@@ -1,6 +1,6 @@
-# product-template
+# SiGA
 
-SiGA: <una línea que describa el producto>. Detalle en `README.md` y `docs/`.
+SiGA: sistema web de gestión operativa académica para la UTN FRT que centraliza en tiempo real el estado de la institución, las aulas, la asistencia docente, las novedades de clase y los avisos institucionales, para estudiantes, docentes, bedeles y autoridades. Producto en `docs/producto/`; detalle técnico en `README.md` y `docs/`.
 
 ## Reglas críticas
 
