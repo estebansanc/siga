@@ -34,7 +34,7 @@ Una novedad sobre un rango de fechas es una sola novedad que abarca todas las cl
 3. Para "Cambio de aula", el sistema verifica que el aula nueva esté disponible en ese horario y, si lo está, la reserva (misma regla de no superposición de RF-16).
 4. El sistema registra la novedad con fecha, hora y usuario responsable, y actualiza el estado de la clase según la tabla de tipos.
 5. El sistema publica la novedad en tiempo real y envía un correo por novedad a cada estudiante que sigue la comisión y tiene activadas las notificaciones (RF-17). No se agrupan ni se difieren.
-6. El docente puede editar o dar por finalizada una novedad. Cada modificación queda en el historial; nada se borra.
+6. El docente puede editar o dar por finalizada una novedad. Cada modificación queda en el historial; nada se borra. Finalizar una Demora o un Cambio de modalidad devuelve la clase a Programada si no tiene asistencia registrada; un Cambio de aula finalizado restituye el aula anterior si sigue libre. Las novedades de Ausencia y Suspensión no se finalizan, porque la clase quedó en estado final: solo se edita su mensaje.
 
 **Reglas**
 

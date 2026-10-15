@@ -1,6 +1,6 @@
 # Mockups
 
-Pantallas principales de SiGA, una por caso de uso real (`05-casos-de-uso-reales.md`). Las de móvil (M1–M8) corresponden a los perfiles Estudiante y Docente; las de escritorio (D1–D8), a Bedel y Autoridad académica.
+Pantallas principales de SiGA, una por caso de uso real (`07-casos-de-uso-reales.md`). Las de móvil (M1–M8) corresponden a los perfiles Estudiante y Docente; las de escritorio (D1–D8), a Bedel y Autoridad académica.
 
 ## Archivo de Figma
 

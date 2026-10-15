@@ -76,6 +76,8 @@ Reglas: las rutas no contienen lógica; los servicios no conocen Hono ni Next.js
 
 ### 2.3 Modelo de dominio
 
+Clases de diseño derivadas del modelo de dominio conceptual (`01-modelo-de-dominio.md`), que es donde están las definiciones, reglas, estados e invariantes de cada concepto. Acá se muestra la versión que implementan los servicios.
+
 ```mermaid
 classDiagram
   class Usuario {
@@ -330,7 +332,7 @@ flowchart LR
 
 ## 6. Vista de escenarios
 
-Escenarios que validan la arquitectura; su detalle de interacción está en `06-diagramas-de-colaboracion.md` y el de interfaz en `05-casos-de-uso-reales.md`.
+Escenarios que validan la arquitectura; su detalle de interacción está en `08-diagramas-de-colaboracion.md` y el de interfaz en `07-casos-de-uso-reales.md`.
 
 | Escenario                                                                                        | Casos de uso        | Atributos que ejercita                                                      |
 | ------------------------------------------------------------------------------------------------ | ------------------- | --------------------------------------------------------------------------- |

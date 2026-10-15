@@ -1,6 +1,6 @@
-# Modelo de casos de uso
+# Diagrama de casos de uso
 
-Actores y casos de uso de SiGA, agrupados por módulo. Cada caso de uso referencia el requisito funcional que lo origina (`../producto/requerimientos.md`). Mermaid no tiene diagrama de casos de uso nativo; se representan con `flowchart`: actores como nodos rectangulares a la izquierda, casos de uso como nodos ovalados, `<<include>>` y `<<extend>>` como aristas punteadas.
+Actores y casos de uso de SiGA, agrupados por módulo. Cada caso de uso referencia el requisito funcional que lo origina (`../producto/requerimientos.md`); su especificación expandida está en `03-modelo-de-casos-de-uso.md`. Mermaid no tiene diagrama de casos de uso nativo; se representan con `flowchart`: actores como nodos rectangulares a la izquierda, casos de uso como nodos ovalados, `<<include>>` y `<<extend>>` como aristas punteadas.
 
 ## Actores
 
@@ -103,6 +103,7 @@ flowchart LR
   DOC[Docente]
   BED[Bedel]
   EXT[Servicio de correo]
+  CLK[Reloj del sistema]
   subgraph Novedades
     direction TB
     CU11([CU-11 Consultar mis clases de hoy])
@@ -110,10 +111,12 @@ flowchart LR
     CU13([CU-13 Publicar novedad de clase])
     CU14([CU-14 Editar o finalizar novedad])
     CU15([CU-15 Notificar novedad por correo])
+    CU38([CU-38 Finalizar clases al terminar la franja])
   end
   EST --> CU11 & CU12
   DOC --> CU13 & CU14
-  BED --> CU13
+  BED --> CU13 & CU14
+  CLK --> CU38
   CU13 -.->|include| CU15
   CU15 --> EXT
   CU11 -.->|extend| CU12
@@ -124,8 +127,9 @@ flowchart LR
 | CU-11 | Consultar mis clases de hoy  | Estudiante     | RF-07        | Comisiones seguidas, estado del docente, aula, novedades activas; se actualiza sola. |
 | CU-12 | Buscar clases con filtros    | Estudiante     | RF-07        | Carrera, año, comisión, materia, fecha, combinables.                                 |
 | CU-13 | Publicar novedad de clase    | Docente, Bedel | RF-05        | Ausencia, demora, virtual, suspensión, cambio de aula; una o varias clases.          |
-| CU-14 | Editar o finalizar novedad   | Docente        | RF-05        | Cada cambio queda en el historial.                                                   |
+| CU-14 | Editar o finalizar novedad   | Docente, Bedel | RF-05        | Cada cambio queda en el historial.                                                   |
 | CU-15 | Notificar novedad por correo | Sistema        | RF-05, RF-17 | Un correo por novedad a cada estudiante suscripto.                                   |
+| CU-38 | Finalizar clases al terminar la franja | Reloj | RF-07   | Toda clase pasa a Finalizada al terminar su horario; sin registro si seguía Programada. |
 
 ## Módulo Aulas y espacios
 

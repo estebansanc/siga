@@ -1,6 +1,6 @@
 # Casos de uso reales: diseño de interfaz gráfica
 
-Casos de uso "reales" (en el sentido de Larman): describen la interacción concreta del actor con la interfaz, pantalla por pantalla, con referencia a los mockups de `03-mockups.md`. Cada caso indica precondiciones, flujo principal sobre la pantalla, flujos alternativos y poscondiciones. Las pantallas se identifican como M1…M8 (móvil) y D1…D8 (escritorio).
+Casos de uso "reales" (en el sentido de Larman): describen la interacción concreta del actor con la interfaz, pantalla por pantalla, con referencia a los mockups de `04-mockups.md`. Cada caso indica precondiciones, flujo principal sobre la pantalla, flujos alternativos y poscondiciones. Las pantallas se identifican como M1…M8 (móvil) y D1…D8 (escritorio).
 
 ## Componentes de interfaz comunes
 

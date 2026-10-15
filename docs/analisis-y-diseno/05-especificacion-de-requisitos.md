@@ -165,7 +165,7 @@ Prioridad: Alta = imprescindible para el MVP; Media = necesaria, puede entregars
 
 ### 3.3 Requisitos de datos
 
-Entidades, reglas de datos (fechas en UTC−3, bajas lógicas, inmutabilidad de eventos, retención de dos ciclos lectivos) en `../producto/requerimientos.md`. Modelo físico en `07-modelo-de-datos.md`.
+Entidades, reglas de datos (fechas en UTC−3, bajas lógicas, inmutabilidad de eventos, retención de dos ciclos lectivos) en `../producto/requerimientos.md`. Modelo físico en `09-modelo-de-datos.md`.
 
 ### 3.4 Requisitos no funcionales
 
@@ -187,4 +187,5 @@ Catálogo completo en `../producto/requerimientos.md` (sección "Requisitos no f
 - **B. Criterios de aceptación CA-01 a CA-09**: `../producto/requerimientos.md`.
 - **C. Matriz de permisos por perfil**: `../producto/requerimientos.md`.
 - **D. Modelo de estados de una clase programada**: `../producto/requerimientos.md` y `../producto/especificaciones/novedades.md`.
-- **E. Casos de uso**: `02-casos-de-uso.md`.
+- **E. Modelo de dominio**: `01-modelo-de-dominio.md`.
+- **F. Casos de uso**: `02-diagrama-de-casos-de-uso.md` y `03-modelo-de-casos-de-uso.md`.
