@@ -840,10 +840,18 @@
             "items": {
               "$ref": "#/components/schemas/Comision"
             }
+          },
+          "notificarNovedadesPorCorreo": {
+            "type": "boolean"
+          },
+          "notificarAvisosPorCorreo": {
+            "type": "boolean"
           }
         },
         "required": [
-          "comisiones"
+          "comisiones",
+          "notificarNovedadesPorCorreo",
+          "notificarAvisosPorCorreo"
         ]
       },
       "Comision": {
@@ -3193,6 +3201,12 @@
                       "minLength": 1
                     },
                     "maxItems": 50
+                  },
+                  "notificarNovedadesPorCorreo": {
+                    "type": "boolean"
+                  },
+                  "notificarAvisosPorCorreo": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -3209,6 +3223,107 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Preferencias"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/preferencias/baja-correo": {
+      "post": {
+        "tags": [
+          "Preferencias"
+        ],
+        "summary": "Dejar de recibir novedades de clase por correo",
+        "description": "Público: el token firmado del correo identifica al estudiante. Desactiva solo la opción de novedades. 400 si el token no es válido.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Baja registrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
                 }
               }
             }
