@@ -13,6 +13,7 @@ import {
   SidebarMenuItem,
   SidebarMenuSkeleton,
   SidebarRail,
+  useSidebar,
 } from "@repo/ui/components/sidebar";
 import { LayoutGridIcon } from "lucide-react";
 import Link from "next/link";
@@ -58,6 +59,8 @@ export function AppSidebar({
   const pathname = usePathname();
   const { data: activeMe = me } = useMe(me);
   const { isSwitching } = useOrganizationSwitch();
+  // En móvil el menú es un panel lateral: elegir una sección navega y lo cierra.
+  const { setOpenMobile } = useSidebar();
   // El menú depende del perfil de SiGA; Configuración, del Administrador de la organización.
   const visibleNavigation = navigationFor(activeMe.perfil, role);
   const hasMultipleOrganizations = activeMe.organizations.length > 1;
@@ -91,7 +94,7 @@ export function AppSidebar({
                     <SidebarMenuButton
                       tooltip={item.title}
                       isActive={isActivePath(pathname, item.href)}
-                      render={<Link href={item.href} />}
+                      render={<Link href={item.href} onClick={() => setOpenMobile(false)} />}
                     >
                       <item.icon />
                       <span>{item.title}</span>

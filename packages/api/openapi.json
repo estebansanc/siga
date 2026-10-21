@@ -2788,7 +2788,10 @@
                     ]
                   },
                   "minutosDemora": {
-                    "type": "integer",
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
                     "minimum": 1,
                     "maximum": 240
                   },
