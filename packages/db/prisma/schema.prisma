@@ -26,6 +26,7 @@ model User {
   profile                UserProfile?
   comisionesDictadas     ComisionDocente[]
   comisionesSeguidas     ComisionSeguida[]
+  notificaciones         Notificacion[]
   novedadesPublicadas    Novedad[]             @relation("NovedadPublicadaPor")
   novedadesFinalizadas   Novedad[]             @relation("NovedadFinalizadaPor")
   estadosInstitucionales EstadoInstitucional[]
@@ -97,9 +98,10 @@ model Organization {
   members     Member[]
   invitations Invitation[]
 
-  settings    OrganizationSettings?
-  auditLogs   AuditLog[]
-  emailOutbox EmailOutbox[]
+  settings       OrganizationSettings?
+  auditLogs      AuditLog[]
+  emailOutbox    EmailOutbox[]
+  notificaciones Notificacion[]
 
   profiles               UserProfile[]
   carreras               Carrera[]
@@ -169,19 +171,20 @@ enum EmailStatus {
 }
 
 model EmailOutbox {
-  id             String       @id @default(cuid())
+  notificacion   Notificacion?
+  id             String        @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   to             String
   subject        String
   html           String
-  status         EmailStatus  @default(PENDING)
-  attempts       Int          @default(0)
+  status         EmailStatus   @default(PENDING)
+  attempts       Int           @default(0)
   lastError      String?
-  sendAfter      DateTime     @default(now())
+  sendAfter      DateTime      @default(now())
   sentAt         DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([status, sendAfter])
   @@index([organizationId, createdAt])
@@ -241,16 +244,18 @@ enum EstadoAula {
 // Perfil de SiGA de cada cuenta (uno por usuario: hay una sola institución). `dni` y
 // `legajo` son opcionales porque el autorregistro todavía no los pide. La baja es lógica.
 model UserProfile {
-  userId         String       @id
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  perfil         Perfil
-  dni            String?
-  legajo         String?
-  activo         Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  userId                      String       @id
+  user                        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId              String
+  organization                Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  perfil                      Perfil
+  dni                         String?
+  legajo                      String?
+  activo                      Boolean      @default(true)
+  notificarNovedadesPorCorreo Boolean      @default(false)
+  notificarAvisosPorCorreo    Boolean      @default(false)
+  createdAt                   DateTime     @default(now())
+  updatedAt                   DateTime     @updatedAt
 
   @@unique([organizationId, dni])
   @@index([organizationId, perfil])
@@ -489,6 +494,7 @@ model Novedad {
   finalizadaPor       User?          @relation("NovedadFinalizadaPor", fields: [finalizadaPorId], references: [id], onDelete: SetNull)
   createdAt           DateTime       @default(now())
   clases              NovedadClase[]
+  notificaciones      Notificacion[]
 
   @@index([organizationId, createdAt])
   @@index([comisionId, estado])
@@ -523,4 +529,29 @@ model ComisionSeguida {
   @@id([userId, comisionId])
   @@index([comisionId])
   @@map("comision_seguida")
+}
+
+enum TipoNotificacion {
+  NOVEDAD
+  AVISO
+}
+
+// Un envío por destinatario. El resultado vive en el email asociado (`email.status`); `novedadId`
+// referencia la novedad que lo originó (los avisos usarán su propia referencia).
+model Notificacion {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  destinatarioId String
+  destinatario   User             @relation(fields: [destinatarioId], references: [id], onDelete: Cascade)
+  tipo           TipoNotificacion
+  novedadId      String?
+  novedad        Novedad?         @relation(fields: [novedadId], references: [id], onDelete: SetNull)
+  emailId        String           @unique
+  email          EmailOutbox      @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+
+  @@index([destinatarioId, createdAt])
+  @@index([novedadId])
+  @@map("notificacion")
 }

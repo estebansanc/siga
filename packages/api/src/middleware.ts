@@ -8,7 +8,7 @@ import { apiEnv } from "./env";
 import { ApiError, forbidden } from "./errors";
 import { consumeRateLimit } from "./services/rate-limit";
 
-const publicPaths = ["/openapi.json", "/docs"];
+const publicPaths = ["/openapi.json", "/docs", "/preferencias/baja-correo"];
 
 export const requireSession = createMiddleware<ApiEnv>(async (c, next) => {
   const path = c.req.path.replace(/^\/api\/v1/, "");

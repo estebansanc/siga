@@ -18,6 +18,7 @@ import { toIso, toIsoOrNull } from "../serializers";
 
 import { registrarCambioMasivo } from "./auditoria";
 import { finalizarClasesVencidas } from "./clases";
+import { notificarNovedadPublicada } from "./notificaciones";
 import { accesoDenegado, assertPerfil, esBedel } from "./permisos";
 
 const novedadInclude = {
@@ -146,7 +147,7 @@ export const publicarNovedad = async (
       : null;
   const estadoNuevo = estadoClasePorNovedad[input.tipo];
 
-  return prisma.$transaction(async (tx) => {
+  const publicada = await prisma.$transaction(async (tx) => {
     if (aulaNueva) await assertAulaLibre(tx, aulaNueva.id, clases);
     await tx.claseProgramada.updateMany({
       where: { id: { in: claseIds } },
@@ -184,6 +185,8 @@ export const publicarNovedad = async (
     });
     return toNovedadDto(novedad);
   });
+  await notificarNovedadPublicada(auth.organizationId, publicada);
+  return publicada;
 };
 
 // Finalizar una Demora o un Cambio de modalidad devuelve la clase a Programada (no hay

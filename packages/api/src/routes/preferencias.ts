@@ -1,9 +1,10 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { actualizarPreferenciasSchema } from "@repo/domain";
+import { actualizarPreferenciasSchema, bajaCorreoSchema } from "@repo/domain";
 
 import type { ApiEnv } from "../context";
-import { perfilOnly } from "../middleware";
-import { preferenciasSchema } from "../schemas";
+import { perfilOnly, rateLimit } from "../middleware";
+import { okSchema, preferenciasSchema } from "../schemas";
+import * as notificaciones from "../services/notificaciones";
 import * as preferencias from "../services/preferencias";
 
 import { commonErrors, jsonBody, jsonResponse } from "./shared";
@@ -37,4 +38,21 @@ export const preferenciaRoutes = new OpenAPIHono<ApiEnv>()
     }),
     async (c) =>
       c.json(await preferencias.actualizarPreferencias(c.get("auth"), c.req.valid("json")), 200),
+  )
+  .openapi(
+    createRoute({
+      method: "post",
+      path: "/baja-correo",
+      tags,
+      summary: "Dejar de recibir novedades de clase por correo",
+      description:
+        "Público: el token firmado del correo identifica al estudiante. Desactiva solo la opción de novedades. 400 si el token no es válido.",
+      request: { body: jsonBody(bajaCorreoSchema) },
+      middleware: [rateLimit({ scope: "baja-correo", limit: 20, windowSeconds: 600 })] as const,
+      responses: { 200: jsonResponse(okSchema, "Baja registrada"), ...commonErrors },
+    }),
+    async (c) => {
+      await notificaciones.darDeBajaNovedadesPorCorreo(c.req.valid("json").token);
+      return c.json({ ok: true as const }, 200);
+    },
   );

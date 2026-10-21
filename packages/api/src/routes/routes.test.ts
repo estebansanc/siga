@@ -380,3 +380,30 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
     expect((await call("/clases?anio=9")).status).toBe(422);
   });
 });
+
+describe("baja de correos sin sesión", () => {
+  it("con token válido desactiva la opción y con uno alterado responde 400", async () => {
+    const institution = await createInstitution();
+    const estudiante = await createUserWithPerfil(institution, "ESTUDIANTE");
+    await prisma.userProfile.update({
+      where: { userId: estudiante.userId },
+      data: { notificarNovedadesPorCorreo: true },
+    });
+    getAuthContext.mockResolvedValue(null);
+    const { crearTokenBajaNovedades } = await import("../services/notificaciones");
+    const token = crearTokenBajaNovedades(estudiante.userId);
+
+    const alterada = await call("/preferencias/baja-correo", json({ token: `${token}x` }));
+    expect(alterada.status).toBe(400);
+    expect(await alterada.json()).toMatchObject({
+      error: { message: "El enlace para dejar de recibir correos no es válido." },
+    });
+
+    const valida = await call("/preferencias/baja-correo", json({ token }));
+    expect(valida.status).toBe(200);
+    expect(
+      (await prisma.userProfile.findUniqueOrThrow({ where: { userId: estudiante.userId } }))
+        .notificarNovedadesPorCorreo,
+    ).toBe(false);
+  });
+});

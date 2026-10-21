@@ -255,7 +255,11 @@ export const novedadSchema = z
 export type NovedadDto = z.infer<typeof novedadSchema>;
 
 export const preferenciasSchema = z
-  .object({ comisiones: z.array(comisionSchema) })
+  .object({
+    comisiones: z.array(comisionSchema),
+    notificarNovedadesPorCorreo: z.boolean(),
+    notificarAvisosPorCorreo: z.boolean(),
+  })
   .openapi("Preferencias");
 export type PreferenciasDto = z.infer<typeof preferenciasSchema>;
 

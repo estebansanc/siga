@@ -28,13 +28,19 @@ beforeEach(async () => {
 describe("preferencias del estudiante", () => {
   it("reemplaza el conjunto de comisiones seguidas y lo devuelve con sus datos", async () => {
     const auth = authOf(institution, estudiante);
-    expect(await obtenerPreferencias(auth)).toEqual({ comisiones: [] });
+    expect(await obtenerPreferencias(auth)).toEqual({
+      comisiones: [],
+      notificarNovedadesPorCorreo: false,
+      notificarAvisosPorCorreo: false,
+    });
     expect(
       await actualizarPreferencias(auth, { comisionIds: [fixture.comisionId, fixture.comisionId] }),
-    ).toEqual({
+    ).toMatchObject({
       comisiones: [expect.objectContaining({ id: fixture.comisionId, codigo: "5K2" })],
     });
-    expect(await actualizarPreferencias(auth, { comisionIds: [] })).toEqual({ comisiones: [] });
+    expect(await actualizarPreferencias(auth, { comisionIds: [] })).toMatchObject({
+      comisiones: [],
+    });
     expect(await prisma.auditLog.count({ where: { action: "preferencias" } })).toBe(2);
   });
 
@@ -53,6 +59,22 @@ describe("preferencias del estudiante", () => {
     });
     await expect(obtenerPreferencias(authOf(institution, fixture.docente))).rejects.toMatchObject({
       status: 403,
+    });
+  });
+});
+
+describe("opciones de correo", () => {
+  it("persisten cada una por separado y se conservan si no se mandan", async () => {
+    const auth = authOf(institution, estudiante);
+    expect(
+      await actualizarPreferencias(auth, { comisionIds: [], notificarNovedadesPorCorreo: true }),
+    ).toMatchObject({ notificarNovedadesPorCorreo: true, notificarAvisosPorCorreo: false });
+    expect(
+      await actualizarPreferencias(auth, { comisionIds: [], notificarAvisosPorCorreo: true }),
+    ).toMatchObject({ notificarNovedadesPorCorreo: true, notificarAvisosPorCorreo: true });
+    expect(await obtenerPreferencias(auth)).toMatchObject({
+      notificarNovedadesPorCorreo: true,
+      notificarAvisosPorCorreo: true,
     });
   });
 });

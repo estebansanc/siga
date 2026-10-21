@@ -265,10 +265,20 @@ const upsertUser = async (user: SeedUser) => {
       createdAt: new Date(),
     },
   });
+  const opcionesDeCorreo =
+    user.id === "estudiante-1"
+      ? { notificarNovedadesPorCorreo: true, notificarAvisosPorCorreo: true }
+      : {};
   await prisma.userProfile.upsert({
     where: { userId: user.id },
-    update: { perfil: user.perfil, dni: user.dni, activo: true },
-    create: { userId: user.id, organizationId: institution.id, perfil: user.perfil, dni: user.dni },
+    update: { perfil: user.perfil, dni: user.dni, activo: true, ...opcionesDeCorreo },
+    create: {
+      userId: user.id,
+      organizationId: institution.id,
+      perfil: user.perfil,
+      dni: user.dni,
+      ...opcionesDeCorreo,
+    },
   });
 };
 

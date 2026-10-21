@@ -9,7 +9,8 @@ import { registrarCambioMasivo } from "./auditoria";
 import { comisionInclude, toComisionDto } from "./datos-academicos";
 import { assertPerfil } from "./permisos";
 
-// RF-17: las comisiones seguidas filtran "Mis clases" del estudiante.
+// RF-17: las comisiones seguidas filtran "Mis clases" del estudiante y definen a quién se le
+// notifica por correo cuando están activadas las opciones de correo.
 export const obtenerPreferencias = async (auth: AuthContext): Promise<PreferenciasDto> => {
   await assertPerfil(auth, "ESTUDIANTE");
   const seguidas = await prisma.comisionSeguida.findMany({
@@ -17,7 +18,11 @@ export const obtenerPreferencias = async (auth: AuthContext): Promise<Preferenci
     include: { comision: { include: comisionInclude } },
     orderBy: [{ comision: { materia: { anioCarrera: "asc" } } }, { comision: { codigo: "asc" } }],
   });
-  return { comisiones: seguidas.map(({ comision }) => toComisionDto(comision)) };
+  const perfil = await prisma.userProfile.findUniqueOrThrow({
+    where: { userId: auth.userId },
+    select: { notificarNovedadesPorCorreo: true, notificarAvisosPorCorreo: true },
+  });
+  return { comisiones: seguidas.map(({ comision }) => toComisionDto(comision)), ...perfil };
 };
 
 export const actualizarPreferencias = async (
@@ -41,9 +46,16 @@ export const actualizarPreferencias = async (
         organizationId: auth.organizationId,
       })),
     });
+    const { notificarNovedadesPorCorreo, notificarAvisosPorCorreo } = input;
+    await tx.userProfile.update({
+      where: { userId: auth.userId },
+      data: { notificarNovedadesPorCorreo, notificarAvisosPorCorreo },
+    });
     await registrarCambioMasivo(tx, auth.organizationId, "ComisionSeguida", "preferencias", {
       userId: auth.userId,
       comisionIds,
+      notificarNovedadesPorCorreo,
+      notificarAvisosPorCorreo,
     });
   });
   return obtenerPreferencias(auth);

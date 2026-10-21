@@ -1,3 +1,5 @@
+import { tipoNovedadLabels, type TipoNovedad } from "@repo/domain";
+
 import { apiEnv } from "../../env";
 
 // Plantillas puras: reciben el contexto ya resuelto y devuelven asunto y HTML. Sin librería de
@@ -27,6 +29,7 @@ export const emailLayout = (
   paragraphs: string[],
   rows: SummaryRow[],
   cta: { label: string; url: string },
+  footer = "",
 ) => `<!doctype html>
 <html lang="es">
 <body style="margin:0;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111827">
@@ -39,6 +42,7 @@ ${paragraphs.map((text) => `<p style="margin:0 0 12px;font-size:15px;line-height
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:16px 0;font-size:14px">${summaryTable(rows)}</table>
 <p style="margin:24px 0 0"><a href="${escapeHtml(cta.url)}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">${escapeHtml(cta.label)}</a></p>
 <p style="margin:16px 0 0;font-size:12px;color:#6b7280">Si el botón no funciona, copiá este link: ${escapeHtml(cta.url)}</p>
+${footer}
 </td></tr>
 </table>
 </td></tr>
@@ -77,3 +81,64 @@ export const invitationEmail = (context: InvitationEmailContext): EmailContent =
     { label: "Ver la invitación", url: context.url },
   ),
 });
+
+export type NovedadEmailContext = {
+  materia: string;
+  comision: string;
+  tipo: TipoNovedad;
+  clases: { fecha: string; horaInicio: string; horaFin: string }[];
+  minutosDemora: number | null;
+  enlaceVirtual: string | null;
+  aulaNueva: string | null;
+  mensaje: string | null;
+  publicadaPorBedelia: boolean;
+  clasesUrl: string;
+  bajaUrl: string;
+};
+
+const isoToArgentine = (fecha: string) => fecha.split("-").reverse().join("/");
+
+const fechaLine = (clases: NovedadEmailContext["clases"]) => {
+  const primera = clases[0]!;
+  const ultima = clases[clases.length - 1]!;
+  if (clases.length === 1) {
+    return `Fecha: ${isoToArgentine(primera.fecha)}, ${primera.horaInicio} a ${primera.horaFin}`;
+  }
+  return `Fechas: del ${isoToArgentine(primera.fecha)} al ${isoToArgentine(ultima.fecha)}`;
+};
+
+const datoLine = (context: NovedadEmailContext) => {
+  if (context.tipo === "DEMORA" && context.minutosDemora !== null) {
+    return `Demora: ${context.minutosDemora} ${context.minutosDemora === 1 ? "minuto" : "minutos"}`;
+  }
+  if (context.tipo === "VIRTUAL" && context.enlaceVirtual) {
+    return `Enlace de la clase: ${context.enlaceVirtual}`;
+  }
+  if (context.tipo === "CAMBIO_AULA" && context.aulaNueva) {
+    return `Aula nueva: ${context.aulaNueva}`;
+  }
+  return null;
+};
+
+// ETI-2: solo tipo, fechas, dato del tipo y mensaje publicado; nunca motivo personal ni autor.
+export const novedadEmail = (context: NovedadEmailContext): EmailContent => {
+  const subject = `Novedad en ${context.materia} ${context.comision}: ${tipoNovedadLabels[context.tipo]}`;
+  const lines = [
+    `Tipo: ${tipoNovedadLabels[context.tipo]}`,
+    fechaLine(context.clases),
+    datoLine(context),
+    context.mensaje ? `Mensaje: ${context.mensaje}` : null,
+    `Publicada por: ${context.publicadaPorBedelia ? "Bedelía" : "Docente"}`,
+  ].filter((line): line is string => line !== null);
+  const footer = `<p style="margin:16px 0 0;font-size:12px"><a href="${escapeHtml(context.bajaUrl)}" style="color:#6b7280">Dejar de recibir novedades por correo</a></p>`;
+  return {
+    subject,
+    html: emailLayout(
+      subject,
+      lines.map(escapeHtml),
+      [],
+      { label: "Ver mis clases", url: context.clasesUrl },
+      footer,
+    ),
+  };
+};

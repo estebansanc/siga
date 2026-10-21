@@ -2,6 +2,7 @@ const optional = (name: string) => process.env[name] ?? "";
 
 export const apiEnv = {
   cronSecret: optional("CRON_SECRET"),
+  authSecret: optional("BETTER_AUTH_SECRET"),
   appUrl: optional("NEXT_PUBLIC_APP_URL").replace(/\/$/, ""),
   storage: {
     endpoint: optional("STORAGE_ENDPOINT"),
