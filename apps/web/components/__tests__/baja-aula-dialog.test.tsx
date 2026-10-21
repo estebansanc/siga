@@ -58,9 +58,9 @@ describe("BajaAulaDialog", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("no habilita la baja hasta que carga el detalle", () => {
+  it("no habilita la baja hasta que carga el detalle", async () => {
     state.detalle = undefined;
     renderWithProviders(<BajaAulaDialog aula={aula} onClose={() => {}} />);
-    expect(screen.getByRole("button", { name: "Dar de baja" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: /Dar de baja/ })).toBeDisabled();
   });
 });
