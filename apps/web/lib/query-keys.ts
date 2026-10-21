@@ -13,5 +13,7 @@ export const queryKeys = {
   carreras: ["carreras"] as const,
   materias: (query: Record<string, string | undefined>) => ["materias", query] as const,
   comisiones: (query: Record<string, string | undefined>) => ["comisiones", query] as const,
+  aulas: (bajas: boolean) => ["aulas", { bajas }] as const,
+  aula: (id: string) => ["aulas", id] as const,
   aulasDisponibles: (claseIds: string[]) => ["aulas-disponibles", claseIds] as const,
 };
