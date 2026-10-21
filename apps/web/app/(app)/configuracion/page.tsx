@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { AppVersion } from "@/components/settings/app-version";
 import { MembersSection } from "@/components/settings/members-section";
 import { OrganizationSection } from "@/components/settings/organization-section";
+import { TurnosSection } from "@/components/settings/turnos-section";
 import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Configuración" };
@@ -22,6 +23,7 @@ export default async function SettingsPage() {
       <PageBody>
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4">
           <OrganizationSection />
+          <TurnosSection />
           <MembersSection currentUserId={session.userId} />
           <AppVersion />
         </div>

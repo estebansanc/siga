@@ -57,7 +57,7 @@ test.describe("Móvil", () => {
     await page.keyboard.press("Escape");
 
     await page.goto("/qr");
-    await expect(page.getByText("Próximamente")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Generar QR" })).toBeVisible();
     await expectNoHorizontalPageScroll(page);
   });
 
