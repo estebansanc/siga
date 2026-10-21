@@ -7,7 +7,7 @@ import { apiEnv } from "../env";
 import { badRequest } from "../errors";
 import type { NovedadDto } from "../schemas";
 
-import { enqueueEmail } from "./emails/outbox";
+import { deliverEmail } from "./emails/outbox";
 import { novedadEmail } from "./emails/templates";
 
 const bajaInvalida = () => badRequest("El enlace para dejar de recibir correos no es válido.");
@@ -53,12 +53,14 @@ const buscarDestinatarios = (organizationId: string, comisionId: string) =>
     select: { id: true, email: true },
   });
 
-const enviarNovedad = async (organizationId: string, novedad: NovedadDto) => {
+// Primero se registran, en una sola transacción, el correo en el outbox y la Notificación de
+// todos los destinatarios: si algo se corta después, el cron reintenta lo que quedó pendiente.
+const registrarNovedad = async (organizationId: string, novedad: NovedadDto) => {
   const destinatarios = await buscarDestinatarios(organizationId, novedad.comision.id);
-  for (const destinatario of destinatarios) {
-    const email = await enqueueEmail(organizationId, {
-      to: destinatario.email,
-      ...novedadEmail({
+  return prisma.$transaction(async (tx) => {
+    const correos = [];
+    for (const destinatario of destinatarios) {
+      const { subject, html } = novedadEmail({
         materia: novedad.comision.materia,
         comision: novedad.comision.codigo,
         tipo: novedad.tipo,
@@ -70,17 +72,28 @@ const enviarNovedad = async (organizationId: string, novedad: NovedadDto) => {
         publicadaPorBedelia: novedad.publicadaPorBedelia,
         clasesUrl: `${apiEnv.appUrl}/clases`,
         bajaUrl: `${apiEnv.appUrl}/baja-correo?token=${crearTokenBajaNovedades(destinatario.id)}`,
-      }),
-    });
-    await prisma.notificacion.create({
-      data: {
-        organizationId,
-        destinatarioId: destinatario.id,
-        tipo: "NOVEDAD",
-        novedadId: novedad.id,
-        emailId: email.id,
-      },
-    });
+      });
+      const correo = await tx.emailOutbox.create({
+        data: { organizationId, to: destinatario.email, subject, html },
+      });
+      await tx.notificacion.create({
+        data: {
+          organizationId,
+          destinatarioId: destinatario.id,
+          tipo: "NOVEDAD",
+          novedadId: novedad.id,
+          emailId: correo.id,
+        },
+      });
+      correos.push(correo);
+    }
+    return correos;
+  });
+};
+
+const enviarNovedad = async (organizationId: string, novedad: NovedadDto) => {
+  for (const correo of await registrarNovedad(organizationId, novedad)) {
+    await deliverEmail(correo);
   }
 };
 
