@@ -25,6 +25,7 @@ describe("publicarNovedadSchema", () => {
 
   it("Demora exige minutos enteros entre 1 y 240 y los acepta como texto", () => {
     expect(pathsDe({ ...base, tipo: "DEMORA" })).toEqual(["minutosDemora"]);
+    expect(pathsDe({ ...base, tipo: "DEMORA", minutosDemora: "" })).toEqual(["minutosDemora"]);
     expect(pathsDe({ ...base, tipo: "DEMORA", minutosDemora: "300" })).toEqual(["minutosDemora"]);
     expect(
       publicarNovedadSchema.parse({ ...base, tipo: "DEMORA", minutosDemora: "15" }),

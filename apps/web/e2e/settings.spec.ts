@@ -1,9 +1,10 @@
-import { expect, test } from "./support/fixtures";
+import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
 
 test.describe("Configuración", () => {
   test("muestra la versión del sistema y sus novedades, aunque no haya cambios", async ({
-    authenticatedPage: page,
+    page,
   }) => {
+    await loginViaUi(page, seededUsers.bedel);
     await page.goto("/configuracion");
     await expect(page.getByText(/^Versión .*\d+\.\d+$/)).toBeVisible();
     await page.getByRole("button", { name: "Novedades" }).click();
@@ -15,19 +16,26 @@ test.describe("Configuración", () => {
     ).toBeVisible();
   });
 
-  test("lista al Administrador como único miembro y ofrece invitar", async ({
-    authenticatedPage: page,
-    user,
-  }) => {
+  test("lista al bedel como Administrador de la institución y ofrece invitar", async ({ page }) => {
+    await loginViaUi(page, seededUsers.bedel);
     await page.goto("/configuracion");
     const membersCard = page
       .locator('[data-slot="card"]')
       .filter({ has: page.getByText("Miembros", { exact: true }) });
-    const items = membersCard.locator('[data-slot="item"]');
-    await expect(items).toHaveCount(1);
-    await expect(items.first()).toContainText(user.name);
-    await expect(items.first()).toContainText("Administrador");
-    await expect(items.first().getByRole("button", { name: /Acciones de/ })).toHaveCount(0);
+    const admin = membersCard
+      .locator('[data-slot="item"]')
+      .filter({ hasText: seededUsers.bedel.name });
+    await expect(admin).toContainText("Administrador");
+    await expect(admin.getByRole("button", { name: /Acciones de/ })).toHaveCount(0);
     await expect(membersCard.getByRole("button", { name: "Invitar" })).toBeVisible();
+  });
+
+  test("un estudiante no ve Configuración y por URL vuelve a Mis clases", async ({
+    authenticatedPage: page,
+  }) => {
+    await expect(page.getByRole("link", { name: "Configuración" })).toHaveCount(0);
+    await page.goto("/configuracion");
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
   });
 });

@@ -18,7 +18,7 @@ export function OrganizationSwitchContent({ children }: { children: ReactNode })
 
   return (
     <>
-      <PageHeader title={<Skeleton className="h-5 w-32" />} />
+      <PageHeader title={<Skeleton className="h-5 w-32" />} estado={false} />
       <PageBody>
         <div className="flex flex-col gap-4 p-4">
           <Skeleton className="h-9 w-full sm:max-w-sm" />

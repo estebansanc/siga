@@ -5,7 +5,7 @@ test.describe("PWA", () => {
     const manifest = await request.get("/manifest.webmanifest", { maxRetries: apiRetries });
     expect(manifest.ok()).toBeTruthy();
     expect(await manifest.json()).toMatchObject({
-      name: "Mi Producto",
+      name: "SiGA",
       display: "standalone",
       start_url: "/",
     });

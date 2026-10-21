@@ -5,7 +5,8 @@ test.describe("Mi perfil", () => {
     authenticatedPage: page,
     user,
   }) => {
-    await page.getByRole("link", { name: "Mi perfil" }).click();
+    await page.getByTestId("user-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Mi perfil" }).click();
     await expect(page).toHaveURL(/\/mi-perfil/);
     const nameInput = page.getByLabel("Nombre", { exact: true });
     await expect(nameInput).toHaveValue(user.name);

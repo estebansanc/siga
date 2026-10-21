@@ -51,7 +51,15 @@ Lo que puede esperar a después de responder (emails, integraciones) pasa por `r
 
 ## Tenancy
 
-El tenant es la **organización** = `Organization` de Better Auth. Se crea automáticamente al registrarse (hook en `packages/auth/src/server.ts`). Cada request lleva `organizationId` desde la sesión activa y todo servicio filtra por él. Las entidades del producto cuelgan de la organización con `organizationId`.
+El tenant es la **organización** = `Organization` de Better Auth. En SiGA es la institución, una sola y precargada por el seed; una cuenta nueva entra a ella como Estudiante en su primera sesión (hook en `packages/auth/src/server.ts`, ver `docs/autenticacion.md`). Cada request lleva `organizationId` y `perfil` desde la sesión activa y todo servicio filtra por el primero y controla permisos con el segundo. Las entidades del producto cuelgan de la organización con `organizationId`.
+
+## Servicios de SiGA
+
+`packages/api/src/services`: `permisos` (`assertPerfil`, acceso denegado auditado), `datos-academicos` (carreras, materias, comisiones, generación de clases sobre `packages/db/src/clases-programadas.ts`), `estado-institucional` (vigente, historial, cambio con suspensión de clases en la misma transacción), `clases` (listado por día y ámbito con finalización perezosa: al consultar, toda clase cuya franja terminó pasa a Finalizada; no hay cron), `novedades` (publicar y finalizar con cambio de estado de las clases y reserva de aula, todo o nada), `preferencias` (comisiones seguidas) y `aulas` (disponibles para un cambio de aula). `packages/db` depende de `packages/domain` por los helpers de tiempo que usa la generación de clases.
+
+## Tiempo real
+
+Por consulta periódica, no por push: los hooks de la web (`apps/web/hooks/use-estado-institucional.ts`, `use-clases.ts`, `use-novedades.ts`) usan React Query con `refetchInterval: 30_000` y `refetchOnWindowFocus`, y cada mutación invalida `clases`, `novedades` y el estado institucional. Cumple el máximo de 60 segundos de RNF-02.
 
 ## Auditoría
 

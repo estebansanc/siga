@@ -18,7 +18,7 @@ Las URLs `*.vercel.app` del proyecto siguen sirviendo, pero las de referencia so
 - `.github/workflows/ci.yml` (PR): lint, typecheck, tests, `openapi:check`, `migrate:check`. El job `e2e` corre solo en PRs a `main`.
 - `.github/workflows/preview.yml` (manual, `workflow_dispatch` con el número de PR): crea el branch de Neon, migra, deploya una preview, comenta la URL y etiqueta el PR con `preview`. Se lanza con `gh workflow run preview.yml -f pr=<n>`.
 - `.github/workflows/preview-cleanup.yml`: borra el branch de Neon al cerrar un PR con etiqueta `preview`.
-- `.github/workflows/deploy-staging.yml` (push a `develop`): migra staging, Vercel compila en la nube y se asigna el alias `STAGING_DOMAIN`.
+- `.github/workflows/deploy-staging.yml` (push a `develop`): migra staging, Vercel compila en la nube y se asigna el alias `STAGING_DOMAIN`. El seed no corre en el deploy: la primera vez (y cada vez que cambie) se corre a mano contra el branch de Neon, `DATABASE_URL=<DIRECT_URL de staging> DIRECT_URL=<idem> pnpm db:seed`; sin la institución cargada nadie puede registrarse (`docs/modelo-de-datos.md`, "Seed").
 - `.github/workflows/deploy-production.yml` (push a `main`): environment `production`, migra y deploya `--prod`. La aprobación de producción es el merge del PR `develop` → `main` (GitHub Free no permite required reviewers en repos privados).
 
 ## Configuración inicial

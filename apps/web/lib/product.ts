@@ -2,4 +2,5 @@
 // lo importan de acá. `bootstrap.sh` del plugin `ticket-flow` reemplaza el literal.
 export const productName = "SiGA";
 
-export const productDescription = "Base para productos con organizaciones, miembros e invitaciones";
+export const productDescription =
+  "Gestión operativa académica de la UTN FRT: estado de la institución, clases, novedades y avisos en tiempo real";

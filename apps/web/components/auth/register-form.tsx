@@ -62,7 +62,7 @@ export function RegisterForm() {
     <Card>
       <CardHeader className="text-center">
         <CardTitle className="text-xl">Crear cuenta</CardTitle>
-        <CardDescription>Creá tu cuenta y tu organización</CardDescription>
+        <CardDescription>Registrate como estudiante de la UTN FRT</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit}>

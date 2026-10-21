@@ -18,17 +18,25 @@ test.describe("API para clientes móviles", () => {
     expect((await anonymous.get("/api/v1/me")).status()).toBe(401);
     const me = await api.get("/api/v1/me");
     expect(me.status()).toBe(200);
-    expect(await me.json()).toMatchObject({ userEmail: user.email, role: "owner" });
+    expect(await me.json()).toMatchObject({
+      userEmail: user.email,
+      role: "member",
+      perfil: "ESTUDIANTE",
+    });
 
-    const renamed = await api.patch("/api/v1/settings", { data: { name: "Organización Móvil" } });
-    expect(renamed.status()).toBe(200);
-    expect(await renamed.json()).toEqual({ name: "Organización Móvil" });
-
-    const invited = await api.post("/api/v1/invitations", { data: { email: newUser().email } });
-    expect(invited.status()).toBe(201);
-    const members = await api.get("/api/v1/members");
-    expect(members.status()).toBe(200);
-    expect(await members.json()).toHaveLength(1);
+    // Un estudiante consulta el estado y las clases, pero no administra la institución.
+    const estado = await api.get("/api/v1/estado-institucional");
+    expect(estado.status()).toBe(200);
+    expect(await estado.json()).toMatchObject({ estado: expect.any(String) });
+    const clases = await api.get("/api/v1/clases?ambito=todas");
+    expect(clases.status()).toBe(200);
+    expect(await clases.json()).toMatchObject({ clases: expect.any(Array) });
+    expect((await api.patch("/api/v1/settings", { data: { name: "Otra" } })).status()).toBe(403);
+    expect(
+      (
+        await api.post("/api/v1/estado-institucional", { data: { estado: "CERRADA", motivo: "x" } })
+      ).status(),
+    ).toBe(403);
 
     const spec = await anonymous.get("/api/v1/openapi.json");
     expect(spec.ok()).toBeTruthy();

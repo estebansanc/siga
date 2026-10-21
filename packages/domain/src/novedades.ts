@@ -28,7 +28,11 @@ export const publicarNovedadSchema = z
   .object({
     claseIds: z.array(idSchema).min(1, "Elegí al menos una clase"),
     tipo: tipoNovedadSchema,
-    minutosDemora: minutosDemoraSchema.optional(),
+    // Un campo numérico vacío llega como "" desde el formulario: cuenta como no informado.
+    minutosDemora: z.preprocess(
+      (value) => (value === "" || value === null ? undefined : value),
+      minutosDemoraSchema.optional(),
+    ),
     enlaceVirtual: textoOpcional(enlaceVirtualSchema),
     aulaNuevaId: textoOpcional(z.string()),
     mensaje: optionalText(500),

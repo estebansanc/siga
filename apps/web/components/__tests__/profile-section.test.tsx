@@ -21,6 +21,7 @@ const me: MeDto = {
   userEmail: "ana@example.com",
   organizationId: "org-1",
   role: "owner",
+  perfil: "BEDEL",
   organizations: [{ id: "org-1", name: "Organización de Ana", slug: "ana", role: "owner" }],
   lostOrganization: null,
 };

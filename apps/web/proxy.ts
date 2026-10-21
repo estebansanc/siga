@@ -9,7 +9,25 @@ const openRoutes = ["/~offline"];
 // no exista) sigue de largo y la resuelve Next, que la 404 con la pantalla neutra en vez de
 // pedir login primero: el proxy no sabe qué rutas existen de verdad, así que solo protege las
 // que sabe que son de la app. Toda ruta nueva de la app va también acá.
-const protectedRoutes = ["/", "/configuracion", "/mi-perfil", "/invitacion"];
+const protectedRoutes = [
+  "/",
+  "/configuracion",
+  "/mi-perfil",
+  "/invitacion",
+  "/clases",
+  "/novedades",
+  "/estado-institucional",
+  "/preferencias",
+  "/avisos",
+  "/asistencia",
+  "/aulas",
+  "/qr",
+  "/solicitudes",
+  "/incidencias",
+  "/usuarios",
+  "/datos-academicos",
+  "/historico",
+];
 
 const startsWithAny = (pathname: string, routes: string[]) =>
   routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));

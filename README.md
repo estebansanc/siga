@@ -44,7 +44,7 @@ Requisitos: Node 22+ (ver `.nvmrc`), pnpm 11, y Docker o un Postgres local en `l
 pnpm dev:local
 ```
 
-Ese comando crea `.env` con valores locales si no existe, instala dependencias, levanta Postgres con Docker si no hay uno corriendo, aplica migraciones, carga el usuario demo y abre la app en http://localhost:3000. Ingresá con `demo@example.com` / `demo1234`. Login con Google, emails y storage requieren completar `GOOGLE_*`, `RESEND_*` y `STORAGE_*` en `.env` (ver `.env.example`).
+Ese comando crea `.env` con valores locales si no existe, instala dependencias, levanta Postgres con Docker si no hay uno corriendo, aplica migraciones, carga el seed de SiGA y abre la app en http://localhost:3000. Usuarios del seed (clave `demo1234`): `demo@example.com` (Bedel), `docente@example.com` (Docente), `estudiante@example.com` (Estudiante que sigue 5K2) y `autoridad@example.com` (Autoridad). El seed es obligatorio: carga la institución a la que entran las cuentas nuevas. Login con Google, emails y storage requieren completar `GOOGLE_*`, `RESEND_*` y `STORAGE_*` en `.env` (ver `.env.example`).
 
 Paso a paso, si preferís hacerlo a mano:
 
@@ -53,13 +53,13 @@ pnpm install
 cp .env.example .env            # completá DATABASE_URL, DIRECT_URL y BETTER_AUTH_SECRET
 docker compose up -d            # Postgres local en localhost:5432 (usuario/clave/db: app)
 pnpm db:migrate                 # aplica migraciones (prisma migrate dev)
-pnpm db:seed                    # demo@example.com / demo1234, Administrador de "Organización demo"
+pnpm db:seed                    # institución, usuarios por perfil, datos académicos y clases
 pnpm dev                        # http://localhost:3000
 ```
 
 Sin Docker: `brew services start postgresql@16` y creá el rol y la base `app` (ver `docs/ambientes-y-deploy.md`).
 
-Rutas útiles: `/`, `/configuracion`, `/mi-perfil`, `/api/v1/docs` (Swagger UI) y `/api/v1/openapi.json`.
+Rutas útiles: `/` (Mis clases de hoy), `/clases` (búsqueda), `/novedades`, `/estado-institucional`, `/preferencias`, `/configuracion`, `/mi-perfil`, `/api/v1/docs` (Swagger UI) y `/api/v1/openapi.json`.
 
 ## Suite de calidad
 

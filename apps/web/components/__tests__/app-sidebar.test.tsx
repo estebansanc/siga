@@ -57,12 +57,16 @@ const otherOrganization = {
   role: "member" as const,
 };
 
-const meOf = (organizations: MeDto["organizations"] = [ownOrganization]): MeDto => ({
+const meOf = (
+  organizations: MeDto["organizations"] = [ownOrganization],
+  perfil: MeDto["perfil"] = "BEDEL",
+): MeDto => ({
   userId: "u1",
   userName: user.name,
   userEmail: user.email,
   organizationId: organizations[0].id,
   role: "owner",
+  perfil,
   organizations,
   lostOrganization: null,
 });
@@ -83,24 +87,70 @@ beforeEach(() => {
   setActive.mockClear();
 });
 
+// Los ítems del menú, sin la marca (que lleva también el nombre de la institución).
+const linkNames = () =>
+  [...document.querySelectorAll<HTMLAnchorElement>('[data-slot="sidebar-menu-button"]')]
+    .slice(1)
+    .map((link) => link.textContent?.trim());
+
 describe("AppSidebar", () => {
-  it("muestra Inicio, Configuración y Mi perfil al Administrador, con Inicio activo solo en la raíz", () => {
-    renderSidebar("owner");
-    expect(screen.getByRole("link", { name: "Inicio" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Inicio" })).toHaveAttribute("data-active");
+  it("el bedel Administrador ve el menú de bedelía y Configuración, con Estado institucional activo", () => {
+    pathnameState.current = "/estado-institucional";
+    renderSidebar("owner", meOf([ownOrganization], "BEDEL"));
+    expect(linkNames()).toEqual([
+      "Estado institucional",
+      "Clases",
+      "Novedades",
+      "Aulas",
+      "QR de asistencia",
+      "Solicitudes",
+      "Incidencias",
+      "Avisos",
+      "Usuarios",
+      "Datos académicos",
+      "Configuración",
+    ]);
+    expect(screen.getByRole("link", { name: "Estado institucional" })).toHaveAttribute(
+      "data-active",
+    );
     expect(screen.getByRole("link", { name: "Configuración" })).toHaveAttribute(
       "href",
       "/configuracion",
     );
-    expect(screen.getByRole("link", { name: "Mi perfil" })).toHaveAttribute("href", "/mi-perfil");
   });
 
-  it("un miembro no ve Configuración, pero sí Inicio y Mi perfil", () => {
-    pathnameState.current = "/mi-perfil";
-    renderSidebar("member");
-    expect(screen.queryByRole("link", { name: "Configuración" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Inicio" })).not.toHaveAttribute("data-active");
-    expect(screen.getByRole("link", { name: "Mi perfil" })).toHaveAttribute("data-active");
+  it("el estudiante ve Mis clases, Buscar, Avisos y Preferencias, sin Configuración", () => {
+    renderSidebar("member", meOf([ownOrganization], "ESTUDIANTE"));
+    expect(linkNames()).toEqual(["Mis clases", "Buscar", "Avisos", "Preferencias"]);
+    expect(screen.getByRole("link", { name: "Mis clases" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Mis clases" })).toHaveAttribute("data-active");
+    expect(screen.getByRole("link", { name: "Preferencias" })).toHaveAttribute(
+      "href",
+      "/preferencias",
+    );
+  });
+
+  it("el docente ve Asistencia, Novedades y Aulas; la autoridad, Consultas históricas y Estado", () => {
+    pathnameState.current = "/novedades";
+    const docente = renderSidebar("member", meOf([ownOrganization], "DOCENTE"));
+    expect(linkNames()).toEqual(["Mis clases", "Asistencia", "Novedades", "Aulas", "Buscar"]);
+    expect(screen.getByRole("link", { name: "Novedades" })).toHaveAttribute("data-active");
+    expect(screen.getByRole("link", { name: "Mis clases" })).not.toHaveAttribute("data-active");
+    docente.unmount();
+
+    renderSidebar("member", meOf([ownOrganization], "AUTORIDAD"));
+    expect(linkNames()).toEqual([
+      "Clases de hoy",
+      "Consultas históricas",
+      "Avisos",
+      "Buscar",
+      "Estado institucional",
+    ]);
+  });
+
+  it("muestra el nombre de la institución bajo la marca del producto", () => {
+    renderSidebar("owner", meOf([{ ...ownOrganization, name: "UTN Facultad Regional Tucumán" }]));
+    expect(screen.getByText("UTN Facultad Regional Tucumán")).toBeInTheDocument();
   });
 
   it("el pie muestra el nombre y el email de quién soy, no de la cookie", () => {
@@ -112,14 +162,17 @@ describe("AppSidebar", () => {
 
   it("con una sola organización muestra la marca del producto con link al inicio, nunca un selector", () => {
     renderSidebar();
-    expect(screen.getByRole("link", { name: productName })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: new RegExp(productName) })).toHaveAttribute(
+      "href",
+      "/",
+    );
     expect(screen.queryByTestId("organization-switcher-trigger")).not.toBeInTheDocument();
   });
 
   it("con más de una organización muestra solo el selector, nunca la marca del producto", () => {
     renderSidebar("owner", meOf([ownOrganization, otherOrganization]));
     expect(screen.getByTestId("organization-switcher-trigger")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: productName })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: new RegExp(productName) })).not.toBeInTheDocument();
   });
 });
 

@@ -1,5 +1,11 @@
 import { createLocalAccountIssuer } from "@better-auth/core/db";
-import { institutionName, institutionSlug, type Perfil } from "@repo/domain";
+import {
+  fechaArgentina,
+  institutionName,
+  institutionSlug,
+  sumarDias,
+  type Perfil,
+} from "@repo/domain";
 import { hashPassword } from "better-auth/crypto";
 
 import { generarClasesProgramadas, toDateColumn } from "../src/clases-programadas";
@@ -122,11 +128,14 @@ const materias = [
   { id: "materia-sg", codigo: "K4-SG", nombre: "Sistemas de Gestión", anioCarrera: 4 },
 ];
 
+// El período va de 30 días atrás a 60 días adelante: así staging y los e2e siempre tienen
+// clases de hoy, cualquiera sea la fecha en que se corra el seed.
+const hoy = fechaArgentina(new Date());
 const periodo = {
-  id: "periodo-2026-2c",
-  nombre: "2.º cuatrimestre 2026",
-  fechaInicio: "2026-08-10",
-  fechaFin: "2026-11-20",
+  id: "periodo-actual",
+  nombre: `Período lectivo ${hoy.slice(0, 4)}`,
+  fechaInicio: sumarDias(hoy, -30),
+  fechaFin: sumarDias(hoy, 60),
 };
 
 const diasNoLaborables = [
@@ -285,7 +294,11 @@ const upsertAcademicData = async () => {
   }
   await prisma.periodoLectivo.upsert({
     where: { id: periodo.id },
-    update: { nombre: periodo.nombre },
+    update: {
+      nombre: periodo.nombre,
+      fechaInicio: toDateColumn(periodo.fechaInicio),
+      fechaFin: toDateColumn(periodo.fechaFin),
+    },
     create: {
       id: periodo.id,
       organizationId: institution.id,
@@ -317,7 +330,7 @@ const upsertAcademicData = async () => {
         periodoLectivoId: periodo.id,
         codigo: comision.codigo,
         turno: "NOCHE",
-        anioLectivo: 2026,
+        anioLectivo: Number(hoy.slice(0, 4)),
       },
     });
     await prisma.comisionDocente.deleteMany({ where: { comisionId: comision.id } });

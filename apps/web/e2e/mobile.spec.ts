@@ -1,10 +1,8 @@
 import {
-  acceptInvitationAsNewMember,
   expect,
   expectNoHorizontalPageScroll,
-  inviteViaApi,
-  newUser,
-  signUpViaApi,
+  loginViaUi,
+  seededUsers,
   test,
 } from "./support/fixtures";
 
@@ -19,54 +17,59 @@ test.describe("Móvil", () => {
     expect(fontFamily).toContain("Google Sans");
   });
 
-  test("ninguna pantalla principal scrollea a lo ancho", async ({
-    authenticatedPage: page,
-    request,
-  }) => {
-    await inviteViaApi(
-      request,
-      `maria.fernanda.gonzalez.iturralde.${Date.now().toString(36)}@example.com`,
-    );
-
-    await expect(page.getByRole("heading", { name: "Inicio" })).toBeVisible();
+  test("ninguna pantalla principal del estudiante scrollea a lo ancho", async ({ page }) => {
+    await loginViaUi(page, seededUsers.estudiante);
+    await expect(page.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
+    await expect(page.getByText(/\d+ clases? · 5K2/)).toBeVisible();
     await expectNoHorizontalPageScroll(page);
 
-    await page.goto("/configuracion");
-    // La versión es lo último que renderiza la página: así se mide con todas las tarjetas
-    // ya dibujadas.
-    await expect(page.getByText("Invitación enviada")).toBeVisible();
-    await expect(page.getByText(/^Versión .*\d+\.\d+$/)).toBeVisible();
+    await page.goto("/clases");
+    await expect(page.getByRole("heading", { name: "Buscar clases" })).toBeVisible();
+    await expect(page.getByLabel("Comisión")).toBeVisible();
     await expectNoHorizontalPageScroll(page);
 
-    await page.getByRole("button", { name: "Invitar" }).click();
-    await expect(page.getByRole("dialog", { name: "Invitar miembro" })).toBeVisible();
+    await page.goto("/preferencias");
+    await expect(page.getByText("Comisiones que seguís")).toBeVisible();
+    await expect(page.getByText("Proyecto Final").first()).toBeVisible();
     await expectNoHorizontalPageScroll(page);
-    await page.keyboard.press("Escape");
+
+    await page.goto("/estado-institucional");
+    await expect(page.getByText("Historial")).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
 
     await page.goto("/mi-perfil");
     await expect(page.getByRole("heading", { name: "Mi perfil" })).toBeVisible();
     await expectNoHorizontalPageScroll(page);
   });
 
-  test("elegir una organización en el selector cierra el menú lateral", async ({
+  test("las pantallas del bedel y el pop-up de novedad del docente no scrollean a lo ancho", async ({
     page,
-    request,
+  }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    await expect(page.getByRole("heading", { name: "Estado institucional" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Cambiar estado" })).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
+
+    await page.goto("/novedades");
+    await page.getByRole("button", { name: "Publicar novedad" }).click();
+    await expect(page.getByRole("dialog", { name: "Publicar novedad" })).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
+    await page.keyboard.press("Escape");
+
+    await page.goto("/qr");
+    await expect(page.getByText("Próximamente")).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
+  });
+
+  test("elegir una sección en el menú lateral navega y lo cierra", async ({
+    authenticatedPage: page,
     isMobile,
   }) => {
     test.skip(!isMobile, "Solo aplica al menú lateral móvil");
-
-    // El Administrador se autentica en `request` (vía API, sin tocar `page`): así `page` queda
-    // libre para el registro del miembro, la cuenta que de verdad prueba el selector.
-    const owner = newUser();
-    await signUpViaApi(request, owner);
-    const member = newUser();
-    const invitation = await inviteViaApi(request, member.email);
-    await acceptInvitationAsNewMember(page, invitation.id, member);
-
     await page.getByRole("button", { name: "Toggle Sidebar" }).click();
     const sidebar = page.locator('[data-slot="sidebar"][data-mobile="true"]');
-    await sidebar.getByTestId("organization-switcher-trigger").click();
-    await page.getByRole("menuitemradio", { name: /Como miembro/ }).click();
+    await sidebar.getByRole("link", { name: "Buscar" }).click();
+    await expect(page).toHaveURL(/\/clases/);
     await expect(sidebar).toBeHidden();
   });
 });
