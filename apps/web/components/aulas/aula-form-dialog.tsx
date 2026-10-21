@@ -72,6 +72,7 @@ export function AulaFormDialog({ aula, onClose }: { aula?: AulaGestionDto; onClo
   const equipamiento = form.watch("equipamiento") ?? [];
   const observaciones = form.watch("observaciones") ?? "";
   const guardando = crear.isPending || actualizar.isPending;
+  const cargandoDetalle = Boolean(aula) && !detalle.data;
   const afectadas = detalle.data?.clasesAfectadas ?? [];
 
   const guardar = async (values: CrearAula) => {
@@ -196,7 +197,7 @@ export function AulaFormDialog({ aula, onClose }: { aula?: AulaGestionDto; onClo
             <Button type="button" variant="outline" disabled={guardando} onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={guardando}>
+            <Button type="submit" disabled={guardando || cargandoDetalle}>
               {guardando ? <Spinner /> : null}
               Guardar
             </Button>

@@ -127,4 +127,10 @@ describe("AulaFormDialog", () => {
     );
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
+
+  it("en la edición no permite guardar hasta que carga el detalle", () => {
+    state.detalle = undefined;
+    renderWithProviders(<AulaFormDialog aula={aula} onClose={() => {}} />);
+    expect(screen.getByRole("button", { name: "Guardar" })).toBeDisabled();
+  });
 });

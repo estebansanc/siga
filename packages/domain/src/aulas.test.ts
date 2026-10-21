@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { actualizarAulaSchema, aulaAsignable, crearAulaSchema } from "./aulas";
+import { actualizarAulaSchema, crearAulaSchema } from "./aulas";
 
 const valida = { codigo: "Aula 99", edificio: "Edificio A", piso: "PB", capacidad: "35" };
 
@@ -47,13 +47,5 @@ describe("actualizarAulaSchema", () => {
       estado: "EN_MANTENIMIENTO",
     });
     expect(actualizarAulaSchema.safeParse({ capacidad: 501 }).success).toBe(false);
-  });
-});
-
-describe("aulaAsignable", () => {
-  it("solo las activas y Disponibles", () => {
-    expect(aulaAsignable({ activa: true, estado: "DISPONIBLE" })).toBe(true);
-    expect(aulaAsignable({ activa: false, estado: "DISPONIBLE" })).toBe(false);
-    expect(aulaAsignable({ activa: true, estado: "FUERA_DE_SERVICIO" })).toBe(false);
   });
 });

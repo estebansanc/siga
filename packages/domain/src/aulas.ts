@@ -34,9 +34,3 @@ export type CrearAula = z.infer<typeof crearAulaSchema>;
 
 export const actualizarAulaSchema = z.object(aulaFields).partial();
 export type ActualizarAula = z.infer<typeof actualizarAulaSchema>;
-
-// Las que no están Disponibles dejan de ofrecerse para asignar clases (RF-02).
-export const aulaAsignable = (aula: {
-  activa: boolean;
-  estado: z.infer<typeof estadoAulaSchema>;
-}) => aula.activa && aula.estado === "DISPONIBLE";

@@ -21,6 +21,7 @@ export const useAula = (id: string) =>
   useQuery({
     queryKey: queryKeys.aula(id),
     queryFn: () => unwrap<AulaDetalleDto>(api.aulas[":id"].$get({ param: { id } })),
+    enabled: Boolean(id),
     ...realtimeQueryOptions,
   });
 
