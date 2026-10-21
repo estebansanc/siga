@@ -18,6 +18,7 @@ import { meRoutes } from "./routes/me";
 import { memberRoutes } from "./routes/members";
 import { novedadRoutes } from "./routes/novedades";
 import { preferenciaRoutes } from "./routes/preferencias";
+import { qrRoutes } from "./routes/qr";
 import { settingsRoutes } from "./routes/settings";
 import { solicitudAulaRoutes } from "./routes/solicitudes-aula";
 import { measureRequest } from "./timing";
@@ -107,6 +108,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
     .route("/comisiones", comisionRoutes)
     .route("/aulas", aulaRoutes)
     .route("/solicitudes-aula", solicitudAulaRoutes)
+    .route("/qr", qrRoutes)
     .route("/cron", cronRoutes);
 };
 

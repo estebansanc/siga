@@ -5,6 +5,7 @@ export * from "./invitations";
 export * from "./me";
 export * from "./novedades";
 export * from "./preferencias";
+export * from "./qr";
 export { findOwnedOrganizationId, listMembers, listOrganizationsOf } from "./memberships";
 export * from "./organizations";
 export * from "./settings";

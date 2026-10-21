@@ -65,7 +65,18 @@ export const meSchema = z
   .openapi("Me");
 export type MeDto = z.infer<typeof meSchema>;
 
-export const settingsSchema = z.object({ name: z.string() }).openapi("Settings");
+const franjaTurnoDtoSchema = z.object({ inicio: z.string(), fin: z.string() });
+
+export const settingsSchema = z
+  .object({
+    name: z.string(),
+    turnos: z.object({
+      MANANA: franjaTurnoDtoSchema,
+      TARDE: franjaTurnoDtoSchema,
+      NOCHE: franjaTurnoDtoSchema,
+    }),
+  })
+  .openapi("Settings");
 export type SettingsDto = z.infer<typeof settingsSchema>;
 
 export const memberSchema = z
@@ -396,3 +407,20 @@ export const solicitudAulaSchema = z
   })
   .openapi("SolicitudAula");
 export type SolicitudAulaDto = z.infer<typeof solicitudAulaSchema>;
+
+export const sesionQrSchema = z
+  .object({
+    id: z.string(),
+    token: z.string().openapi({ description: "Firmado; es lo que codifica el QR" }),
+    aula: aulaResumenSchema,
+    fecha: z.string().openapi({ description: "yyyy-mm-dd en hora argentina" }),
+    turno: turnoSchema,
+    turnoInicio: z.string(),
+    turnoFin: z.string(),
+    emitidoEn: z.string(),
+    venceEn: z.string(),
+  })
+  .openapi("SesionQr");
+export type SesionQrDto = z.infer<typeof sesionQrSchema>;
+
+export const clasesDelTurnoSchema = z.array(claseSchema).openapi("ClasesDelTurno");

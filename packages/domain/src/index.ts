@@ -12,3 +12,4 @@ export * from "./settings";
 export * from "./slug";
 export * from "./solicitudes-aula";
 export * from "./tiempo";
+export * from "./turnos";

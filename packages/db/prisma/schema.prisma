@@ -31,6 +31,7 @@ model User {
   novedadesFinalizadas   Novedad[]             @relation("NovedadFinalizadaPor")
   estadosInstitucionales EstadoInstitucional[]
   solicitudesAula        SolicitudAula[]
+  sesionesQr             SesionQr[]
 
   @@unique([email])
   @@map("user")
@@ -117,6 +118,7 @@ model Organization {
   novedades              Novedad[]
   comisionesSeguidas     ComisionSeguida[]
   solicitudesAula        SolicitudAula[]
+  sesionesQr             SesionQr[]
 
   @@unique([slug])
   @@map("organization")
@@ -159,6 +161,9 @@ model Invitation {
 model OrganizationSettings {
   organizationId String       @id
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // Franjas de los turnos {MANANA|TARDE|NOCHE: {inicio, fin}} en "HH:mm" argentino; null usa
+  // los valores iniciales del dominio.
+  turnos         Json?
   updatedAt      DateTime     @updatedAt
 
   @@map("organization_settings")
@@ -390,6 +395,7 @@ model Aula {
   novedadesNuevas     Novedad[]         @relation("NovedadAulaNueva")
   novedadesAnteriores NovedadClase[]    @relation("NovedadClaseAulaAnterior")
   solicitudes         SolicitudAula[]
+  sesionesQr          SesionQr[]
 
   @@unique([organizationId, codigo])
   @@map("aula")
@@ -591,4 +597,24 @@ model SolicitudAula {
   @@index([organizationId, solicitanteId, createdAt])
   @@index([claseId, estado])
   @@map("solicitud_aula")
+// Cada código de QR de asistencia emitido por un bedel. `token` es único y firmado; `venceEn`
+// es el menor entre 60 s desde `emitidoEn` y el fin del turno.
+model SesionQr {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  aulaId         String
+  aula           Aula         @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+  fecha          DateTime     @db.Date
+  turno          Turno
+  token          String
+  emitidoEn      DateTime     @default(now())
+  venceEn        DateTime
+  bedelId        String
+  bedel          User         @relation(fields: [bedelId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([organizationId, emitidoEn])
+  @@index([aulaId, fecha, turno])
+  @@map("sesion_qr")
 }

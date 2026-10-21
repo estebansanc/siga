@@ -107,13 +107,20 @@ describe("contrato HTTP", () => {
   });
 
   it("ajustes: lee el nombre, lo cambia con validación y lo refleja en quién soy", async () => {
-    expect(await (await call("/settings")).json()).toEqual({
+    expect(await (await call("/settings")).json()).toMatchObject({
       name: organization.organizationName,
+      turnos: { NOCHE: { inicio: "18:00", fin: "23:30" } },
     });
+    const solapados = {
+      MANANA: { inicio: "07:00", fin: "13:00" },
+      TARDE: { inicio: "12:00", fin: "18:00" },
+      NOCHE: { inicio: "18:00", fin: "23:30" },
+    };
+    expect((await call("/settings", json({ turnos: solapados }, "PATCH"))).status).toBe(422);
     expect((await call("/settings", json({ name: "   " }, "PATCH"))).status).toBe(422);
     const renamed = await call("/settings", json({ name: "  Organización QA  " }, "PATCH"));
     expect(renamed.status).toBe(200);
-    expect(await renamed.json()).toEqual({ name: "Organización QA" });
+    expect(await renamed.json()).toMatchObject({ name: "Organización QA" });
     const me = (await (await call("/me")).json()) as { organizations: { name: string }[] };
     expect(me.organizations[0]?.name).toBe("Organización QA");
   });
@@ -267,7 +274,7 @@ describe("rol de miembro", () => {
     asLinked();
     const settings = await call("/settings");
     expect(settings.status).toBe(200);
-    expect(await settings.json()).toEqual({ name: organization.organizationName });
+    expect(await settings.json()).toMatchObject({ name: organization.organizationName });
     asLinked();
     expect((await call("/members")).status).toBe(200);
   });
@@ -311,7 +318,14 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
     expect(fueraDeRango.status).toBe(422);
     const errores = (await fueraDeRango.json()) as { error: { issues: { path: string }[] } };
     expect(errores.error.issues.map((issue) => issue.path)).toEqual(["capacidad"]);
+    como(docente);
+    const qr = { aulaId: "x", turno: "NOCHE", fecha: "2026-10-26" };
+    expect((await call("/qr/sesiones", json(qr))).status).toBe(403);
+    como(estudiante);
+    expect((await call("/qr/clases?aulaId=x&turno=NOCHE&fecha=2026-10-26")).status).toBe(403);
 
+    como(institution);
+    expect((await call("/qr/sesiones", json({ ...qr, turno: "MADRUGADA" }))).status).toBe(422);
     como(institution);
     const invalido = await call("/estado-institucional", json({ estado: "CERRADA" }));
     expect(invalido.status).toBe(422);
@@ -320,6 +334,25 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
     como(docente);
     const demora = await call("/novedades", json({ claseIds: ["x"], tipo: "DEMORA" }));
     expect(demora.status).toBe(422);
+  });
+
+  it("el bedel genera un QR y lista las clases del turno por HTTP", async () => {
+    const institution = await createInstitution();
+    const fixture = await seedAcademicFixture(institution);
+    const fecha = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    await createClase(institution, fixture, fecha, "19:00", "23:00");
+    getAuthContext.mockResolvedValue(authOf(institution, institution));
+    const consulta = `aulaId=${fixture.aulaId}&turno=NOCHE&fecha=${fecha}`;
+
+    const clases = await call(`/qr/clases?${consulta}`);
+    expect(clases.status).toBe(200);
+    expect(await clases.json()).toHaveLength(1);
+    const sesion = await call(
+      "/qr/sesiones",
+      json({ aulaId: fixture.aulaId, turno: "NOCHE", fecha }),
+    );
+    expect(sesion.status).toBe(201);
+    expect(await sesion.json()).toMatchObject({ turno: "NOCHE", aula: { id: fixture.aulaId } });
   });
 
   it("bedel cierra la institución, docente publica una demora y el estudiante la ve en sus clases", async () => {
