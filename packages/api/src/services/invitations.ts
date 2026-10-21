@@ -138,12 +138,13 @@ export const acceptInvitation = async (
 ): Promise<InvitationResolutionDto> => {
   const invitation = await findInvitation(invitationId);
   await memberships.acceptInvitation(headers, invitation.id);
-  // Better Auth deja activa la organización aceptada; el usuario sigue en la propia y cambia
-  // desde el selector cuando quiere.
-  await memberships.setActiveOrganization(
-    headers,
-    await memberships.findOwnedOrganizationId(auth.userId),
-  );
+  // Better Auth deja activa la organización aceptada; una cuenta con organización propia
+  // sigue en ella y cambia desde el selector cuando quiere. En SiGA las cuentas nuevas entran
+  // a la institución sin organización propia: entonces la aceptada queda activa.
+  const ownedOrganizationId = await memberships
+    .findOwnedOrganizationId(auth.userId)
+    .catch(() => null);
+  if (ownedOrganizationId) await memberships.setActiveOrganization(headers, ownedOrganizationId);
   return { organizationName: invitation.organization.name };
 };
 

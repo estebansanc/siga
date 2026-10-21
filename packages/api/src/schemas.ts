@@ -1,5 +1,15 @@
 import { z } from "@hono/zod-openapi";
-import { invitationStatusSchema, memberRoleSchema } from "@repo/domain";
+import {
+  estadoClaseSchema,
+  estadoInstitucionSchema,
+  estadoNovedadSchema,
+  invitationStatusSchema,
+  memberRoleSchema,
+  modalidadSchema,
+  perfilSchema,
+  tipoNovedadSchema,
+  turnoSchema,
+} from "@repo/domain";
 
 export const errorSchema = z
   .object({
@@ -37,6 +47,9 @@ export const meSchema = z
     userEmail: z.string(),
     organizationId: z.string(),
     role: memberRoleSchema,
+    perfil: z.enum(perfilSchema.options).openapi({
+      description: "Perfil de SiGA: decide el panel principal y los permisos",
+    }),
     organizations: z.array(myOrganizationSchema).openapi({
       description: "Todas las organizaciones de la cuenta: la propia y las que la invitaron",
     }),
@@ -99,3 +112,172 @@ export const dailyCronResultSchema = z
   .object({ emails: cronResultSchema, purgedRateLimitBuckets: z.number() })
   .openapi("DailyCronResult");
 export type DailyCronResultDto = z.infer<typeof dailyCronResultSchema>;
+
+// ---------- SiGA ----------
+
+const usuarioResumenSchema = z.object({ id: z.string(), nombre: z.string() });
+
+export const estadoInstitucionalSchema = z
+  .object({
+    id: z.string().nullable().openapi({
+      description: "`null` cuando no hay ningún registro todavía (se asume Abierta)",
+    }),
+    estado: estadoInstitucionSchema,
+    motivo: z.string().nullable(),
+    desde: z.string(),
+    vigenciaHasta: z.string().nullable(),
+    usuario: usuarioResumenSchema.nullable(),
+  })
+  .openapi("EstadoInstitucional");
+export type EstadoInstitucionalDto = z.infer<typeof estadoInstitucionalSchema>;
+
+export const cambioEstadoInstitucionalSchema = z
+  .object({
+    estado: estadoInstitucionalSchema,
+    clasesSuspendidas: z.number().int(),
+  })
+  .openapi("CambioEstadoInstitucional");
+export type CambioEstadoInstitucionalDto = z.infer<typeof cambioEstadoInstitucionalSchema>;
+
+export const carreraSchema = z
+  .object({ id: z.string(), codigo: z.string(), nombre: z.string() })
+  .openapi("Carrera");
+export type CarreraDto = z.infer<typeof carreraSchema>;
+
+export const materiaSchema = z
+  .object({
+    id: z.string(),
+    codigo: z.string(),
+    nombre: z.string(),
+    anioCarrera: z.number().int(),
+    carreraId: z.string(),
+  })
+  .openapi("Materia");
+export type MateriaDto = z.infer<typeof materiaSchema>;
+
+export const aulaSchema = z
+  .object({
+    id: z.string(),
+    codigo: z.string(),
+    edificio: z.string(),
+    piso: z.string(),
+    capacidad: z.number().int(),
+    equipamiento: z.array(z.string()),
+  })
+  .openapi("Aula");
+export type AulaDto = z.infer<typeof aulaSchema>;
+
+const aulaResumenSchema = aulaSchema.pick({ id: true, codigo: true, edificio: true, piso: true });
+
+export const comisionSchema = z
+  .object({
+    id: z.string(),
+    codigo: z.string(),
+    turno: turnoSchema,
+    anioLectivo: z.number().int(),
+    materia: materiaSchema,
+    carrera: carreraSchema,
+    docentes: z.array(usuarioResumenSchema),
+  })
+  .openapi("Comision");
+export type ComisionDto = z.infer<typeof comisionSchema>;
+
+export const claseNovedadSchema = z
+  .object({
+    id: z.string(),
+    tipo: tipoNovedadSchema,
+    estado: estadoNovedadSchema,
+    minutosDemora: z.number().int().nullable(),
+    enlaceVirtual: z.string().nullable(),
+    aulaNueva: aulaResumenSchema.nullable(),
+    mensaje: z.string().nullable(),
+    publicadaPorBedelia: z.boolean(),
+    createdAt: z.string(),
+  })
+  .openapi("ClaseNovedad");
+export type ClaseNovedadDto = z.infer<typeof claseNovedadSchema>;
+
+export const claseSchema = z
+  .object({
+    id: z.string(),
+    fecha: z.string().openapi({ description: "yyyy-mm-dd en hora argentina" }),
+    horaInicio: z.string(),
+    horaFin: z.string(),
+    inicio: z.string(),
+    fin: z.string(),
+    estado: estadoClaseSchema,
+    modalidad: modalidadSchema,
+    comision: z.object({ id: z.string(), codigo: z.string(), turno: turnoSchema }),
+    materia: materiaSchema,
+    carrera: carreraSchema,
+    aula: aulaResumenSchema.nullable(),
+    docentes: z.array(usuarioResumenSchema).openapi({
+      description: "Solo el nombre: los estudiantes no ven datos personales del docente",
+    }),
+    novedades: z.array(claseNovedadSchema).openapi({
+      description: "Las activas en el listado; en el detalle, también las finalizadas del día",
+    }),
+  })
+  .openapi("Clase");
+export type ClaseDto = z.infer<typeof claseSchema>;
+
+export const clasesDelDiaSchema = z
+  .object({ fecha: z.string(), clases: z.array(claseSchema) })
+  .openapi("ClasesDelDia");
+export type ClasesDelDiaDto = z.infer<typeof clasesDelDiaSchema>;
+
+export const novedadSchema = z
+  .object({
+    id: z.string(),
+    tipo: tipoNovedadSchema,
+    estado: estadoNovedadSchema,
+    minutosDemora: z.number().int().nullable(),
+    enlaceVirtual: z.string().nullable(),
+    aulaNueva: aulaResumenSchema.nullable(),
+    mensaje: z.string().nullable(),
+    publicadaPor: usuarioResumenSchema,
+    publicadaPorBedelia: z.boolean(),
+    createdAt: z.string(),
+    finalizadaEn: z.string().nullable(),
+    comision: z.object({ id: z.string(), codigo: z.string(), materia: z.string() }),
+    clases: z.array(
+      z.object({
+        id: z.string(),
+        fecha: z.string(),
+        horaInicio: z.string(),
+        horaFin: z.string(),
+        estado: estadoClaseSchema,
+      }),
+    ),
+  })
+  .openapi("Novedad");
+export type NovedadDto = z.infer<typeof novedadSchema>;
+
+export const preferenciasSchema = z
+  .object({ comisiones: z.array(comisionSchema) })
+  .openapi("Preferencias");
+export type PreferenciasDto = z.infer<typeof preferenciasSchema>;
+
+export const generacionClasesSchema = z
+  .object({ creadas: z.number().int(), existentes: z.number().int(), sinAula: z.number().int() })
+  .openapi("GeneracionClases");
+export type GeneracionClasesDto = z.infer<typeof generacionClasesSchema>;
+
+export const generarClasesBodySchema = z.object({
+  periodoLectivoId: z.string().optional(),
+  comisionId: z.string().optional(),
+});
+
+export const materiasQuerySchema = z.object({
+  carreraId: z.string().optional(),
+  anio: z.coerce.number().int().min(1).max(6).optional(),
+});
+
+// Hono entrega cada query param como texto: varias clases viajan separadas por coma.
+export const aulasDisponiblesQuerySchema = z.object({
+  claseIds: z
+    .string()
+    .min(1)
+    .transform((value) => value.split(",").filter(Boolean))
+    .openapi({ description: "Ids de clases separados por coma", example: "clase-1,clase-2" }),
+});

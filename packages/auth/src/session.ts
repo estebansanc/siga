@@ -1,6 +1,7 @@
 import { prisma } from "@repo/db";
-import type { MemberRole } from "@repo/domain";
+import type { MemberRole, Perfil } from "@repo/domain";
 
+import { roleOf } from "./roles";
 import { auth } from "./server";
 
 export class UnauthorizedError extends Error {
@@ -10,7 +11,8 @@ export class UnauthorizedError extends Error {
   }
 }
 
-export type { MemberRole };
+export type { MemberRole, Perfil };
+export { roleOf };
 
 export type LostOrganization = { id: string; name: string };
 
@@ -18,6 +20,7 @@ export type AuthContext = {
   userId: string;
   organizationId: string;
   role: MemberRole;
+  perfil: Perfil;
   userName: string;
   userEmail: string;
   lostOrganization: LostOrganization | null;
@@ -26,11 +29,6 @@ export type AuthContext = {
 type SessionResult = Awaited<ReturnType<typeof auth.api.getSession>>;
 
 type Membership = { organizationId: string; role: string };
-
-// Better Auth guarda el rol como texto ("owner" o una lista separada por comas con otros
-// roles); única fuente de verdad para leerlo, reexportada para el resto de la API.
-export const roleOf = (role: string): MemberRole =>
-  role.split(",").includes("owner") ? "owner" : "member";
 
 // La organización activa de la cookie puede haber dejado de tener membresía (el Administrador
 // quitó al miembro): la organización en sí sigue existiendo, así que se nombra para el aviso
@@ -46,9 +44,9 @@ const resolveLostOrganization = async (
 };
 
 // La cookie cachea la sesión y no se invalida al quitar al miembro: la membresía se lee en
-// cada request y, si la organización activa ya no tiene una, se vuelve a la propia informando
-// de qué organización se dejó (`removeMembership` deja la referencia vieja en la sesión a
-// propósito, para poder nombrarla).
+// cada request y, si la organización activa ya no tiene una, se vuelve a la propia (o a la
+// primera membresía) informando de qué organización se dejó (`removeMembership` deja la
+// referencia vieja en la sesión a propósito, para poder nombrarla).
 const resolveActiveMembership = async (
   userId: string,
   activeOrganizationId: string | null,
@@ -62,12 +60,23 @@ const resolveActiveMembership = async (
     (membership) => membership.organizationId === activeOrganizationId,
   );
   if (active) return { membership: active, lostOrganization: null };
-  const owned = memberships.find((membership) => roleOf(membership.role) === "owner");
-  if (!owned) return null;
+  const fallback =
+    memberships.find((membership) => roleOf(membership.role) === "owner") ?? memberships[0];
+  if (!fallback) return null;
   return {
-    membership: owned,
+    membership: fallback,
     lostOrganization: await resolveLostOrganization(activeOrganizationId),
   };
+};
+
+// El perfil de SiGA (Estudiante, Docente, Bedel o Autoridad) decide qué puede hacer cada
+// cuenta. Una cuenta sin perfil o desactivada no tiene contexto: no entra.
+const resolveActivePerfil = async (userId: string): Promise<Perfil | null> => {
+  const profile = await prisma.userProfile.findUnique({
+    where: { userId },
+    select: { perfil: true, activo: true },
+  });
+  return profile?.activo ? profile.perfil : null;
 };
 
 const toAuthContext = async (session: SessionResult): Promise<AuthContext | null> => {
@@ -77,11 +86,14 @@ const toAuthContext = async (session: SessionResult): Promise<AuthContext | null
     session.session.activeOrganizationId ?? null,
   );
   if (!resolution) return null;
+  const perfil = await resolveActivePerfil(session.user.id);
+  if (!perfil) return null;
   const { membership, lostOrganization } = resolution;
   return {
     userId: session.user.id,
     organizationId: membership.organizationId,
     role: roleOf(membership.role),
+    perfil,
     userName: session.user.name,
     userEmail: session.user.email,
     lostOrganization,

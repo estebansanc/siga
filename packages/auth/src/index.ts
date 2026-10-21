@@ -8,5 +8,6 @@ export {
   type AuthContext,
   type LostOrganization,
   type MemberRole,
+  type Perfil,
 } from "./session";
 export { APIError as AuthApiError } from "better-auth/api";

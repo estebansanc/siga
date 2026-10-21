@@ -2,7 +2,15 @@ import { currentAuditActor } from "./audit-context";
 import { Prisma, type PrismaClient } from "./generated/client";
 
 // Entidades de negocio cuyos cambios quedan en `audit_log`. El producto agrega acá las suyas.
-const auditedModels = ["Organization", "Member", "Invitation"] as const;
+const auditedModels = [
+  "Organization",
+  "Member",
+  "Invitation",
+  "UserProfile",
+  "EstadoInstitucional",
+  "Novedad",
+  "ClaseProgramada",
+] as const;
 
 type AuditedModel = (typeof auditedModels)[number];
 type AuditedAction = "create" | "update" | "delete";
@@ -51,6 +59,13 @@ export const withAudit = (client: PrismaClient) =>
     },
   });
 
+// Las entidades auditadas se identifican por `id`, salvo las que cuelgan de una cuenta
+// (`UserProfile`), que se identifican por `userId`.
+const entityIdOf = (result: unknown) => {
+  const record = result as { id?: string; userId?: string } | null;
+  return record?.id ?? record?.userId;
+};
+
 const record = async (
   client: PrismaClient,
   model: string,
@@ -61,7 +76,7 @@ const record = async (
 ) => {
   if (!isAudited(model)) return;
   const actor = currentAuditActor();
-  const entityId = (result as { id?: string } | null)?.id;
+  const entityId = entityIdOf(result);
   if (!actor || !entityId) return;
   await client.auditLog.create({
     data: {

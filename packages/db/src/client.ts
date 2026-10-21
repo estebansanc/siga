@@ -20,3 +20,9 @@ export const prisma: Client = globalForPrisma.prisma ?? createClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export type Db = Client;
+// El cliente que recibe el callback de `prisma.$transaction`: el mismo, sin lo que no aplica
+// dentro de una transacción.
+export type DbTransaction = Omit<
+  Db,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;

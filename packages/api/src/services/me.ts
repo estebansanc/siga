@@ -21,6 +21,7 @@ export const getMe = async (auth: AuthContext): Promise<MeDto> => {
     userEmail: user.email,
     organizationId: auth.organizationId,
     role: auth.role,
+    perfil: auth.perfil,
     organizations: await listOrganizationsOf(auth.userId),
     lostOrganization: auth.lostOrganization,
   };

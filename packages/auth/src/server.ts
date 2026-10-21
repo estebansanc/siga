@@ -1,38 +1,54 @@
 import { prismaAdapter } from "@better-auth/prisma-adapter";
-import { prisma } from "@repo/db";
-import { slugify } from "@repo/domain";
+import { prisma, runWithAuditActor } from "@repo/db";
+import { institutionSlug } from "@repo/domain";
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { bearer, organization } from "better-auth/plugins";
 
 import { authEnv } from "./env";
+import { roleOf } from "./roles";
 
 const invitationExpiresInSeconds = 7 * 24 * 60 * 60;
 
-const createOwnedOrganization = (user: { id: string; name: string }) =>
-  prisma.organization.create({
-    data: {
-      id: crypto.randomUUID(),
-      name: `Organización de ${user.name}`,
-      slug: `${slugify(user.name) || "organizacion"}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: new Date(),
-      members: {
-        create: { id: crypto.randomUUID(), userId: user.id, role: "owner", createdAt: new Date() },
+// SiGA tiene una sola institución, precargada por el seed (CFG-2). Una cuenta nueva (el
+// autorregistro) entra como miembro con perfil Estudiante, el único que una persona puede
+// asignarse sola; Docente, Bedel y Autoridad los asigna un administrador.
+const joinInstitutionAsStudent = async (userId: string) => {
+  const institution = await prisma.organization.findUnique({
+    where: { slug: institutionSlug },
+    select: { id: true },
+  });
+  if (!institution) {
+    throw new Error(`No existe la institución "${institutionSlug}". Corré pnpm db:seed.`);
+  }
+  await runWithAuditActor({ userId, organizationId: institution.id }, async () => {
+    await prisma.member.create({
+      data: {
+        id: crypto.randomUUID(),
+        organizationId: institution.id,
+        userId,
+        role: "member",
+        createdAt: new Date(),
       },
-    },
+    });
+    await prisma.userProfile.create({
+      data: { userId, organizationId: institution.id, perfil: "ESTUDIANTE" },
+    });
   });
+  return institution.id;
+};
 
-// Toda cuenta tiene una organización propia (donde es owner) que arranca activa en cada
-// sesión nueva; se crea acá, en la primera sesión, y no al crear el usuario.
-const resolveOwnedOrganizationId = async (userId: string) => {
-  const membership = await prisma.member.findFirst({
-    where: { userId, role: "owner" },
+// La organización activa de cada sesión nueva: la propia si es Administrador de alguna, si no
+// la primera membresía, y si no tiene ninguna, la institución (primera sesión de la cuenta).
+const resolveActiveOrganizationId = async (userId: string) => {
+  const memberships = await prisma.member.findMany({
+    where: { userId },
     orderBy: { createdAt: "asc" },
-    select: { organizationId: true },
+    select: { organizationId: true, role: true },
   });
-  if (membership) return membership.organizationId;
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  return (await createOwnedOrganization(user)).id;
+  const preferred =
+    memberships.find((membership) => roleOf(membership.role) === "owner") ?? memberships[0];
+  return preferred ? preferred.organizationId : joinInstitutionAsStudent(userId);
 };
 
 export const auth = betterAuth({
@@ -60,7 +76,7 @@ export const auth = betterAuth({
         before: async (session) => ({
           data: {
             ...session,
-            activeOrganizationId: await resolveOwnedOrganizationId(session.userId),
+            activeOrganizationId: await resolveActiveOrganizationId(session.userId),
           },
         }),
       },

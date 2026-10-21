@@ -4,9 +4,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiBasePath, createApi } from "../app";
 import {
+  authOf,
+  createClase,
+  createInstitution,
   createMember,
   createOrganization,
+  createUserWithPerfil,
   resetDatabase,
+  seedAcademicFixture,
   signInAs,
   type TestOrganization,
 } from "../test/db";
@@ -40,6 +45,7 @@ const ownerAuthOf = (test: TestOrganization): Auth.AuthContext => ({
   userId: test.userId,
   organizationId: test.organizationId,
   role: "owner",
+  perfil: "BEDEL",
   userName: `Usuario ${test.userId}`,
   userEmail: test.userEmail,
   lostOrganization: null,
@@ -197,6 +203,18 @@ describe("contrato HTTP", () => {
       "/api/v1/invitations",
       "/api/v1/invitations/{id}/accept",
       "/api/v1/cron/daily",
+      "/api/v1/estado-institucional",
+      "/api/v1/estado-institucional/historial",
+      "/api/v1/clases",
+      "/api/v1/clases/{id}",
+      "/api/v1/novedades",
+      "/api/v1/novedades/{id}/finalizar",
+      "/api/v1/preferencias",
+      "/api/v1/carreras",
+      "/api/v1/materias",
+      "/api/v1/comisiones",
+      "/api/v1/comisiones/generar-clases",
+      "/api/v1/aulas/disponibles",
     ]) {
       expect(spec.paths).toHaveProperty(path);
     }
@@ -252,5 +270,93 @@ describe("rol de miembro", () => {
     expect(await settings.json()).toEqual({ name: organization.organizationName });
     asLinked();
     expect((await call("/members")).status).toBe(200);
+  });
+});
+
+describe("SiGA: perfiles y flujo principal por HTTP", () => {
+  it("cada ruta responde 403 a los perfiles que no la usan, y 422 con detalle por campo", async () => {
+    const institution = await createInstitution();
+    const estudiante = await createUserWithPerfil(institution, "ESTUDIANTE");
+    const docente = await createUserWithPerfil(institution, "DOCENTE");
+    const como = (user: Parameters<typeof authOf>[1]) =>
+      getAuthContext.mockResolvedValueOnce(authOf(institution, user));
+
+    como(estudiante);
+    expect(
+      (await call("/estado-institucional", json({ estado: "CERRADA", motivo: "x" }))).status,
+    ).toBe(403);
+    como(estudiante);
+    expect((await call("/novedades")).status).toBe(403);
+    como(docente);
+    expect((await call("/preferencias")).status).toBe(403);
+    como(docente);
+    expect((await call("/comisiones/generar-clases", json({}))).status).toBe(403);
+
+    como(institution);
+    const invalido = await call("/estado-institucional", json({ estado: "CERRADA" }));
+    expect(invalido.status).toBe(422);
+    const body = (await invalido.json()) as { error: { issues: { path: string }[] } };
+    expect(body.error.issues.map((issue) => issue.path)).toEqual(["motivo"]);
+    como(docente);
+    const demora = await call("/novedades", json({ claseIds: ["x"], tipo: "DEMORA" }));
+    expect(demora.status).toBe(422);
+  });
+
+  it("bedel cierra la institución, docente publica una demora y el estudiante la ve en sus clases", async () => {
+    const institution = await createInstitution();
+    const fixture = await seedAcademicFixture(institution);
+    const estudiante = await createUserWithPerfil(institution, "ESTUDIANTE");
+    const manana = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const clase = await createClase(institution, fixture, manana, "08:00", "10:00");
+    const como = (user: Parameters<typeof authOf>[1]) =>
+      getAuthContext.mockResolvedValueOnce(authOf(institution, user));
+
+    como(estudiante);
+    expect(await (await call("/estado-institucional")).json()).toMatchObject({ estado: "ABIERTA" });
+    como(institution);
+    const cerrada = await call(
+      "/estado-institucional",
+      json({ estado: "ABIERTA_CON_NOVEDADES", motivo: "Paro de transporte" }),
+    );
+    expect(cerrada.status).toBe(201);
+    expect(await cerrada.json()).toMatchObject({
+      estado: { estado: "ABIERTA_CON_NOVEDADES", usuario: { id: institution.userId } },
+      clasesSuspendidas: 0,
+    });
+
+    como(estudiante);
+    const preferencias = await call(
+      "/preferencias",
+      json({ comisionIds: [fixture.comisionId] }, "PUT"),
+    );
+    expect(preferencias.status).toBe(200);
+
+    como(fixture.docente);
+    const publicada = await call(
+      "/novedades",
+      json({ claseIds: [clase.id], tipo: "DEMORA", minutosDemora: "15", mensaje: "Arranco 8:15" }),
+    );
+    expect(publicada.status).toBe(201);
+
+    como(estudiante);
+    const clases = await call(`/clases?fecha=${manana}&anio=5`);
+    expect(clases.status).toBe(200);
+    expect(await clases.json()).toMatchObject({
+      fecha: manana,
+      clases: [
+        {
+          id: clase.id,
+          estado: "DEMORADA",
+          novedades: [{ tipo: "DEMORA", minutosDemora: 15, mensaje: "Arranco 8:15" }],
+        },
+      ],
+    });
+    como(estudiante);
+    expect(await (await call(`/aulas/disponibles?claseIds=${clase.id}`)).json()).toEqual([
+      expect.objectContaining({ codigo: "Aula 7" }),
+      expect.objectContaining({ codigo: "Aula 12" }),
+    ]);
+    como(estudiante);
+    expect((await call("/clases?anio=9")).status).toBe(422);
   });
 });

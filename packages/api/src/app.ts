@@ -8,10 +8,16 @@ import type { ApiEnv } from "./context";
 import { runWithDefer, type DeferAdapter } from "./deferred";
 import { ApiError } from "./errors";
 import { requireSession } from "./middleware";
+import { aulaRoutes } from "./routes/aulas";
+import { claseRoutes } from "./routes/clases";
 import { cronRoutes } from "./routes/cron";
+import { carreraRoutes, comisionRoutes, materiaRoutes } from "./routes/datos-academicos";
+import { estadoInstitucionalRoutes } from "./routes/estado-institucional";
 import { invitationRoutes } from "./routes/invitations";
 import { meRoutes } from "./routes/me";
 import { memberRoutes } from "./routes/members";
+import { novedadRoutes } from "./routes/novedades";
+import { preferenciaRoutes } from "./routes/preferencias";
 import { settingsRoutes } from "./routes/settings";
 import { measureRequest } from "./timing";
 
@@ -73,10 +79,10 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
   app.doc31("/openapi.json", {
     openapi: "3.1.0",
     info: {
-      title: "API",
+      title: "SiGA API",
       version: "1.0.0",
       description:
-        "Sesión, organizaciones, miembros e invitaciones. Autenticación por cookie (web) o bearer token (móvil).",
+        "Sesión y perfil, estado institucional, clases programadas, novedades, preferencias del estudiante y datos académicos base. Autenticación por cookie (web) o bearer token (móvil).",
     },
     security: [{ bearerAuth: [] }, { cookieAuth: [] }],
   });
@@ -91,6 +97,14 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
     .route("/settings", settingsRoutes)
     .route("/members", memberRoutes)
     .route("/invitations", invitationRoutes)
+    .route("/estado-institucional", estadoInstitucionalRoutes)
+    .route("/clases", claseRoutes)
+    .route("/novedades", novedadRoutes)
+    .route("/preferencias", preferenciaRoutes)
+    .route("/carreras", carreraRoutes)
+    .route("/materias", materiaRoutes)
+    .route("/comisiones", comisionRoutes)
+    .route("/aulas", aulaRoutes)
     .route("/cron", cronRoutes);
 };
 

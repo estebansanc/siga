@@ -23,6 +23,13 @@ model User {
   invitations   Invitation[]
   auditLogs     AuditLog[]
 
+  profile                UserProfile?
+  comisionesDictadas     ComisionDocente[]
+  comisionesSeguidas     ComisionSeguida[]
+  novedadesPublicadas    Novedad[]             @relation("NovedadPublicadaPor")
+  novedadesFinalizadas   Novedad[]             @relation("NovedadFinalizadaPor")
+  estadosInstitucionales EstadoInstitucional[]
+
   @@unique([email])
   @@map("user")
 }
@@ -93,6 +100,19 @@ model Organization {
   settings    OrganizationSettings?
   auditLogs   AuditLog[]
   emailOutbox EmailOutbox[]
+
+  profiles               UserProfile[]
+  carreras               Carrera[]
+  materias               Materia[]
+  periodosLectivos       PeriodoLectivo[]
+  comisiones             Comision[]
+  horarios               Horario[]
+  diasNoLaborables       DiaNoLaborable[]
+  aulas                  Aula[]
+  clases                 ClaseProgramada[]
+  estadosInstitucionales EstadoInstitucional[]
+  novedades              Novedad[]
+  comisionesSeguidas     ComisionSeguida[]
 
   @@unique([slug])
   @@map("organization")
@@ -195,4 +215,312 @@ model AuditLog {
   @@index([organizationId, entity, entityId])
   @@index([organizationId, createdAt])
   @@map("audit_log")
+}
+
+// ---------- SiGA: usuarios y datos académicos base ----------
+
+enum Perfil {
+  ESTUDIANTE
+  DOCENTE
+  BEDEL
+  AUTORIDAD
+}
+
+enum Turno {
+  MANANA
+  TARDE
+  NOCHE
+}
+
+enum EstadoAula {
+  DISPONIBLE
+  FUERA_DE_SERVICIO
+  EN_MANTENIMIENTO
+}
+
+// Perfil de SiGA de cada cuenta (uno por usuario: hay una sola institución). `dni` y
+// `legajo` son opcionales porque el autorregistro todavía no los pide. La baja es lógica.
+model UserProfile {
+  userId         String       @id
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  perfil         Perfil
+  dni            String?
+  legajo         String?
+  activo         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, dni])
+  @@index([organizationId, perfil])
+  @@map("user_profile")
+}
+
+model Carrera {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  codigo         String
+  nombre         String
+  activa         Boolean      @default(true)
+  materias       Materia[]
+
+  @@unique([organizationId, codigo])
+  @@map("carrera")
+}
+
+model Materia {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  carreraId      String
+  carrera        Carrera      @relation(fields: [carreraId], references: [id], onDelete: Cascade)
+  codigo         String
+  nombre         String
+  anioCarrera    Int
+  activa         Boolean      @default(true)
+  comisiones     Comision[]
+
+  @@unique([organizationId, codigo])
+  @@index([carreraId, anioCarrera])
+  @@map("materia")
+}
+
+model PeriodoLectivo {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  nombre         String
+  fechaInicio    DateTime     @db.Date
+  fechaFin       DateTime     @db.Date
+  comisiones     Comision[]
+
+  @@index([organizationId])
+  @@map("periodo_lectivo")
+}
+
+model Comision {
+  id               String            @id @default(cuid())
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  materiaId        String
+  materia          Materia           @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  periodoLectivoId String
+  periodoLectivo   PeriodoLectivo    @relation(fields: [periodoLectivoId], references: [id], onDelete: Cascade)
+  codigo           String
+  turno            Turno
+  anioLectivo      Int
+  activa           Boolean           @default(true)
+  docentes         ComisionDocente[]
+  horarios         Horario[]
+  clases           ClaseProgramada[]
+  novedades        Novedad[]
+  seguidores       ComisionSeguida[]
+
+  // El mismo código (5K2) identifica al grupo en cada materia que cursa.
+  @@unique([materiaId, codigo])
+  @@index([organizationId])
+  @@map("comision")
+}
+
+model ComisionDocente {
+  comisionId String
+  comision   Comision @relation(fields: [comisionId], references: [id], onDelete: Cascade)
+  docenteId  String
+  docente    User     @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+
+  @@id([comisionId, docenteId])
+  @@index([docenteId])
+  @@map("comision_docente")
+}
+
+// Franja semanal de una comisión. `diaSemana` va de 1 (lunes) a 7 (domingo); las horas son
+// "HH:mm" en hora argentina.
+model Horario {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  comisionId     String
+  comision       Comision          @relation(fields: [comisionId], references: [id], onDelete: Cascade)
+  diaSemana      Int
+  horaInicio     String
+  horaFin        String
+  aulaHabitualId String?
+  aulaHabitual   Aula?             @relation(fields: [aulaHabitualId], references: [id], onDelete: SetNull)
+  clases         ClaseProgramada[]
+
+  @@index([comisionId])
+  @@map("horario")
+}
+
+model DiaNoLaborable {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fecha          DateTime     @db.Date
+  motivo         String
+
+  @@unique([organizationId, fecha])
+  @@map("dia_no_laborable")
+}
+
+// "Ocupada" no se guarda: se calcula a partir de las clases en curso.
+model Aula {
+  id                  String            @id @default(cuid())
+  organizationId      String
+  organization        Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  codigo              String
+  edificio            String
+  piso                String
+  capacidad           Int
+  equipamiento        String[]
+  estado              EstadoAula        @default(DISPONIBLE)
+  observaciones       String?
+  activa              Boolean           @default(true)
+  horarios            Horario[]
+  clases              ClaseProgramada[]
+  novedadesNuevas     Novedad[]         @relation("NovedadAulaNueva")
+  novedadesAnteriores NovedadClase[]    @relation("NovedadClaseAulaAnterior")
+
+  @@unique([organizationId, codigo])
+  @@map("aula")
+}
+
+// ---------- SiGA: clases, estado institucional y novedades ----------
+
+enum EstadoClase {
+  PROGRAMADA
+  DEMORADA
+  DOCENTE_PRESENTE
+  VIRTUAL
+  AUSENTE
+  SUSPENDIDA
+  FINALIZADA
+}
+
+enum Modalidad {
+  PRESENCIAL
+  VIRTUAL
+}
+
+enum TipoNovedad {
+  AUSENCIA
+  DEMORA
+  VIRTUAL
+  SUSPENSION
+  CAMBIO_AULA
+}
+
+enum EstadoNovedad {
+  ACTIVA
+  FINALIZADA
+}
+
+enum EstadoInstitucion {
+  ABIERTA
+  CERRADA
+  ABIERTA_CON_NOVEDADES
+}
+
+// Instancia de dictado. `fecha` es el día en hora argentina; `inicio` y `fin` son los
+// instantes exactos de la franja, para comparar con "ahora" sin convertir zonas.
+model ClaseProgramada {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  comisionId     String
+  comision       Comision       @relation(fields: [comisionId], references: [id], onDelete: Cascade)
+  horarioId      String?
+  horario        Horario?       @relation(fields: [horarioId], references: [id], onDelete: SetNull)
+  fecha          DateTime       @db.Date
+  inicio         DateTime
+  fin            DateTime
+  aulaId         String?
+  aula           Aula?          @relation(fields: [aulaId], references: [id], onDelete: SetNull)
+  modalidad      Modalidad      @default(PRESENCIAL)
+  estado         EstadoClase    @default(PROGRAMADA)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  novedades      NovedadClase[]
+
+  @@unique([comisionId, inicio])
+  @@index([organizationId, fecha])
+  @@index([aulaId, inicio])
+  @@index([organizationId, estado, fin])
+  @@map("clase_programada")
+}
+
+// Solo inserts: el estado vigente es la fila con el `desde` más reciente.
+model EstadoInstitucional {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  estado         EstadoInstitucion
+  motivo         String?
+  desde          DateTime
+  vigenciaHasta  DateTime?
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime          @default(now())
+
+  @@index([organizationId, desde])
+  @@map("estado_institucional")
+}
+
+model Novedad {
+  id                  String         @id @default(cuid())
+  organizationId      String
+  organization        Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  comisionId          String
+  comision            Comision       @relation(fields: [comisionId], references: [id], onDelete: Cascade)
+  tipo                TipoNovedad
+  minutosDemora       Int?
+  enlaceVirtual       String?
+  aulaNuevaId         String?
+  aulaNueva           Aula?          @relation("NovedadAulaNueva", fields: [aulaNuevaId], references: [id], onDelete: SetNull)
+  mensaje             String?
+  estado              EstadoNovedad  @default(ACTIVA)
+  publicadaPorId      String
+  publicadaPor        User           @relation("NovedadPublicadaPor", fields: [publicadaPorId], references: [id], onDelete: Cascade)
+  publicadaPorBedelia Boolean        @default(false)
+  finalizadaEn        DateTime?
+  finalizadaPorId     String?
+  finalizadaPor       User?          @relation("NovedadFinalizadaPor", fields: [finalizadaPorId], references: [id], onDelete: SetNull)
+  createdAt           DateTime       @default(now())
+  clases              NovedadClase[]
+
+  @@index([organizationId, createdAt])
+  @@index([comisionId, estado])
+  @@index([publicadaPorId])
+  @@map("novedad")
+}
+
+// `aulaAnteriorId` guarda el aula que tenía la clase antes de un Cambio de aula, para
+// restituirla al finalizar la novedad si sigue libre.
+model NovedadClase {
+  novedadId      String
+  novedad        Novedad         @relation(fields: [novedadId], references: [id], onDelete: Cascade)
+  claseId        String
+  clase          ClaseProgramada @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  aulaAnteriorId String?
+  aulaAnterior   Aula?           @relation("NovedadClaseAulaAnterior", fields: [aulaAnteriorId], references: [id], onDelete: SetNull)
+
+  @@id([novedadId, claseId])
+  @@index([claseId])
+  @@map("novedad_clase")
+}
+
+model ComisionSeguida {
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comisionId     String
+  comision       Comision     @relation(fields: [comisionId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@id([userId, comisionId])
+  @@index([comisionId])
+  @@map("comision_seguida")
 }

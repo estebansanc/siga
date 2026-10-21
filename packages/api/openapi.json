@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "API",
+    "title": "SiGA API",
     "version": "1.0.0",
-    "description": "Sesión, organizaciones, miembros e invitaciones. Autenticación por cookie (web) o bearer token (móvil)."
+    "description": "Sesión y perfil, estado institucional, clases programadas, novedades, preferencias del estudiante y datos académicos base. Autenticación por cookie (web) o bearer token (móvil)."
   },
   "security": [
     {
@@ -48,6 +48,16 @@
               "member"
             ]
           },
+          "perfil": {
+            "type": "string",
+            "enum": [
+              "ESTUDIANTE",
+              "DOCENTE",
+              "BEDEL",
+              "AUTORIDAD"
+            ],
+            "description": "Perfil de SiGA: decide el panel principal y los permisos"
+          },
           "organizations": {
             "type": "array",
             "items": {
@@ -65,6 +75,7 @@
           "userEmail",
           "organizationId",
           "role",
+          "perfil",
           "organizations",
           "lostOrganization"
         ]
@@ -283,6 +294,664 @@
         },
         "required": [
           "organizationName"
+        ]
+      },
+      "EstadoInstitucional": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`null` cuando no hay ningún registro todavía (se asume Abierta)"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ABIERTA",
+              "CERRADA",
+              "ABIERTA_CON_NOVEDADES"
+            ]
+          },
+          "motivo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "desde": {
+            "type": "string"
+          },
+          "vigenciaHasta": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "usuario": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nombre"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "estado",
+          "motivo",
+          "desde",
+          "vigenciaHasta",
+          "usuario"
+        ]
+      },
+      "CambioEstadoInstitucional": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "$ref": "#/components/schemas/EstadoInstitucional"
+          },
+          "clasesSuspendidas": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "estado",
+          "clasesSuspendidas"
+        ]
+      },
+      "ClasesDelDia": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string"
+          },
+          "clases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Clase"
+            }
+          }
+        },
+        "required": [
+          "fecha",
+          "clases"
+        ]
+      },
+      "Clase": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fecha": {
+            "type": "string",
+            "description": "yyyy-mm-dd en hora argentina"
+          },
+          "horaInicio": {
+            "type": "string"
+          },
+          "horaFin": {
+            "type": "string"
+          },
+          "inicio": {
+            "type": "string"
+          },
+          "fin": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "PROGRAMADA",
+              "DEMORADA",
+              "DOCENTE_PRESENTE",
+              "VIRTUAL",
+              "AUSENTE",
+              "SUSPENDIDA",
+              "FINALIZADA"
+            ]
+          },
+          "modalidad": {
+            "type": "string",
+            "enum": [
+              "PRESENCIAL",
+              "VIRTUAL"
+            ]
+          },
+          "comision": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "codigo": {
+                "type": "string"
+              },
+              "turno": {
+                "type": "string",
+                "enum": [
+                  "MANANA",
+                  "TARDE",
+                  "NOCHE"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "codigo",
+              "turno"
+            ]
+          },
+          "materia": {
+            "$ref": "#/components/schemas/Materia"
+          },
+          "carrera": {
+            "$ref": "#/components/schemas/Carrera"
+          },
+          "aula": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "codigo": {
+                "type": "string"
+              },
+              "edificio": {
+                "type": "string"
+              },
+              "piso": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "codigo",
+              "edificio",
+              "piso"
+            ]
+          },
+          "docentes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "nombre": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "nombre"
+              ]
+            },
+            "description": "Solo el nombre: los estudiantes no ven datos personales del docente"
+          },
+          "novedades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClaseNovedad"
+            },
+            "description": "Las activas en el listado; en el detalle, también las finalizadas del día"
+          }
+        },
+        "required": [
+          "id",
+          "fecha",
+          "horaInicio",
+          "horaFin",
+          "inicio",
+          "fin",
+          "estado",
+          "modalidad",
+          "comision",
+          "materia",
+          "carrera",
+          "aula",
+          "docentes",
+          "novedades"
+        ]
+      },
+      "Materia": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "anioCarrera": {
+            "type": "integer"
+          },
+          "carreraId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "codigo",
+          "nombre",
+          "anioCarrera",
+          "carreraId"
+        ]
+      },
+      "Carrera": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "codigo",
+          "nombre"
+        ]
+      },
+      "ClaseNovedad": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "AUSENCIA",
+              "DEMORA",
+              "VIRTUAL",
+              "SUSPENSION",
+              "CAMBIO_AULA"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVA",
+              "FINALIZADA"
+            ]
+          },
+          "minutosDemora": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "enlaceVirtual": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "aulaNueva": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "codigo": {
+                "type": "string"
+              },
+              "edificio": {
+                "type": "string"
+              },
+              "piso": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "codigo",
+              "edificio",
+              "piso"
+            ]
+          },
+          "mensaje": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publicadaPorBedelia": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "estado",
+          "minutosDemora",
+          "enlaceVirtual",
+          "aulaNueva",
+          "mensaje",
+          "publicadaPorBedelia",
+          "createdAt"
+        ]
+      },
+      "Novedad": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "AUSENCIA",
+              "DEMORA",
+              "VIRTUAL",
+              "SUSPENSION",
+              "CAMBIO_AULA"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVA",
+              "FINALIZADA"
+            ]
+          },
+          "minutosDemora": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "enlaceVirtual": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "aulaNueva": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "codigo": {
+                "type": "string"
+              },
+              "edificio": {
+                "type": "string"
+              },
+              "piso": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "codigo",
+              "edificio",
+              "piso"
+            ]
+          },
+          "mensaje": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publicadaPor": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nombre"
+            ]
+          },
+          "publicadaPorBedelia": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "finalizadaEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "comision": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "codigo": {
+                "type": "string"
+              },
+              "materia": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "codigo",
+              "materia"
+            ]
+          },
+          "clases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "fecha": {
+                  "type": "string"
+                },
+                "horaInicio": {
+                  "type": "string"
+                },
+                "horaFin": {
+                  "type": "string"
+                },
+                "estado": {
+                  "type": "string",
+                  "enum": [
+                    "PROGRAMADA",
+                    "DEMORADA",
+                    "DOCENTE_PRESENTE",
+                    "VIRTUAL",
+                    "AUSENTE",
+                    "SUSPENDIDA",
+                    "FINALIZADA"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "fecha",
+                "horaInicio",
+                "horaFin",
+                "estado"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "estado",
+          "minutosDemora",
+          "enlaceVirtual",
+          "aulaNueva",
+          "mensaje",
+          "publicadaPor",
+          "publicadaPorBedelia",
+          "createdAt",
+          "finalizadaEn",
+          "comision",
+          "clases"
+        ]
+      },
+      "Preferencias": {
+        "type": "object",
+        "properties": {
+          "comisiones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Comision"
+            }
+          }
+        },
+        "required": [
+          "comisiones"
+        ]
+      },
+      "Comision": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "turno": {
+            "type": "string",
+            "enum": [
+              "MANANA",
+              "TARDE",
+              "NOCHE"
+            ]
+          },
+          "anioLectivo": {
+            "type": "integer"
+          },
+          "materia": {
+            "$ref": "#/components/schemas/Materia"
+          },
+          "carrera": {
+            "$ref": "#/components/schemas/Carrera"
+          },
+          "docentes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "nombre": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "nombre"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "codigo",
+          "turno",
+          "anioLectivo",
+          "materia",
+          "carrera",
+          "docentes"
+        ]
+      },
+      "GeneracionClases": {
+        "type": "object",
+        "properties": {
+          "creadas": {
+            "type": "integer"
+          },
+          "existentes": {
+            "type": "integer"
+          },
+          "sinAula": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "creadas",
+          "existentes",
+          "sinAula"
+        ]
+      },
+      "Aula": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "edificio": {
+            "type": "string"
+          },
+          "piso": {
+            "type": "string"
+          },
+          "capacidad": {
+            "type": "integer"
+          },
+          "equipamiento": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "codigo",
+          "edificio",
+          "piso",
+          "capacidad",
+          "equipamiento"
         ]
       },
       "DailyCronResult": {
@@ -1415,6 +2084,1508 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvitationResolution"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/estado-institucional": {
+      "get": {
+        "tags": [
+          "Estado institucional"
+        ],
+        "summary": "Estado institucional vigente",
+        "description": "Abierta, Cerrada o Abierta con novedades, con motivo, vigencia y responsable.",
+        "responses": {
+          "200": {
+            "description": "Estado vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstadoInstitucional"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Estado institucional"
+        ],
+        "summary": "Registrar un cambio de estado institucional",
+        "description": "Solo Bedel. El motivo es obligatorio salvo para Abierta; 422 si el estado coincide con el vigente. Al cerrar, las clases de la ventana de cierre pasan a Suspendida.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "estado": {
+                    "type": "string",
+                    "enum": [
+                      "ABIERTA",
+                      "CERRADA",
+                      "ABIERTA_CON_NOVEDADES"
+                    ]
+                  },
+                  "motivo": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 280
+                  },
+                  "vigenciaHasta": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "estado"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Estado registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CambioEstadoInstitucional"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/estado-institucional/historial": {
+      "get": {
+        "tags": [
+          "Estado institucional"
+        ],
+        "summary": "Historial de cambios de estado, el más reciente primero",
+        "responses": {
+          "200": {
+            "description": "Historial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EstadoInstitucional"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clases": {
+      "get": {
+        "tags": [
+          "Clases"
+        ],
+        "summary": "Clases programadas de un día, con estado y novedades activas",
+        "description": "Por defecto hoy y el ámbito `mias` (comisiones seguidas del estudiante o dictadas por el docente; bedel y autoridad ven todas). Filtros combinables: carrera, año, materia, comisión y fecha.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": false,
+            "name": "fecha",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "mias",
+                "todas"
+              ],
+              "default": "mias"
+            },
+            "required": false,
+            "name": "ambito",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "carreraId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            },
+            "required": false,
+            "name": "anio",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "materiaId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "comisionId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Clases del día",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClasesDelDia"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clases/{id}": {
+      "get": {
+        "tags": [
+          "Clases"
+        ],
+        "summary": "Detalle de una clase con el historial de novedades del día",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Clase",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Clase"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/novedades": {
+      "get": {
+        "tags": [
+          "Novedades"
+        ],
+        "summary": "Novedades publicadas, la más reciente primero",
+        "description": "El docente ve las de sus comisiones; bedel y autoridad, todas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVA",
+                "FINALIZADA"
+              ]
+            },
+            "required": false,
+            "name": "estado",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Novedades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Novedad"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Novedades"
+        ],
+        "summary": "Publicar una novedad sobre una o más clases de una comisión",
+        "description": "Docente sobre sus comisiones, bedel sobre cualquiera. Cambia el estado de las clases según el tipo; Cambio de aula reserva el aula nueva (409 si ya está asignada en esa franja).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "claseIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  },
+                  "tipo": {
+                    "type": "string",
+                    "enum": [
+                      "AUSENCIA",
+                      "DEMORA",
+                      "VIRTUAL",
+                      "SUSPENSION",
+                      "CAMBIO_AULA"
+                    ]
+                  },
+                  "minutosDemora": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 240
+                  },
+                  "enlaceVirtual": {
+                    "type": "string"
+                  },
+                  "aulaNuevaId": {
+                    "type": "string"
+                  },
+                  "mensaje": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "claseIds",
+                  "tipo"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Novedad publicada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Novedad"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/novedades/{id}/finalizar": {
+      "post": {
+        "tags": [
+          "Novedades"
+        ],
+        "summary": "Dar por finalizada una novedad",
+        "description": "Demora y Virtual devuelven la clase a Programada; Cambio de aula restituye el aula anterior si sigue libre. Ausencia y Suspensión no se finalizan (422).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Novedad finalizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Novedad"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/preferencias": {
+      "get": {
+        "tags": [
+          "Preferencias"
+        ],
+        "summary": "Comisiones que sigue el estudiante",
+        "responses": {
+          "200": {
+            "description": "Preferencias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferencias"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Preferencias"
+        ],
+        "summary": "Reemplazar las comisiones seguidas",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "comisionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "required": [
+                  "comisionIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Preferencias guardadas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferencias"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/carreras": {
+      "get": {
+        "tags": [
+          "Datos académicos"
+        ],
+        "summary": "Carreras activas",
+        "responses": {
+          "200": {
+            "description": "Carreras",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Carrera"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/materias": {
+      "get": {
+        "tags": [
+          "Datos académicos"
+        ],
+        "summary": "Materias activas, filtrables por carrera y año",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "carreraId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            },
+            "required": false,
+            "name": "anio",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Materias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Materia"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/comisiones": {
+      "get": {
+        "tags": [
+          "Datos académicos"
+        ],
+        "summary": "Buscar comisiones activas por carrera, año y materia",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "carreraId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            },
+            "required": false,
+            "name": "anio",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "materiaId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comisiones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Comision"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/comisiones/generar-clases": {
+      "post": {
+        "tags": [
+          "Datos académicos"
+        ],
+        "summary": "Generar las clases programadas de un período o de una comisión",
+        "description": "Una clase por horario y fecha del período, sin días no laborables; las que ya existen se conservan y las que no consiguen aula quedan sin aula.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "periodoLectivoId": {
+                    "type": "string"
+                  },
+                  "comisionId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resumen de la generación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneracionClases"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/aulas/disponibles": {
+      "get": {
+        "tags": [
+          "Aulas"
+        ],
+        "summary": "Aulas libres en la franja de las clases indicadas",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Ids de clases separados por coma",
+              "example": "clase-1,clase-2"
+            },
+            "required": true,
+            "description": "Ids de clases separados por coma",
+            "name": "claseIds",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aulas disponibles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Aula"
+                  }
                 }
               }
             }

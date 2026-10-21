@@ -11,6 +11,7 @@ const authOf = (test: TestOrganization): AuthContext => ({
   userId: test.userId,
   organizationId: test.organizationId,
   role: "owner",
+  perfil: "BEDEL",
   userName: "Nombre de la cookie",
   userEmail: test.userEmail,
   lostOrganization: null,
@@ -30,6 +31,7 @@ describe("quién soy", () => {
       userEmail: member.userEmail,
       organizationId: member.organizationId,
       role: "owner",
+      perfil: "BEDEL",
       organizations: [
         expect.objectContaining({ id: member.organizationId, role: "owner" }),
         expect.objectContaining({ id: organization.organizationId, role: "member" }),

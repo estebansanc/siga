@@ -1,5 +1,6 @@
 import { readAuthContext } from "@repo/auth";
 import { measure, runWithAuditActor } from "@repo/db";
+import type { Perfil } from "@repo/domain";
 import { createMiddleware } from "hono/factory";
 
 import type { ApiEnv } from "./context";
@@ -29,6 +30,14 @@ export const ownerOnly = createMiddleware<ApiEnv>(async (c, next) => {
   }
   await next();
 });
+
+// Las rutas de SiGA declaran qué perfiles las usan (matriz de permisos de
+// `docs/producto/requerimientos.md`); el servicio vuelve a verificarlo y audita el rechazo.
+export const perfilOnly = (...perfiles: Perfil[]) =>
+  createMiddleware<ApiEnv>(async (c, next) => {
+    if (!perfiles.includes(c.get("auth").perfil)) throw forbidden("Acceso denegado");
+    await next();
+  });
 
 export const requireCronSecret = createMiddleware(async (c, next) => {
   const header = c.req.header("authorization") ?? "";
