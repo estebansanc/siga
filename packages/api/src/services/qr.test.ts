@@ -8,6 +8,7 @@ import {
   countAuditLogs,
   createClase,
   createInstitution,
+  createOrganization,
   createUserWithPerfil,
   resetDatabase,
   seedAcademicFixture,
@@ -64,12 +65,27 @@ describe("generar QR de asistencia", () => {
     expect(sesion.venceEn).toBe(finTurno.toISOString());
   });
 
-  it("rechaza con la institución Cerrada y la acepta si la vigencia ya pasó", async () => {
+  it("rechaza con la institución Cerrada", async () => {
     await asOrganization(institution, () =>
       cambiarEstado(bedel(), { estado: "CERRADA", motivo: "Prueba QR" }),
     );
     await expect(generar()).rejects.toMatchObject({ status: 422, message: /cerrada/ });
     expect(await prisma.sesionQr.count()).toBe(0);
+  });
+
+  it("acepta una institución Cerrada cuya vigencia ya pasó", async () => {
+    const ahora = new Date();
+    await prisma.estadoInstitucional.create({
+      data: {
+        organizationId: institution.organizationId,
+        estado: "CERRADA",
+        motivo: "Prueba QR",
+        desde: new Date(ahora.getTime() - 3_600_000),
+        vigenciaHasta: new Date(ahora.getTime() - 60_000),
+        userId: institution.userId,
+      },
+    });
+    await expect(generar(ahora)).resolves.toMatchObject({ turno: "NOCHE" });
   });
 
   it("acepta con la institución Abierta con novedades", async () => {
@@ -102,7 +118,24 @@ describe("generar QR de asistencia", () => {
     ).rejects.toMatchObject({ status: 422, message: /turno/ });
   });
 
-  it("rechaza un aula inexistente o de otra organización", async () => {
+  it("rechaza un aula de otra organización", async () => {
+    const otra = await createOrganization();
+    const ajena = await prisma.aula.create({
+      data: {
+        organizationId: otra.organizationId,
+        codigo: "Aula 99",
+        edificio: "C",
+        piso: "PB",
+        capacidad: 10,
+        equipamiento: [],
+      },
+    });
+    await expect(generarQr(bedel(), { ...noche(), aulaId: ajena.id })).rejects.toMatchObject({
+      status: 404,
+    });
+  });
+
+  it("rechaza un aula inexistente", async () => {
     await expect(generarQr(bedel(), { ...noche(), aulaId: "no-existe" })).rejects.toMatchObject({
       status: 404,
     });

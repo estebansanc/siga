@@ -69,6 +69,60 @@ test.describe("QR de asistencia", () => {
     await expect(page.getByRole("timer")).toHaveCount(0);
   });
 
+  test("un turno ya terminado hoy da error y no muestra QR", async ({ page }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/configuracion");
+    await page.getByLabel("Mañana: inicio").fill("00:00");
+    await page.getByLabel("Mañana: fin").fill("00:01");
+    await page.getByRole("button", { name: "Guardar turnos" }).click();
+    await expect(page.getByText("Turnos actualizados")).toBeVisible();
+
+    try {
+      await page.goto("/qr");
+      await page.getByLabel("Aula").selectOption({ label: "Aula 12" });
+      await page.getByLabel("Turno").selectOption("MANANA");
+      await page.getByRole("button", { name: "Generar QR" }).click();
+      await expect(page.getByText("El turno ya terminó")).toBeVisible();
+      await expect(page.getByRole("timer")).toHaveCount(0);
+    } finally {
+      await page.goto("/configuracion");
+      await page.getByLabel("Mañana: inicio").fill("07:00");
+      await page.getByLabel("Mañana: fin").fill("13:00");
+      await page.getByRole("button", { name: "Guardar turnos" }).click();
+      await expect(page.getByText("Turnos actualizados")).toBeVisible();
+    }
+  });
+
+  test("al vencer el código junto con el turno el QR desaparece con un aviso", async ({ page }) => {
+    const ahora = Date.now();
+    await page.route("**/api/v1/qr/sesiones", (route) =>
+      route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "sesion-e2e",
+          token: "token-e2e",
+          aula: { id: "aula-12", codigo: "Aula 12", edificio: "Edificio A", piso: "1.º piso" },
+          fecha: fechaArgentina(new Date()),
+          turno: "NOCHE",
+          turnoInicio: new Date(ahora - 3_600_000).toISOString(),
+          turnoFin: new Date(ahora + 3_000).toISOString(),
+          emitidoEn: new Date(ahora).toISOString(),
+          venceEn: new Date(ahora + 3_000).toISOString(),
+        }),
+      }),
+    );
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/qr");
+    await page.getByLabel("Aula").selectOption({ label: "Aula 12" });
+    await page.getByLabel("Turno").selectOption("NOCHE");
+    await page.getByRole("button", { name: "Generar QR" }).click();
+
+    await expect(page.getByRole("timer")).toBeVisible();
+    await expect(page.getByText("El turno terminó")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("timer")).toHaveCount(0);
+  });
+
   test("un cambio de turnos en Configuración se ve en el QR", async ({ page }) => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/configuracion");

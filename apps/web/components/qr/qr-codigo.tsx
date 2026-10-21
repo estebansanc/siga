@@ -7,7 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 
 import { describirAula } from "@/components/clases/clase-card";
 
-// Código blanco sobre fondo blanco con margen: se lee igual en el tema oscuro.
+// Fondo blanco fijo: el código oscuro se lee igual en el tema oscuro.
 export function QrCodigo({
   sesion,
   segundos,
