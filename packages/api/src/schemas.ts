@@ -1,5 +1,6 @@
 import { z } from "@hono/zod-openapi";
 import {
+  estadoAulaSchema,
   estadoClaseSchema,
   estadoInstitucionSchema,
   estadoNovedadSchema,
@@ -280,4 +281,48 @@ export const aulasDisponiblesQuerySchema = z.object({
     .min(1)
     .transform((value) => value.split(",").filter(Boolean))
     .openapi({ description: "Ids de clases separados por coma", example: "clase-1,clase-2" }),
+});
+
+export const aulaGestionSchema = aulaSchema
+  .extend({
+    estado: estadoAulaSchema,
+    ocupada: z.boolean().openapi({
+      description: "Calculada: tiene una clase en curso que no está Suspendida, Ausente ni Virtual",
+    }),
+    observaciones: z.string().nullable(),
+    activa: z.boolean(),
+  })
+  .openapi("AulaGestion");
+export type AulaGestionDto = z.infer<typeof aulaGestionSchema>;
+
+export const aulaClaseSchema = z
+  .object({
+    id: z.string(),
+    fecha: z.string(),
+    horaInicio: z.string(),
+    horaFin: z.string(),
+    estado: estadoClaseSchema,
+    materia: z.string(),
+    comision: z.string(),
+  })
+  .openapi("AulaClase");
+export type AulaClaseDto = z.infer<typeof aulaClaseSchema>;
+
+export const aulaDetalleSchema = aulaGestionSchema
+  .extend({
+    clases: z.array(aulaClaseSchema).openapi({ description: "Hoy y los próximos 7 días" }),
+    clasesAfectadas: z.array(aulaClaseSchema).openapi({
+      description:
+        "Clases asignadas que todavía no terminaron: las que afecta pasar el aula a Fuera de servicio, En mantenimiento o darla de baja",
+    }),
+  })
+  .openapi("AulaDetalle");
+export type AulaDetalleDto = z.infer<typeof aulaDetalleSchema>;
+
+export const aulasGestionQuerySchema = z.object({
+  bajas: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) => value === "true")
+    .openapi({ description: "true lista las aulas dadas de baja en lugar de las activas" }),
 });

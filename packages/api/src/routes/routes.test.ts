@@ -291,6 +291,26 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
     expect((await call("/preferencias")).status).toBe(403);
     como(docente);
     expect((await call("/comisiones/generar-clases", json({}))).status).toBe(403);
+    for (const perfil of [docente, estudiante]) {
+      como(perfil);
+      expect((await call("/aulas")).status).toBe(403);
+      como(perfil);
+      expect((await call("/aulas", json({}))).status).toBe(403);
+      como(perfil);
+      expect((await call("/aulas/x/baja", json({}))).status).toBe(403);
+    }
+
+    como(institution);
+    const aula = { codigo: "Aula 99", edificio: "Edificio A", piso: "PB", capacidad: 35 };
+    const creada = await call("/aulas", json(aula));
+    expect(creada.status).toBe(201);
+    como(institution);
+    expect((await call("/aulas", json(aula))).status).toBe(409);
+    como(institution);
+    const fueraDeRango = await call("/aulas", json({ ...aula, codigo: "Otra", capacidad: 501 }));
+    expect(fueraDeRango.status).toBe(422);
+    const errores = (await fueraDeRango.json()) as { error: { issues: { path: string }[] } };
+    expect(errores.error.issues.map((issue) => issue.path)).toEqual(["capacidad"]);
 
     como(institution);
     const invalido = await call("/estado-institucional", json({ estado: "CERRADA" }));

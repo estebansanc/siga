@@ -10,6 +10,7 @@ const auditedModels = [
   "EstadoInstitucional",
   "Novedad",
   "ClaseProgramada",
+  "Aula",
 ] as const;
 
 type AuditedModel = (typeof auditedModels)[number];

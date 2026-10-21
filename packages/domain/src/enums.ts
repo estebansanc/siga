@@ -115,3 +115,24 @@ export const estadoAulaLabels: Record<EstadoAula, string> = {
   FUERA_DE_SERVICIO: "Fuera de servicio",
   EN_MANTENIMIENTO: "En mantenimiento",
 };
+
+export const equipamientoSchema = z.enum([
+  "Proyector",
+  "Pantalla",
+  "Computadora",
+  "Climatizacion",
+  "Ventilacion",
+  "Pizarra",
+  "Conectividad",
+]);
+export type Equipamiento = z.infer<typeof equipamientoSchema>;
+
+export const equipamientoLabels: Record<Equipamiento, string> = {
+  Proyector: "Proyector",
+  Pantalla: "Pantalla",
+  Computadora: "Computadora",
+  Climatizacion: "Climatización",
+  Ventilacion: "Ventilación",
+  Pizarra: "Pizarra",
+  Conectividad: "Conectividad",
+};

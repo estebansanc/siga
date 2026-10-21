@@ -954,6 +954,119 @@
           "equipamiento"
         ]
       },
+      "AulaGestion": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Aula"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "estado": {
+                "type": "string",
+                "enum": [
+                  "DISPONIBLE",
+                  "FUERA_DE_SERVICIO",
+                  "EN_MANTENIMIENTO"
+                ]
+              },
+              "ocupada": {
+                "type": "boolean",
+                "description": "Calculada: tiene una clase en curso que no está Suspendida, Ausente ni Virtual"
+              },
+              "observaciones": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "activa": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "estado",
+              "ocupada",
+              "observaciones",
+              "activa"
+            ]
+          }
+        ]
+      },
+      "AulaDetalle": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AulaGestion"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "clases": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AulaClase"
+                },
+                "description": "Hoy y los próximos 7 días"
+              },
+              "clasesAfectadas": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AulaClase"
+                },
+                "description": "Clases asignadas que todavía no terminaron: las que afecta pasar el aula a Fuera de servicio, En mantenimiento o darla de baja"
+              }
+            },
+            "required": [
+              "clases",
+              "clasesAfectadas"
+            ]
+          }
+        ]
+      },
+      "AulaClase": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fecha": {
+            "type": "string"
+          },
+          "horaInicio": {
+            "type": "string"
+          },
+          "horaFin": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "PROGRAMADA",
+              "DEMORADA",
+              "DOCENTE_PRESENTE",
+              "VIRTUAL",
+              "AUSENTE",
+              "SUSPENDIDA",
+              "FINALIZADA"
+            ]
+          },
+          "materia": {
+            "type": "string"
+          },
+          "comision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fecha",
+          "horaInicio",
+          "horaFin",
+          "estado",
+          "materia",
+          "comision"
+        ]
+      },
       "DailyCronResult": {
         "type": "object",
         "properties": {
@@ -3589,6 +3702,679 @@
                   "items": {
                     "$ref": "#/components/schemas/Aula"
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/aulas": {
+      "get": {
+        "tags": [
+          "Aulas"
+        ],
+        "summary": "Aulas con estado y ocupación en tiempo real",
+        "description": "Solo Bedel. Las activas, o con `bajas=true` las dadas de baja. `ocupada` se calcula con las clases en curso.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "true lista las aulas dadas de baja en lugar de las activas"
+            },
+            "required": false,
+            "description": "true lista las aulas dadas de baja en lugar de las activas",
+            "name": "bajas",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aulas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AulaGestion"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Aulas"
+        ],
+        "summary": "Dar de alta un aula",
+        "description": "Solo Bedel. 409 si el código ya existe; 422 ante datos inválidos.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "codigo": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "edificio": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "piso": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "capacidad": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500
+                  },
+                  "equipamiento": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "Proyector",
+                        "Pantalla",
+                        "Computadora",
+                        "Climatizacion",
+                        "Ventilacion",
+                        "Pizarra",
+                        "Conectividad"
+                      ]
+                    },
+                    "default": []
+                  },
+                  "estado": {
+                    "type": "string",
+                    "enum": [
+                      "DISPONIBLE",
+                      "FUERA_DE_SERVICIO",
+                      "EN_MANTENIMIENTO"
+                    ],
+                    "default": "DISPONIBLE"
+                  },
+                  "observaciones": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "codigo",
+                  "edificio",
+                  "piso",
+                  "capacidad"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Aula creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AulaGestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/aulas/{id}": {
+      "get": {
+        "tags": [
+          "Aulas"
+        ],
+        "summary": "Detalle de un aula con sus clases de hoy y los próximos 7 días",
+        "description": "Solo Bedel. `clasesAfectadas` lista las clases sin terminar asignadas al aula, para advertir antes de sacarla de servicio o darla de baja.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aula",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AulaDetalle"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Aulas"
+        ],
+        "summary": "Editar un aula",
+        "description": "Solo Bedel. Ocupada no es un estado editable. Las clases afectadas conservan el aula: reasignarlas es otra operación. 409 si el código ya existe.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "codigo": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "edificio": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "piso": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "capacidad": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500
+                  },
+                  "equipamiento": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "Proyector",
+                        "Pantalla",
+                        "Computadora",
+                        "Climatizacion",
+                        "Ventilacion",
+                        "Pizarra",
+                        "Conectividad"
+                      ]
+                    }
+                  },
+                  "estado": {
+                    "type": "string",
+                    "enum": [
+                      "DISPONIBLE",
+                      "FUERA_DE_SERVICIO",
+                      "EN_MANTENIMIENTO"
+                    ]
+                  },
+                  "observaciones": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Aula actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AulaGestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/aulas/{id}/baja": {
+      "post": {
+        "tags": [
+          "Aulas"
+        ],
+        "summary": "Dar de baja un aula",
+        "description": "Solo Bedel. Baja lógica: el código queda reservado y se puede reactivar.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aula dada de baja",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AulaGestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/aulas/{id}/reactivar": {
+      "post": {
+        "tags": [
+          "Aulas"
+        ],
+        "summary": "Reactivar un aula dada de baja",
+        "description": "Solo Bedel.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aula reactivada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AulaGestion"
                 }
               }
             }
