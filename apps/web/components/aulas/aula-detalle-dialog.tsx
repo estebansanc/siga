@@ -8,8 +8,8 @@ import { Skeleton } from "@repo/ui/components/skeleton";
 import { FormDialogContent } from "@/components/form-dialog-content";
 import { useAula } from "@/hooks/use-aulas";
 
-import { AulaEstadoBadge } from "./aula-estado-badge";
 import { AulaClasesList } from "./aula-clases-list";
+import { AulaEstadoBadge } from "./aula-estado-badge";
 
 export function AulaDetalleDialog({ aulaId, onClose }: { aulaId: string; onClose: () => void }) {
   const aula = useAula(aulaId);
