@@ -78,7 +78,7 @@ Requisitos cubiertos: RF-01, RF-08, RF-14, RF-17. Criterios de aceptación: CA-0
 1. El estudiante busca y agrega o quita comisiones de su lista.
 2. El sistema guarda las preferencias y las aplica como filtro por defecto en "Mis clases" (RF-07).
 3. Al publicarse una novedad en una comisión seguida (RF-05) o un aviso dirigido al estudiante (RF-14), el sistema envía el correo solo si el estudiante lo habilitó.
-4. Cada correo incluye un enlace para dejar de recibir notificaciones. Se envía un correo por cada novedad o aviso; no se agrupan.
+4. Cada correo incluye un enlace para dejar de recibir notificaciones. Se envía un correo por cada novedad o aviso; no se agrupan. Las opciones arrancan desactivadas. Editar o finalizar una novedad no envía correo. La baja desde el enlace desactiva solo la opción de novedades (la de avisos se cubre en RF-14) y exige confirmar con un botón.
 
 **Salidas**: preferencias guardadas y confirmadas; "Mis clases" filtrado por las comisiones seguidas.
 

@@ -70,8 +70,10 @@ const abierta: EstadoInstitucionalDto = {
   usuario: null,
 };
 
+const sinCorreo = { notificarNovedadesPorCorreo: false, notificarAvisosPorCorreo: false };
+
 beforeEach(() => {
-  state.preferencias = { comisiones: [comision] };
+  state.preferencias = { ...sinCorreo, comisiones: [comision] };
   state.clases = { fecha: "2026-10-14", clases: [clase] };
   state.estado = abierta;
 });
@@ -84,7 +86,7 @@ describe("MisClasesHoy", () => {
   });
 
   it("sin comisiones seguidas invita a elegirlas", () => {
-    state.preferencias = { comisiones: [] };
+    state.preferencias = { ...sinCorreo, comisiones: [] };
     renderWithProviders(<MisClasesHoy />);
     expect(screen.getByText("Todavía no seguís ninguna comisión")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Elegir comisiones" })).toHaveAttribute(
