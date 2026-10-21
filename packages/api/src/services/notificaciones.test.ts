@@ -97,6 +97,21 @@ describe("correo de novedades", () => {
     expect(enviados[0]!.html).toContain("Fechas: del");
   });
 
+  it("con varios destinatarios cada Notificacion apunta a su propio correo", async () => {
+    const otros = await Promise.all(
+      [1, 2, 3].map(() => crearEstudiante({ sigue: true, correo: true })),
+    );
+    const clase = await createClase(institution, fixture, dia(1));
+    await publicar([clase.id]);
+    const todos = [suscripta, ...otros];
+    const notificaciones = await prisma.notificacion.findMany({ include: { email: true } });
+    expect(notificaciones).toHaveLength(todos.length);
+    for (const usuario of todos) {
+      const propia = notificaciones.find((n) => n.destinatarioId === usuario.userId);
+      expect(propia?.email.to).toBe(usuario.userEmail);
+    }
+  });
+
   it("Ausencia no lleva línea de dato", async () => {
     const clase = await createClase(institution, fixture, dia(1));
     await publicar([clase.id], "AUSENCIA");

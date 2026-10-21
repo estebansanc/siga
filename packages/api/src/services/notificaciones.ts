@@ -57,36 +57,37 @@ const buscarDestinatarios = (organizationId: string, comisionId: string) =>
 // todos los destinatarios: si algo se corta después, el cron reintenta lo que quedó pendiente.
 const registrarNovedad = async (organizationId: string, novedad: NovedadDto) => {
   const destinatarios = await buscarDestinatarios(organizationId, novedad.comision.id);
+  const mensajes = destinatarios.map((destinatario) => ({
+    organizationId,
+    to: destinatario.email,
+    ...novedadEmail({
+      materia: novedad.comision.materia,
+      comision: novedad.comision.codigo,
+      tipo: novedad.tipo,
+      clases: novedad.clases,
+      minutosDemora: novedad.minutosDemora,
+      enlaceVirtual: novedad.enlaceVirtual,
+      aulaNueva: novedad.aulaNueva?.codigo ?? null,
+      mensaje: novedad.mensaje,
+      publicadaPorBedelia: novedad.publicadaPorBedelia,
+      clasesUrl: `${apiEnv.appUrl}/clases`,
+      bajaUrl: `${apiEnv.appUrl}/baja-correo?token=${crearTokenBajaNovedades(destinatario.id)}`,
+    }),
+  }));
   return prisma.$transaction(async (tx) => {
-    const correos = [];
-    for (const destinatario of destinatarios) {
-      const { subject, html } = novedadEmail({
-        materia: novedad.comision.materia,
-        comision: novedad.comision.codigo,
-        tipo: novedad.tipo,
-        clases: novedad.clases,
-        minutosDemora: novedad.minutosDemora,
-        enlaceVirtual: novedad.enlaceVirtual,
-        aulaNueva: novedad.aulaNueva?.codigo ?? null,
-        mensaje: novedad.mensaje,
-        publicadaPorBedelia: novedad.publicadaPorBedelia,
-        clasesUrl: `${apiEnv.appUrl}/clases`,
-        bajaUrl: `${apiEnv.appUrl}/baja-correo?token=${crearTokenBajaNovedades(destinatario.id)}`,
-      });
-      const correo = await tx.emailOutbox.create({
-        data: { organizationId, to: destinatario.email, subject, html },
-      });
-      await tx.notificacion.create({
-        data: {
-          organizationId,
-          destinatarioId: destinatario.id,
-          tipo: "NOVEDAD",
-          novedadId: novedad.id,
-          emailId: correo.id,
-        },
-      });
-      correos.push(correo);
-    }
+    const correos = await tx.emailOutbox.createManyAndReturn({ data: mensajes });
+    const destinatarioPorEmail = new Map(
+      destinatarios.map((destinatario) => [destinatario.email, destinatario.id]),
+    );
+    await tx.notificacion.createMany({
+      data: correos.map((correo) => ({
+        organizationId,
+        destinatarioId: destinatarioPorEmail.get(correo.to)!,
+        tipo: "NOVEDAD" as const,
+        novedadId: novedad.id,
+        emailId: correo.id,
+      })),
+    });
     return correos;
   });
 };
