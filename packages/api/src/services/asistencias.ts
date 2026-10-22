@@ -1,21 +1,32 @@
 import type { AuthContext } from "@repo/auth";
-import { fromDateColumn, prisma } from "@repo/db";
+import { fromDateColumn, prisma, type Prisma } from "@repo/db";
 import {
+  bloqueoIntentosMinutos,
+  elegirClaseDeRegistro,
   esHoraFutura,
   fechaArgentina,
   horaArgentina,
   instanteArgentino,
+  intentosFallidosMax,
+  ipEnAlgunaRed,
   metodoAsistenciaLabels,
+  rangoDeTurno,
+  ubicacionDentroDelRadio,
+  ventanaIntentosMinutos,
   type MetodoAsistencia,
   type RegistroManualInput,
+  type RegistroQrInput,
+  type ValidacionPresencia,
 } from "@repo/domain";
 
-import { conflict, notFound, unprocessable } from "../errors";
-import type { AsistenciaDto } from "../schemas";
+import { ApiError, conflict, notFound, unprocessable } from "../errors";
+import type { AsistenciaDto, RegistroQrResultadoDto } from "../schemas";
 
 import { registrarCambioMasivo } from "./auditoria";
 import { asistenciaInclude, finalizarClasesVencidas, toAsistenciaDto } from "./clases";
 import { assertPerfil } from "./permisos";
+import { buscarSesionVigente } from "./qr";
+import { obtenerPresencia, obtenerTurnos } from "./settings";
 
 const estadosConAsistenciaPendiente = ["PROGRAMADA", "DEMORADA"] as const;
 
@@ -55,8 +66,37 @@ const buscarClaseElegible = async (auth: AuthContext, input: RegistroManualInput
   return clase;
 };
 
-// RF-18: contingencia del Bedel cuando el docente no puede usar el QR. Todo o nada: la
-// asistencia (única por clase), el paso a Docente presente y la auditoría van en una transacción.
+type NuevaAsistencia = Pick<
+  Prisma.AsistenciaDocenteUncheckedCreateInput,
+  | "docenteId"
+  | "metodo"
+  | "horaLlegada"
+  | "motivo"
+  | "validacion"
+  | "sesionQrId"
+  | "registradaPorId"
+>;
+
+// Todo o nada: la asistencia (única por clase), el paso a Docente presente y la auditoría van en
+// una transacción. Es el camino común del registro manual y del registro por QR.
+const persistirAsistencia = (auth: AuthContext, claseId: string, datos: NuevaAsistencia) =>
+  prisma.$transaction(async (tx) => {
+    const { count } = await tx.claseProgramada.updateMany({
+      where: { id: claseId, estado: { in: [...estadosConAsistenciaPendiente] } },
+      data: { estado: "DOCENTE_PRESENTE" },
+    });
+    if (count === 0) throw unprocessable("La clase cambió de estado: volvé a intentarlo");
+    await registrarCambioMasivo(tx, auth.organizationId, "ClaseProgramada", "docente_presente", {
+      claseIds: [claseId],
+      metodo: datos.metodo,
+    });
+    return tx.asistenciaDocente.create({
+      data: { organizationId: auth.organizationId, claseId, ...datos },
+      include: asistenciaInclude,
+    });
+  });
+
+// RF-18: contingencia del Bedel cuando el docente no puede usar el QR.
 export const registrarAsistenciaManual = async (
   auth: AuthContext,
   input: RegistroManualInput,
@@ -67,32 +107,154 @@ export const registrarAsistenciaManual = async (
   const clase = await buscarClaseElegible(auth, input, ahora);
 
   try {
-    const asistencia = await prisma.$transaction(async (tx) => {
-      const { count } = await tx.claseProgramada.updateMany({
-        where: { id: clase.id, estado: { in: [...estadosConAsistenciaPendiente] } },
-        data: { estado: "DOCENTE_PRESENTE" },
-      });
-      if (count === 0) throw unprocessable("La clase cambió de estado: volvé a intentarlo");
-      await registrarCambioMasivo(tx, auth.organizationId, "ClaseProgramada", "docente_presente", {
-        claseIds: [clase.id],
-        metodo: "MANUAL",
-      });
-      return tx.asistenciaDocente.create({
-        data: {
-          organizationId: auth.organizationId,
-          claseId: clase.id,
-          docenteId: input.docenteId,
-          metodo: "MANUAL",
-          horaLlegada: instanteArgentino(fechaArgentina(ahora), input.horaLlegada),
-          motivo: input.motivo,
-          registradaPorId: auth.userId,
-        },
-        include: asistenciaInclude,
-      });
+    const asistencia = await persistirAsistencia(auth, clase.id, {
+      docenteId: input.docenteId,
+      metodo: "MANUAL",
+      horaLlegada: instanteArgentino(fechaArgentina(ahora), input.horaLlegada),
+      motivo: input.motivo,
+      registradaPorId: auth.userId,
     });
     return toAsistenciaDto(asistencia);
   } catch (error) {
     // Perdió la carrera contra otro registro: se informa la asistencia que ganó.
     throw (await errorClaseConAsistencia(clase.id)) ?? error;
+  }
+};
+
+const errorCodigoInvalido =
+  "El código QR no es válido o ya venció. Pedí a bedelía que lo muestre de nuevo.";
+const errorSinClase = "No tenés una clase en esta aula y turno.";
+const errorFueraDeLaInstitucion =
+  "No pudimos confirmar que estés en la institución. Pedí el registro manual al bedel.";
+
+const bloqueoPorIntentos = (liberaEn: Date) =>
+  new ApiError(
+    429,
+    "ATTEMPTS_BLOCKED",
+    `Superaste los ${intentosFallidosMax} intentos fallidos. No podés volver a escanear hasta que pasen ${bloqueoIntentosMinutos} minutos: se libera a las ${horaArgentina(liberaEn)}.`,
+  );
+
+// SEG-9: por usuario y no por IP, que en la institución se comparte. Con 10 fallos en 15 minutos
+// el bloqueo dura 15 minutos desde el último, cuando los 10 ya salieron de la ventana.
+const bloqueoVigente = async (auth: AuthContext, ahora: Date) => {
+  const desde = new Date(ahora.getTime() - ventanaIntentosMinutos * 60_000);
+  const { _count, _max } = await prisma.intentoAsistenciaFallido.aggregate({
+    where: { userId: auth.userId, organizationId: auth.organizationId, createdAt: { gt: desde } },
+    _count: true,
+    _max: { createdAt: true },
+  });
+  if (_count < intentosFallidosMax || !_max.createdAt) return null;
+  const liberaEn = new Date(_max.createdAt.getTime() + bloqueoIntentosMinutos * 60_000);
+  return liberaEn > ahora ? bloqueoPorIntentos(liberaEn) : null;
+};
+
+const rechazarIntento = async (auth: AuthContext, motivo: string, mensaje: string, ahora: Date) => {
+  await prisma.intentoAsistenciaFallido.create({
+    data: { organizationId: auth.organizationId, userId: auth.userId, motivo, createdAt: ahora },
+  });
+  return (await bloqueoVigente(auth, ahora)) ?? unprocessable(mensaje);
+};
+
+const estadosElegiblesPorQr = [...estadosConAsistenciaPendiente, "DOCENTE_PRESENTE"] as const;
+
+const clasesDelDocenteEnLaSesion = async (
+  auth: AuthContext,
+  sesion: NonNullable<Awaited<ReturnType<typeof buscarSesionVigente>>>,
+) => {
+  const turnos = await obtenerTurnos(auth.organizationId);
+  const { desde, hasta } = rangoDeTurno(turnos, sesion.turno, fromDateColumn(sesion.fecha));
+  return prisma.claseProgramada.findMany({
+    where: {
+      organizationId: auth.organizationId,
+      aulaId: sesion.aulaId,
+      fecha: sesion.fecha,
+      modalidad: "PRESENCIAL",
+      estado: { in: [...estadosElegiblesPorQr] },
+      inicio: { lt: hasta },
+      fin: { gt: desde },
+      comision: { activa: true, docentes: { some: { docenteId: auth.userId } } },
+    },
+    include: { asistencia: { include: asistenciaInclude } },
+  });
+};
+
+const validarPresencia = async (
+  auth: AuthContext,
+  input: RegistroQrInput,
+  ip: string,
+): Promise<ValidacionPresencia | null> => {
+  const sede = await obtenerPresencia(auth.organizationId);
+  if (input.ubicacion && ubicacionDentroDelRadio(input.ubicacion, sede)) return "UBICACION";
+  return ipEnAlgunaRed(ip, sede.redes) ? "RED" : null;
+};
+
+// RF-04: el docente escanea el QR del aula. Se valida el código, su clase y su presencia (sin
+// guardar coordenadas) y se registra por el mismo camino que el manual, con método QR.
+export const registrarAsistenciaQr = async (
+  auth: AuthContext,
+  input: RegistroQrInput,
+  ip: string,
+  ahora = new Date(),
+): Promise<{ resultado: RegistroQrResultadoDto; creada: boolean }> => {
+  await assertPerfil(auth, "DOCENTE");
+  const bloqueo = await bloqueoVigente(auth, ahora);
+  if (bloqueo) throw bloqueo;
+
+  const sesion = await buscarSesionVigente(auth.organizationId, input.token, ahora);
+  if (!sesion) throw await rechazarIntento(auth, "codigo_invalido", errorCodigoInvalido, ahora);
+  const yaUsado = await prisma.asistenciaDocente.findFirst({
+    where: { sesionQrId: sesion.id, docenteId: auth.userId },
+    select: { id: true },
+  });
+  if (yaUsado) throw await rechazarIntento(auth, "codigo_usado", errorCodigoInvalido, ahora);
+
+  if (fromDateColumn(sesion.fecha) !== fechaArgentina(ahora)) {
+    throw await rechazarIntento(auth, "codigo_de_otra_fecha", errorCodigoInvalido, ahora);
+  }
+
+  await finalizarClasesVencidas(auth.organizationId, ahora);
+  const clase = elegirClaseDeRegistro(await clasesDelDocenteEnLaSesion(auth, sesion), ahora);
+  if (!clase) throw await rechazarIntento(auth, "sin_clase", errorSinClase, ahora);
+
+  const resumen = { aula: sesion.aula, turno: sesion.turno };
+  if (clase.asistencia) {
+    const asistencia = toAsistenciaDto(clase.asistencia);
+    return {
+      resultado: { asistencia, yaRegistrada: true, validacion: null, ...resumen },
+      creada: false,
+    };
+  }
+
+  const validacion = await validarPresencia(auth, input, ip);
+  if (!validacion) {
+    throw await rechazarIntento(auth, "fuera_de_la_institucion", errorFueraDeLaInstitucion, ahora);
+  }
+
+  try {
+    const asistencia = await persistirAsistencia(auth, clase.id, {
+      docenteId: auth.userId,
+      metodo: "QR",
+      horaLlegada: ahora,
+      validacion,
+      sesionQrId: sesion.id,
+      registradaPorId: auth.userId,
+    });
+    const dto = toAsistenciaDto(asistencia);
+    return {
+      resultado: { asistencia: dto, yaRegistrada: false, validacion, ...resumen },
+      creada: true,
+    };
+  } catch (error) {
+    // Otro registro de la misma clase ganó la carrera: se informa el que quedó.
+    const existente = await prisma.asistenciaDocente.findUnique({
+      where: { claseId: clase.id },
+      include: asistenciaInclude,
+    });
+    if (!existente) throw error;
+    const asistencia = toAsistenciaDto(existente);
+    return {
+      resultado: { asistencia, yaRegistrada: true, validacion: null, ...resumen },
+      creada: false,
+    };
   }
 };

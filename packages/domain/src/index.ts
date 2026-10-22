@@ -10,6 +10,7 @@ export * from "./institucion";
 export * from "./invitations";
 export * from "./novedades";
 export * from "./preferencias";
+export * from "./presencia";
 export * from "./profile";
 export * from "./settings";
 export * from "./slug";

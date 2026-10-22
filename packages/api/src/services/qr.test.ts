@@ -188,6 +188,24 @@ describe("clases del aula en el turno", () => {
     });
   });
 
+  it("muestra al bedel el estado de asistencia de cada clase", async () => {
+    const conRegistro = await createClase(institution, fixture, fecha, "21:00", "22:00");
+    await prisma.asistenciaDocente.create({
+      data: {
+        organizationId: institution.organizationId,
+        claseId: conRegistro.id,
+        docenteId: fixture.docente.userId,
+        metodo: "QR",
+        validacion: "RED",
+        horaLlegada: new Date(`${fecha}T21:02:00-03:00`),
+        registradaPorId: fixture.docente.userId,
+      },
+    });
+    const clases = await listarClasesDelTurno(bedel(), noche());
+    expect(clases.map((clase) => clase.asistencia?.metodo ?? null)).toEqual([null, "QR"]);
+    expect(clases[1]?.asistencia).toMatchObject({ horaLlegada: "21:02" });
+  });
+
   it("incluye una clase que empieza antes del turno pero lo cruza", async () => {
     await createClase(institution, fixture, fecha, "17:00", "18:30");
     const clases = await listarClasesDelTurno(bedel(), noche());

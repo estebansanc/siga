@@ -47,7 +47,7 @@ export const requireCronSecret = createMiddleware(async (c, next) => {
   await next();
 });
 
-const clientIp = (headers: Headers) =>
+export const clientIp = (headers: Headers) =>
   headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
   headers.get("x-real-ip")?.trim() ||
   "local";

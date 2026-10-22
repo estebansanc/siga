@@ -1,5 +1,13 @@
 import { prisma } from "@repo/db";
-import { turnosIniciales, turnosSchema, type Turnos, type UpdateSettingsInput } from "@repo/domain";
+import {
+  presenciaInicial,
+  presenciaSchema,
+  turnosIniciales,
+  turnosSchema,
+  type Presencia,
+  type Turnos,
+  type UpdateSettingsInput,
+} from "@repo/domain";
 
 import type { SettingsDto } from "../schemas";
 
@@ -16,20 +24,31 @@ export const obtenerTurnos = async (organizationId: string): Promise<Turnos> => 
   return guardados.success ? guardados.data : turnosIniciales;
 };
 
+export const obtenerPresencia = async (organizationId: string): Promise<Presencia> => {
+  const settings = await prisma.organizationSettings.findUnique({
+    where: { organizationId },
+    select: { presencia: true },
+  });
+  const guardada = presenciaSchema.safeParse(settings?.presencia);
+  return guardada.success ? guardada.data : presenciaInicial;
+};
+
 export const getSettings = async (organizationId: string): Promise<SettingsDto> => ({
   name: await findOrganizationName(organizationId),
   turnos: await obtenerTurnos(organizationId),
+  presencia: await obtenerPresencia(organizationId),
 });
 
 export const updateSettings = async (
   organizationId: string,
   input: UpdateSettingsInput,
 ): Promise<SettingsDto> => {
-  const { name, turnos } = input;
+  const { name, turnos, presencia } = input;
+  const cambios = { turnos, presencia };
   await prisma.organizationSettings.upsert({
     where: { organizationId },
-    create: { organizationId, turnos },
-    update: { turnos },
+    create: { organizationId, ...cambios },
+    update: cambios,
   });
   if (name !== undefined) await renameOrganization(organizationId, name);
   return getSettings(organizationId);

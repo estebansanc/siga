@@ -5,6 +5,7 @@ import { institutionSlug, type Perfil } from "@repo/domain";
 import { findOwnedOrganizationId } from "../services/memberships";
 
 const tables = [
+  "intento_asistencia_fallido",
   "asistencia_docente",
   "sesion_qr",
   "novedad_clase",

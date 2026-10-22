@@ -36,6 +36,7 @@ model User {
   asistencias            AsistenciaDocente[]   @relation("AsistenciaDocente")
   asistenciasRegistradas AsistenciaDocente[]   @relation("AsistenciaRegistrada")
   solicitudesAulaResueltas SolicitudAula[]     @relation("SolicitudAulaResueltaPor")
+  intentosAsistencia     IntentoAsistenciaFallido[]
 
   @@unique([email])
   @@map("user")
@@ -125,6 +126,7 @@ model Organization {
   solicitudesAula        SolicitudAula[]
   sesionesQr             SesionQr[]
   asistencias            AsistenciaDocente[]
+  intentosAsistencia     IntentoAsistenciaFallido[]
 
   @@unique([slug])
   @@map("organization")
@@ -170,6 +172,9 @@ model OrganizationSettings {
   // Franjas de los turnos {MANANA|TARDE|NOCHE: {inicio, fin}} en "HH:mm" argentino; null usa
   // los valores iniciales del dominio.
   turnos         Json?
+  // Presencia del docente al registrar por QR {latitud, longitud, radioMetros, redes[]}
+  // (CFG-1); null usa la sede y el radio iniciales, con la red institucional vacía.
+  presencia      Json?
   updatedAt      DateTime     @updatedAt
 
   @@map("organization_settings")
@@ -628,6 +633,7 @@ model SesionQr {
   venceEn        DateTime
   bedelId        String
   bedel          User         @relation(fields: [bedelId], references: [id], onDelete: Cascade)
+  asistencias    AsistenciaDocente[]
 
   @@unique([token])
   @@index([organizationId, emitidoEn])
@@ -673,6 +679,13 @@ enum MetodoAsistencia {
   MANUAL
 }
 
+// Cómo se validó la presencia del docente en el registro por QR: dentro del radio de la sede o
+// desde la red institucional. Nunca se guardan las coordenadas (ETI-3).
+enum ValidacionPresencia {
+  UBICACION
+  RED
+}
+
 // La asistencia del docente a una clase: una sola por clase, sea por QR o manual. `horaLlegada`
 // es el instante de llegada; `registradaPorId` es quien la cargó (el Bedel en el registro
 // manual, el propio docente en el QR). `motivo` solo existe en el registro manual.
@@ -687,10 +700,29 @@ model AsistenciaDocente {
   metodo          MetodoAsistencia
   horaLlegada     DateTime
   motivo          String?
+  validacion      ValidacionPresencia?
+  sesionQrId      String?
+  sesionQr        SesionQr?        @relation(fields: [sesionQrId], references: [id], onDelete: SetNull)
   registradaPorId String
   registradaPor   User             @relation("AsistenciaRegistrada", fields: [registradaPorId], references: [id], onDelete: Cascade)
   createdAt       DateTime         @default(now())
 
+  @@unique([sesionQrId, docenteId])
   @@index([organizationId, createdAt])
   @@map("asistencia_docente")
+}
+
+// SEG-9: cada intento de registro por QR rechazado (código inválido, sin clase o fuera de la
+// institución). Con 10 en 15 minutos el docente queda bloqueado 15 minutos.
+model IntentoAsistenciaFallido {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  motivo         String
+  createdAt      DateTime     @default(now())
+
+  @@index([userId, createdAt])
+  @@map("intento_asistencia_fallido")
 }

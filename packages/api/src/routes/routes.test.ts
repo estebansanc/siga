@@ -361,6 +361,41 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
     expect(await sesion.json()).toMatchObject({ turno: "NOCHE", aula: { id: fixture.aulaId } });
   });
 
+  it("el registro por QR es del docente: 403 al resto, 422 con detalle por campo y 422 por código inválido", async () => {
+    const institution = await createInstitution();
+    const fixture = await seedAcademicFixture(institution);
+    const ubicacion = { latitud: -26.8, longitud: -65.2, precisionMetros: 10 };
+
+    getAuthContext.mockResolvedValueOnce(authOf(institution, institution));
+    expect((await call("/asistencias/qr", json({ token: "x" }))).status).toBe(403);
+    getAuthContext.mockResolvedValue(authOf(institution, fixture.docente));
+    const vacio = await call("/asistencias/qr", json({ token: "" }));
+    expect(vacio.status).toBe(422);
+    const errores = (await vacio.json()) as { error: { issues: { path: string }[] } };
+    expect(errores.error.issues.map((issue) => issue.path)).toEqual(["token"]);
+    const invalido = await call("/asistencias/qr", json({ token: "alterado", ubicacion }));
+    expect(invalido.status).toBe(422);
+    expect(await invalido.json()).toMatchObject({
+      error: { message: expect.stringContaining("El código QR no es válido") },
+    });
+  });
+
+  it("los ajustes devuelven y guardan la presencia; un radio inválido da 422 y no guarda", async () => {
+    const institution = await createInstitution();
+    getAuthContext.mockResolvedValue(authOf(institution, institution));
+    const presencia = { latitud: -26.8, longitud: -65.2, radioMetros: 120, redes: ["10.0.0.0/8"] };
+
+    const inicial = await call("/settings");
+    expect(await inicial.json()).toMatchObject({ presencia: { radioMetros: 200, redes: [] } });
+    const invalido = await call(
+      "/settings",
+      json({ presencia: { ...presencia, radioMetros: 0 } }, "PATCH"),
+    );
+    expect(invalido.status).toBe(422);
+    const guardado = await call("/settings", json({ presencia }, "PATCH"));
+    expect(await guardado.json()).toMatchObject({ presencia });
+  });
+
   it("el bedel registra la asistencia manual por HTTP y los demás perfiles reciben 403", async () => {
     const institution = await createInstitution();
     const fixture = await seedAcademicFixture(institution);

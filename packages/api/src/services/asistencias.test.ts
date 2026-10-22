@@ -143,7 +143,7 @@ describe("registro manual de asistencia", () => {
     const registrante = { ...bedel(), userId: "usuario-inexistente" };
     await expect(
       asOrganization(institution, () => registrarAsistenciaManual(registrante, registro(), ahora)),
-    ).rejects.toBeInstanceOf(Error);
+    ).rejects.toMatchObject({ code: "P2003" });
     const clase = await prisma.claseProgramada.findUniqueOrThrow({ where: { id: claseId } });
     expect(clase.estado).toBe("PROGRAMADA");
     expect(await prisma.asistenciaDocente.count()).toBe(0);

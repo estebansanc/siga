@@ -1,4 +1,4 @@
-import { createHmac, randomUUID } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
 import type { AuthContext } from "@repo/auth";
 import { prisma, toDateColumn } from "@repo/db";
@@ -34,6 +34,24 @@ const firmarToken = (payload: Record<string, string | number>) => {
   return `${contenido}.${firmar(contenido)}`;
 };
 
+const firmaCoincide = (contenido: string, firma: string) => {
+  const esperada = Buffer.from(firmar(contenido));
+  const recibida = Buffer.from(firma);
+  return esperada.length === recibida.length && timingSafeEqual(esperada, recibida);
+};
+
+// RF-04: la firma y el vencimiento del token, y que coincida con una Sesión de QR guardada de la
+// organización. `null` cubre código alterado, vencido o desconocido, sin distinguirlos.
+export const buscarSesionVigente = async (organizationId: string, token: string, ahora: Date) => {
+  const [contenido, firma] = token.split(".");
+  if (!contenido || !firma || !firmaCoincide(contenido, firma)) return null;
+  const sesion = await prisma.sesionQr.findFirst({
+    where: { organizationId, token, venceEn: { gt: ahora } },
+    include: { aula: { select: { id: true, codigo: true, edificio: true, piso: true } } },
+  });
+  return sesion;
+};
+
 const estadosSinPresencia = ["SUSPENDIDA", "FINALIZADA"] as const;
 
 const buscarAula = async (organizationId: string, aulaId: string) => {
@@ -65,7 +83,7 @@ const clasesDelTurno = async (
     include: claseInclude,
     orderBy: { inicio: "asc" },
   });
-  return clases.map((clase) => toClaseDto(clase));
+  return clases.map((clase) => toClaseDto(clase, true));
 };
 
 // RF-03: las clases presenciales vigentes del aula cuya franja se superpone con el turno.
