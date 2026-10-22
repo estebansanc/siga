@@ -185,6 +185,10 @@ export const avisoEmail = (context: AvisoEmailContext): EmailContent => {
       ],
       { label: "Ver los avisos", url: context.avisosUrl },
       footer,
+    ),
+  };
+};
+
 export type ResolucionAula = "APROBADA" | "RECHAZADA" | "REASIGNADA" | "ASIGNADA";
 
 export type SolicitudAulaEmailContext = {
