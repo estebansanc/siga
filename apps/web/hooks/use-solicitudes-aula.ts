@@ -1,7 +1,17 @@
 "use client";
 
-import type { BusquedaAulaDto, ClasesDelDiaDto, SolicitudAulaDto } from "@repo/api/client";
-import type { BuscarAulaSolicitud, CrearSolicitudAulaInput } from "@repo/domain";
+import type {
+  BusquedaAulaDto,
+  ClaseDto,
+  ClasesDelDiaDto,
+  ClasesSinAulaDto,
+  SolicitudAulaDto,
+} from "@repo/api/client";
+import type {
+  BuscarAulaSolicitud,
+  CrearSolicitudAulaInput,
+  EstadoSolicitudAula,
+} from "@repo/domain";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, unwrap } from "@/lib/api-client";
@@ -56,5 +66,73 @@ export const useCrearSolicitudAula = () => {
         queryClient.invalidateQueries({ queryKey: ["clases"] }),
         queryClient.invalidateQueries({ queryKey: ["aulas"] }),
       ]),
+  });
+};
+
+export const useSolicitudesAula = (estado: EstadoSolicitudAula) =>
+  useQuery({
+    queryKey: queryKeys.solicitudesAula(estado),
+    queryFn: () => unwrap<SolicitudAulaDto[]>(api["solicitudes-aula"].$get({ query: { estado } })),
+    ...realtimeQueryOptions,
+  });
+
+export const useClasesSinAula = () =>
+  useQuery({
+    queryKey: queryKeys.clasesSinAula,
+    queryFn: () => unwrap<ClasesSinAulaDto>(api.clases["sin-aula"].$get()),
+    ...realtimeQueryOptions,
+  });
+
+// Resolver una solicitud o asignar un aula cambia la clase, su ocupación y puede publicar una
+// novedad: se refrescan todos esos listados.
+const useInvalidarResolucion = () => {
+  const queryClient = useQueryClient();
+  return () =>
+    Promise.all(
+      ["solicitudes-aula", "clases", "clase", "aulas", "aulas-disponibles", "novedades"].map(
+        (key) => queryClient.invalidateQueries({ queryKey: [key] }),
+      ),
+    );
+};
+
+export const useAprobarSolicitudAula = () => {
+  const invalidar = useInvalidarResolucion();
+  return useMutation({
+    mutationFn: ({ id, aulaId }: { id: string; aulaId: string }) =>
+      unwrap<SolicitudAulaDto>(
+        api["solicitudes-aula"][":id"].aprobar.$post({ param: { id }, json: { aulaId } }),
+      ),
+    onSuccess: invalidar,
+  });
+};
+
+export const useReasignarSolicitudAula = () => {
+  const invalidar = useInvalidarResolucion();
+  return useMutation({
+    mutationFn: ({ id, aulaId }: { id: string; aulaId: string }) =>
+      unwrap<SolicitudAulaDto>(
+        api["solicitudes-aula"][":id"].reasignar.$post({ param: { id }, json: { aulaId } }),
+      ),
+    onSuccess: invalidar,
+  });
+};
+
+export const useRechazarSolicitudAula = () => {
+  const invalidar = useInvalidarResolucion();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) =>
+      unwrap<SolicitudAulaDto>(
+        api["solicitudes-aula"][":id"].rechazar.$post({ param: { id }, json: { motivo } }),
+      ),
+    onSuccess: invalidar,
+  });
+};
+
+export const useAsignarAulaAClase = () => {
+  const invalidar = useInvalidarResolucion();
+  return useMutation({
+    mutationFn: ({ id, aulaId }: { id: string; aulaId: string }) =>
+      unwrap<ClaseDto>(api.clases[":id"].aula.$post({ param: { id }, json: { aulaId } })),
+    onSuccess: invalidar,
   });
 };

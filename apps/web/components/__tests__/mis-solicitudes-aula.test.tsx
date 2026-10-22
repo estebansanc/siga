@@ -19,9 +19,12 @@ const solicitud = (parcial: Partial<SolicitudAulaDto>): SolicitudAulaDto => ({
   comentario: null,
   motivoRechazo: null,
   createdAt: "2026-10-14T12:00:00.000Z",
+  resueltaEn: null,
+  solicitante: { id: "d1", nombre: "Marcos Álvarez" },
   aula: { id: "a7", codigo: "Aula 7", edificio: "Edificio B", piso: "PB" },
   clase: {
     id: "c1",
+    aula: null,
     fecha: "2026-10-15",
     horaInicio: "19:00",
     horaFin: "23:00",

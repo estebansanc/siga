@@ -1,5 +1,6 @@
 import { createLocalAccountIssuer } from "@better-auth/core/db";
 import {
+  diaSemanaDe,
   fechaArgentina,
   institutionName,
   institutionSlug,
@@ -8,7 +9,7 @@ import {
 } from "@repo/domain";
 import { hashPassword } from "better-auth/crypto";
 
-import { generarClasesProgramadas, toDateColumn } from "../src/clases-programadas";
+import { fromDateColumn, generarClasesProgramadas, toDateColumn } from "../src/clases-programadas";
 import { prisma } from "../src/client";
 
 // Seed de SiGA: la institución (CFG-2), un usuario por perfil, la carrera ISI con sus
@@ -384,12 +385,73 @@ const resetOperationalData = async () => {
   });
 };
 
+const proximaClase = async (comisionId: string, diaSemana?: number, fecha?: string) => {
+  const candidatas = await prisma.claseProgramada.findMany({
+    where: { comisionId, fecha: fecha ? toDateColumn(fecha) : { gt: toDateColumn(hoy) } },
+    orderBy: { inicio: "asc" },
+    take: 14,
+  });
+  const clase = candidatas.find(
+    (candidata) => !diaSemana || diaSemanaDe(fromDateColumn(candidata.fecha)) === diaSemana,
+  );
+  if (!clase) throw new Error(`Sin clases futuras para ${comisionId}`);
+  return clase;
+};
+
+// Datos de RF-16 para QA y e2e, anclados a fechas futuras para no depender de la hora: dos
+// solicitudes Pendientes (docente-1), una Asignada y tres clases sin aula en los próximos días.
+// La Pendiente de 4K2 y la clase sin aula de Simulación coinciden en día y franja.
+const sembrarSolicitudesDeAula = async () => {
+  const simulacion = await proximaClase("comision-5k2-sim", 2);
+  const fechaSimulacion = fromDateColumn(simulacion.fecha);
+  const proyectoFinal = await proximaClase("comision-5k2-pf");
+  const sistemasDeGestion = await proximaClase("comision-4k2-sg", undefined, fechaSimulacion);
+  const administracion = await proximaClase("comision-5k2-ag");
+  const inteligencia = await proximaClase("comision-5k2-ia");
+  await prisma.claseProgramada.updateMany({
+    where: { id: { in: [simulacion.id, inteligencia.id] } },
+    data: { aulaId: null },
+  });
+  const base = { organizationId: institution.id };
+  await prisma.solicitudAula.createMany({
+    data: [
+      {
+        ...base,
+        solicitanteId: "docente-1",
+        claseId: proyectoFinal.id,
+        aulaId: "lab-3",
+        alumnos: 28,
+        recursos: ["Computadora", "Proyector"],
+        comentario: "Práctica con el entorno de desarrollo",
+      },
+      {
+        ...base,
+        solicitanteId: "docente-1",
+        claseId: sistemasDeGestion.id,
+        aulaId: "aula-12",
+        alumnos: 35,
+        recursos: ["Proyector"],
+      },
+      {
+        ...base,
+        solicitanteId: "docente-4",
+        claseId: administracion.id,
+        aulaId: "lab-3",
+        alumnos: 25,
+        recursos: ["Computadora"],
+        estado: "ASIGNADA" as const,
+      },
+    ],
+  });
+};
+
 const seed = async () => {
   await upsertInstitution();
   for (const user of users) await upsertUser(user);
   await upsertAcademicData();
   await resetOperationalData();
   const resumen = await generarClasesProgramadas(prisma, institution.id);
+  await sembrarSolicitudesDeAula();
   console.log(
     `Seed listo: ${institution.name}. Clases generadas: ${resumen.creadas}. Usuarios (clave ${password}): ${users
       .map((user) => `${user.email} (${user.perfil})`)

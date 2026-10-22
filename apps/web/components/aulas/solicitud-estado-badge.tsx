@@ -11,12 +11,18 @@ const presentacion: Record<EstadoSolicitudAula, { tono: Tono; icon: LucideIcon }
   RECHAZADA: { tono: "rojo", icon: XIcon },
 };
 
-export function SolicitudEstadoBadge({ estado }: { estado: EstadoSolicitudAula }) {
+export function SolicitudEstadoBadge({
+  estado,
+  etiqueta = estadoSolicitudAulaLabels[estado],
+}: {
+  estado: EstadoSolicitudAula;
+  etiqueta?: string;
+}) {
   const { tono, icon: Icon } = presentacion[estado];
   return (
     <Badge variant="outline" className={`gap-1.5 ${tonoClassNames[tono]}`} data-estado={estado}>
       <Icon aria-hidden="true" />
-      {estadoSolicitudAulaLabels[estado]}
+      {etiqueta}
     </Badge>
   );
 }
