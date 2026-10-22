@@ -1,6 +1,7 @@
 import { prisma } from "@repo/db";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as Env from "../env";
 import { createReadUrl, createUploadUrl, getObjectSize } from "../integrations/storage";
 import {
   asOrganization,
@@ -26,14 +27,14 @@ import {
 } from "./incidencias";
 
 vi.mock("../env", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../env")>()),
+  ...(await importOriginal<typeof Env>()),
   isStorageConfigured: () => true,
 }));
 vi.mock("../integrations/storage", () => ({
   assertStorageConfigured: vi.fn(),
-  createUploadUrl: vi.fn(async (key: string) => `https://r2.test/upload/${key}`),
-  createReadUrl: vi.fn(async (key: string) => `https://r2.test/read/${key}`),
-  getObjectSize: vi.fn(async () => 800_000),
+  createUploadUrl: vi.fn((key: string) => Promise.resolve(`https://r2.test/upload/${key}`)),
+  createReadUrl: vi.fn((key: string) => Promise.resolve(`https://r2.test/read/${key}`)),
+  getObjectSize: vi.fn(() => Promise.resolve(800_000)),
 }));
 
 let institution: TestOrganization;
