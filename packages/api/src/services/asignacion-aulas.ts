@@ -73,7 +73,7 @@ export const listarClasesSinAula = async (
     include: claseInclude,
     orderBy: [{ inicio: "asc" }, { comision: { materia: { nombre: "asc" } } }],
   });
-  return { clases: clases.map(toClaseDto) };
+  return { clases: clases.map((clase) => toClaseDto(clase, true)) };
 };
 
 const leerClaseAsignable = async (
@@ -289,7 +289,7 @@ export const asignarAulaAClaseSinAula = async (
       where: { id: claseId },
       include: claseInclude,
     });
-    return { valor: toClaseDto(actualizada), novedad: null, correos };
+    return { valor: toClaseDto(actualizada, true), novedad: null, correos };
   });
   return entregarResultado(resultado, auth.organizationId);
 };
