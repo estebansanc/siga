@@ -3,7 +3,7 @@
   "info": {
     "title": "SiGA API",
     "version": "1.0.0",
-    "description": "Sesión y perfil, estado institucional, clases programadas, novedades, preferencias del estudiante y datos académicos base. Autenticación por cookie (web) o bearer token (móvil)."
+    "description": "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante y datos académicos base. Autenticación por cookie (web) o bearer token (móvil)."
   },
   "security": [
     {
@@ -888,6 +888,155 @@
           "clases"
         ]
       },
+      "Aviso": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "cuerpo": {
+            "type": "string"
+          },
+          "prioridad": {
+            "type": "string",
+            "enum": [
+              "NORMAL",
+              "URGENTE"
+            ]
+          },
+          "destinatarios": {
+            "type": "object",
+            "properties": {
+              "todos": {
+                "type": "boolean"
+              },
+              "perfiles": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "ESTUDIANTE",
+                    "DOCENTE",
+                    "BEDEL",
+                    "AUTORIDAD"
+                  ]
+                }
+              },
+              "carreraIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "anios": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6
+                }
+              },
+              "comisionIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "todos",
+              "perfiles",
+              "carreraIds",
+              "anios",
+              "comisionIds"
+            ]
+          },
+          "desde": {
+            "type": "string"
+          },
+          "hasta": {
+            "type": "string"
+          },
+          "enviarPorCorreo": {
+            "type": "boolean"
+          },
+          "publicadoPor": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nombre"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "titulo",
+          "cuerpo",
+          "prioridad",
+          "destinatarios",
+          "desde",
+          "hasta",
+          "enviarPorCorreo",
+          "publicadoPor",
+          "createdAt"
+        ]
+      },
+      "NotificacionAviso": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "destinatario": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nombre",
+              "email"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SENT",
+              "FAILED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "destinatario",
+          "estado"
+        ]
+      },
       "Preferencias": {
         "type": "object",
         "properties": {
@@ -963,6 +1112,28 @@
           "materia",
           "carrera",
           "docentes"
+        ]
+      },
+      "BajaCorreoResultado": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "novedades",
+              "avisos"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "tipo"
         ]
       },
       "GeneracionClases": {
@@ -3460,6 +3631,375 @@
         }
       }
     },
+    "/api/v1/avisos": {
+      "get": {
+        "tags": [
+          "Avisos"
+        ],
+        "summary": "Avisos institucionales según la vista pedida",
+        "description": "VIGENTES (por defecto, urgentes primero) e HISTORIAL (vencidos) devuelven los que le corresponden al usuario según el segmento. PUBLICADOS lista todos los de la institución y es solo de Bedel y Autoridad (403 para el resto).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "VIGENTES",
+                "HISTORIAL",
+                "PUBLICADOS"
+              ],
+              "default": "VIGENTES"
+            },
+            "required": false,
+            "name": "vista",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avisos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Aviso"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Avisos"
+        ],
+        "summary": "Publicar un aviso institucional",
+        "description": "Solo Bedel y Autoridad. El aviso se ve entre `desde` (ahora si se omite) y `hasta`. Con `enviarPorCorreo` sale un correo por destinatario al publicar; a los estudiantes solo si activaron la opción de avisos. No se edita ni se borra.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "titulo": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "cuerpo": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "prioridad": {
+                    "type": "string",
+                    "enum": [
+                      "NORMAL",
+                      "URGENTE"
+                    ],
+                    "default": "NORMAL"
+                  },
+                  "destinatarios": {
+                    "type": "object",
+                    "properties": {
+                      "todos": {
+                        "type": "boolean"
+                      },
+                      "perfiles": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "ESTUDIANTE",
+                            "DOCENTE",
+                            "BEDEL",
+                            "AUTORIDAD"
+                          ]
+                        }
+                      },
+                      "carreraIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "anios": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 6
+                        }
+                      },
+                      "comisionIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    "required": [
+                      "todos",
+                      "perfiles",
+                      "carreraIds",
+                      "anios",
+                      "comisionIds"
+                    ]
+                  },
+                  "desde": {
+                    "type": "string"
+                  },
+                  "hasta": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "enviarPorCorreo": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "titulo",
+                  "cuerpo",
+                  "destinatarios",
+                  "hasta"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Aviso publicado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Aviso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/avisos/{id}/notificaciones": {
+      "get": {
+        "tags": [
+          "Avisos"
+        ],
+        "summary": "Resultado de los envíos por correo de un aviso",
+        "description": "Solo Bedel y Autoridad. Un registro por destinatario con su estado de envío: PENDING (Pendiente), SENT (Enviado) o FAILED (Fallido).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envíos del aviso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificacionAviso"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/preferencias": {
       "get": {
         "tags": [
@@ -3652,8 +4192,8 @@
         "tags": [
           "Preferencias"
         ],
-        "summary": "Dejar de recibir novedades de clase por correo",
-        "description": "Público: el token firmado del correo identifica al estudiante. Desactiva solo la opción de novedades. 400 si el token no es válido.",
+        "summary": "Dejar de recibir novedades de clase o avisos institucionales por correo",
+        "description": "Público: el token firmado del correo identifica al estudiante. Desactiva solo la opción que indica el token (novedades o avisos) y la devuelve en `tipo`. 400 si el token no es válido.",
         "requestBody": {
           "required": true,
           "content": {
@@ -3680,7 +4220,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Ok"
+                  "$ref": "#/components/schemas/BajaCorreoResultado"
                 }
               }
             }

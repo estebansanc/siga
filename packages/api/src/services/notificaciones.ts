@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { prisma } from "@repo/db";
+import { prisma, type EmailOutbox } from "@repo/db";
 
 import { runDeferred } from "../deferred";
 import { apiEnv } from "../env";
@@ -12,32 +12,47 @@ import { novedadEmail } from "./emails/templates";
 
 const bajaInvalida = () => badRequest("El enlace para dejar de recibir correos no es válido.");
 
-const firmar = (userId: string) =>
-  createHmac("sha256", apiEnv.authSecret).update(`baja-novedades:${userId}`).digest("base64url");
+export type TipoBajaCorreo = "novedades" | "avisos";
 
-// El token no vence: lo firma el servidor con el secreto de la app y solo identifica al usuario.
-export const crearTokenBajaNovedades = (userId: string) =>
-  `${Buffer.from(userId).toString("base64url")}.${firmar(userId)}`;
+const tiposBaja: readonly TipoBajaCorreo[] = ["novedades", "avisos"];
 
-const leerTokenBajaNovedades = (token: string) => {
-  const [encodedUserId, firma, ...resto] = token.split(".");
-  if (!encodedUserId || !firma || resto.length > 0) throw bajaInvalida();
+const firmar = (tipo: TipoBajaCorreo, userId: string) =>
+  createHmac("sha256", apiEnv.authSecret).update(`baja-${tipo}:${userId}`).digest("base64url");
+
+// El token no vence: lo firma el servidor con el secreto de la app e identifica al usuario y
+// qué correo deja de recibir.
+export const crearTokenBaja = (tipo: TipoBajaCorreo, userId: string) =>
+  `${tipo}.${Buffer.from(userId).toString("base64url")}.${firmar(tipo, userId)}`;
+
+export const crearTokenBajaNovedades = (userId: string) => crearTokenBaja("novedades", userId);
+export const crearTokenBajaAvisos = (userId: string) => crearTokenBaja("avisos", userId);
+
+const leerTokenBaja = (token: string) => {
+  const [tipo, encodedUserId, firma, ...resto] = token.split(".");
+  if (!tipo || !encodedUserId || !firma || resto.length > 0) throw bajaInvalida();
+  if (!tiposBaja.includes(tipo as TipoBajaCorreo)) throw bajaInvalida();
+  const tipoBaja = tipo as TipoBajaCorreo;
   const userId = Buffer.from(encodedUserId, "base64url").toString();
-  const esperada = Buffer.from(firmar(userId));
+  const esperada = Buffer.from(firmar(tipoBaja, userId));
   const recibida = Buffer.from(firma);
   if (esperada.length !== recibida.length || !timingSafeEqual(esperada, recibida)) {
     throw bajaInvalida();
   }
-  return userId;
+  return { tipo: tipoBaja, userId };
 };
 
-export const darDeBajaNovedadesPorCorreo = async (token: string) => {
-  const userId = leerTokenBajaNovedades(token);
-  await prisma.userProfile.updateMany({
-    where: { userId },
-    data: { notificarNovedadesPorCorreo: false },
-  });
+const campoDeBaja = {
+  novedades: "notificarNovedadesPorCorreo",
+  avisos: "notificarAvisosPorCorreo",
+} as const;
+
+export const darDeBajaPorCorreo = async (token: string) => {
+  const { tipo, userId } = leerTokenBaja(token);
+  await prisma.userProfile.updateMany({ where: { userId }, data: { [campoDeBaja[tipo]]: false } });
+  return tipo;
 };
+
+export const urlDeBaja = (token: string) => `${apiEnv.appUrl}/baja-correo?token=${token}`;
 
 const buscarDestinatarios = (organizationId: string, comisionId: string) =>
   prisma.user.findMany({
@@ -53,12 +68,46 @@ const buscarDestinatarios = (organizationId: string, comisionId: string) =>
     select: { id: true, email: true },
   });
 
+type EnvioPendiente = { destinatarioId: string; to: string; subject: string; html: string };
+type OrigenDelEnvio = { tipo: "NOVEDAD"; novedadId: string } | { tipo: "AVISO"; avisoId: string };
+
 // Primero se registran, en una sola transacción, el correo en el outbox y la Notificación de
 // todos los destinatarios: si algo se corta después, el cron reintenta lo que quedó pendiente.
-const registrarNovedad = async (organizationId: string, novedad: NovedadDto) => {
+export const registrarEnvios = (
+  organizationId: string,
+  envios: EnvioPendiente[],
+  origen: OrigenDelEnvio,
+) =>
+  prisma.$transaction(async (tx) => {
+    const correos = await tx.emailOutbox.createManyAndReturn({
+      data: envios.map(({ to, subject, html }) => ({ organizationId, to, subject, html })),
+    });
+    const destinatarioPorEmail = new Map(envios.map((envio) => [envio.to, envio.destinatarioId]));
+    await tx.notificacion.createMany({
+      data: correos.map((correo) => ({
+        organizationId,
+        destinatarioId: destinatarioDe(destinatarioPorEmail, correo.to),
+        emailId: correo.id,
+        ...origen,
+      })),
+    });
+    return correos;
+  });
+
+const destinatarioDe = (destinatarioPorEmail: Map<string, string>, email: string) => {
+  const destinatarioId = destinatarioPorEmail.get(email);
+  if (!destinatarioId) throw new Error(`El correo a ${email} no tiene destinatario`);
+  return destinatarioId;
+};
+
+export const enviarCorreos = async (correos: EmailOutbox[]) => {
+  for (const correo of correos) await deliverEmail(correo);
+};
+
+const enviarNovedad = async (organizationId: string, novedad: NovedadDto) => {
   const destinatarios = await buscarDestinatarios(organizationId, novedad.comision.id);
-  const mensajes = destinatarios.map((destinatario) => ({
-    organizationId,
+  const envios = destinatarios.map((destinatario) => ({
+    destinatarioId: destinatario.id,
     to: destinatario.email,
     ...novedadEmail({
       materia: novedad.comision.materia,
@@ -71,31 +120,14 @@ const registrarNovedad = async (organizationId: string, novedad: NovedadDto) => 
       mensaje: novedad.mensaje,
       publicadaPorBedelia: novedad.publicadaPorBedelia,
       clasesUrl: `${apiEnv.appUrl}/clases`,
-      bajaUrl: `${apiEnv.appUrl}/baja-correo?token=${crearTokenBajaNovedades(destinatario.id)}`,
+      bajaUrl: urlDeBaja(crearTokenBajaNovedades(destinatario.id)),
     }),
   }));
-  return prisma.$transaction(async (tx) => {
-    const correos = await tx.emailOutbox.createManyAndReturn({ data: mensajes });
-    const destinatarioPorEmail = new Map(
-      destinatarios.map((destinatario) => [destinatario.email, destinatario.id]),
-    );
-    await tx.notificacion.createMany({
-      data: correos.map((correo) => ({
-        organizationId,
-        destinatarioId: destinatarioPorEmail.get(correo.to)!,
-        tipo: "NOVEDAD" as const,
-        novedadId: novedad.id,
-        emailId: correo.id,
-      })),
-    });
-    return correos;
+  const correos = await registrarEnvios(organizationId, envios, {
+    tipo: "NOVEDAD",
+    novedadId: novedad.id,
   });
-};
-
-const enviarNovedad = async (organizationId: string, novedad: NovedadDto) => {
-  for (const correo of await registrarNovedad(organizationId, novedad)) {
-    await deliverEmail(correo);
-  }
+  await enviarCorreos(correos);
 };
 
 // Un correo por novedad y por estudiante que sigue la comisión con la opción activa. Un fallo

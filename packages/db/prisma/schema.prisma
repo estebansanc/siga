@@ -29,6 +29,7 @@ model User {
   notificaciones         Notificacion[]
   novedadesPublicadas    Novedad[]             @relation("NovedadPublicadaPor")
   novedadesFinalizadas   Novedad[]             @relation("NovedadFinalizadaPor")
+  avisosPublicados       Aviso[]               @relation("AvisoPublicadoPor")
   estadosInstitucionales EstadoInstitucional[]
   solicitudesAula        SolicitudAula[]
   sesionesQr             SesionQr[]
@@ -116,6 +117,7 @@ model Organization {
   clases                 ClaseProgramada[]
   estadosInstitucionales EstadoInstitucional[]
   novedades              Novedad[]
+  avisos                 Aviso[]
   comisionesSeguidas     ComisionSeguida[]
   solicitudesAula        SolicitudAula[]
   sesionesQr             SesionQr[]
@@ -547,7 +549,7 @@ enum TipoNotificacion {
 }
 
 // Un envío por destinatario. El resultado vive en el email asociado (`email.status`); `novedadId`
-// referencia la novedad que lo originó (los avisos usarán su propia referencia).
+// referencia la novedad o el aviso que lo originó.
 model Notificacion {
   id             String           @id @default(cuid())
   organizationId String
@@ -557,12 +559,15 @@ model Notificacion {
   tipo           TipoNotificacion
   novedadId      String?
   novedad        Novedad?         @relation(fields: [novedadId], references: [id], onDelete: SetNull)
+  avisoId        String?
+  aviso          Aviso?           @relation(fields: [avisoId], references: [id], onDelete: SetNull)
   emailId        String           @unique
   email          EmailOutbox      @relation(fields: [emailId], references: [id], onDelete: Cascade)
   createdAt      DateTime         @default(now())
 
   @@index([destinatarioId, createdAt])
   @@index([novedadId])
+  @@index([avisoId])
   @@map("notificacion")
 }
 
@@ -619,4 +624,37 @@ model SesionQr {
   @@index([organizationId, emitidoEn])
   @@index([aulaId, fecha, turno])
   @@map("sesion_qr")
+}
+
+enum PrioridadAviso {
+  NORMAL
+  URGENTE
+}
+
+// Sin edición ni borrado. El segmento suma criterios: `todos`, o cualquiera de `perfiles`,
+// `carreraIds`, `anios` y `comisionIds` (estos tres, sobre las comisiones que el destinatario
+// sigue o dicta). Vigente entre `desde` y `hasta`; vencido pasa al historial.
+model Aviso {
+  id              String           @id @default(cuid())
+  organizationId  String
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  titulo          String
+  cuerpo          String
+  prioridad       PrioridadAviso   @default(NORMAL)
+  todos           Boolean
+  perfiles        Perfil[]
+  carreraIds      String[]
+  anios           Int[]
+  comisionIds     String[]
+  desde           DateTime
+  hasta           DateTime
+  enviarPorCorreo Boolean          @default(false)
+  publicadoPorId  String
+  publicadoPor    User             @relation("AvisoPublicadoPor", fields: [publicadoPorId], references: [id], onDelete: Cascade)
+  createdAt       DateTime         @default(now())
+  notificaciones  Notificacion[]
+
+  @@index([organizationId, hasta])
+  @@index([organizationId, createdAt])
+  @@map("aviso")
 }

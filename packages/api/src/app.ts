@@ -9,6 +9,7 @@ import { runWithDefer, type DeferAdapter } from "./deferred";
 import { ApiError } from "./errors";
 import { requireSession } from "./middleware";
 import { aulaRoutes } from "./routes/aulas";
+import { avisoRoutes } from "./routes/avisos";
 import { claseRoutes } from "./routes/clases";
 import { cronRoutes } from "./routes/cron";
 import { carreraRoutes, comisionRoutes, materiaRoutes } from "./routes/datos-academicos";
@@ -84,7 +85,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
       title: "SiGA API",
       version: "1.0.0",
       description:
-        "Sesión y perfil, estado institucional, clases programadas, novedades, preferencias del estudiante y datos académicos base. Autenticación por cookie (web) o bearer token (móvil).",
+        "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante y datos académicos base. Autenticación por cookie (web) o bearer token (móvil).",
     },
     security: [{ bearerAuth: [] }, { cookieAuth: [] }],
   });
@@ -102,6 +103,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
     .route("/estado-institucional", estadoInstitucionalRoutes)
     .route("/clases", claseRoutes)
     .route("/novedades", novedadRoutes)
+    .route("/avisos", avisoRoutes)
     .route("/preferencias", preferenciaRoutes)
     .route("/carreras", carreraRoutes)
     .route("/materias", materiaRoutes)

@@ -15,7 +15,7 @@ import {
   type TestUser,
 } from "../test/db";
 
-import { crearTokenBajaNovedades, darDeBajaNovedadesPorCorreo } from "./notificaciones";
+import { crearTokenBajaNovedades, darDeBajaPorCorreo } from "./notificaciones";
 import { finalizarNovedad, publicarNovedad } from "./novedades";
 
 let institution: TestOrganization;
@@ -136,7 +136,7 @@ describe("baja del correo de novedades", () => {
       where: { userId: suscripta.userId },
       data: { notificarAvisosPorCorreo: true },
     });
-    await darDeBajaNovedadesPorCorreo(crearTokenBajaNovedades(suscripta.userId));
+    expect(await darDeBajaPorCorreo(crearTokenBajaNovedades(suscripta.userId))).toBe("novedades");
     expect(
       await prisma.userProfile.findUniqueOrThrow({ where: { userId: suscripta.userId } }),
     ).toMatchObject({ notificarNovedadesPorCorreo: false, notificarAvisosPorCorreo: true });
@@ -145,14 +145,14 @@ describe("baja del correo de novedades", () => {
   it("un token alterado es inválido y no cambia nada", async () => {
     const token = crearTokenBajaNovedades(suscripta.userId);
     for (const alterado of [`${token}x`, token.slice(0, -2), "basura", ""]) {
-      await expect(darDeBajaNovedadesPorCorreo(alterado)).rejects.toMatchObject({
+      await expect(darDeBajaPorCorreo(alterado)).rejects.toMatchObject({
         status: 400,
         message: "El enlace para dejar de recibir correos no es válido.",
       });
     }
     const otro = crearTokenBajaNovedades("otro-usuario");
-    const cruzado = `${otro.split(".")[0]}.${token.split(".")[1]}`;
-    await expect(darDeBajaNovedadesPorCorreo(cruzado)).rejects.toMatchObject({ status: 400 });
+    const cruzado = `${otro.split(".")[0]}.${otro.split(".")[1]}.${token.split(".")[2]}`;
+    await expect(darDeBajaPorCorreo(cruzado)).rejects.toMatchObject({ status: 400 });
     expect(
       (await prisma.userProfile.findUniqueOrThrow({ where: { userId: suscripta.userId } }))
         .notificarNovedadesPorCorreo,

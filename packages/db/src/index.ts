@@ -6,6 +6,7 @@ export {
   type Account,
   type AuditLog,
   type Aula,
+  type Aviso,
   type Carrera,
   type ClaseProgramada,
   type Comision,

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { escapeHtml, formatEmailDate, invitationEmail, novedadEmail } from "./templates";
+import {
+  avisoEmail,
+  escapeHtml,
+  formatEmailDate,
+  invitationEmail,
+  novedadEmail,
+} from "./templates";
 
 describe("plantillas de email", () => {
   it("formatea la fecha en hora de Argentina", () => {
@@ -90,5 +96,28 @@ describe("correo de novedad", () => {
       ],
     });
     expect(email.html).toContain("Fechas: del 23/10/2026 al 30/10/2026");
+  });
+
+  it("el aviso lleva el asunto por prioridad, el cuerpo escapado en párrafos y la vigencia", () => {
+    const base = {
+      titulo: "Corte <de> luz",
+      cuerpo: "Hoy no hay clases\n<b>Mañana sí</b>",
+      desde: new Date("2026-10-23T13:00:00.000Z"),
+      hasta: new Date("2026-10-24T02:30:00.000Z"),
+      avisosUrl: "https://app.test/avisos",
+      bajaUrl: "https://app.test/baja-correo?token=t",
+    };
+    const urgente = avisoEmail({ ...base, prioridad: "URGENTE" });
+    expect(urgente.subject).toBe("Aviso urgente: Corte <de> luz");
+    expect(urgente.html).toContain("Hoy no hay clases</p>");
+    expect(urgente.html).toContain("&lt;b&gt;Mañana sí&lt;/b&gt;");
+    expect(urgente.html).toContain("Vigente hasta");
+    expect(urgente.html).toContain("Dejar de recibir avisos institucionales por correo");
+    expect(avisoEmail({ ...base, prioridad: "NORMAL" }).subject).toBe(
+      "Aviso institucional: Corte <de> luz",
+    );
+    expect(avisoEmail({ ...base, prioridad: "NORMAL", bajaUrl: null }).html).not.toContain(
+      "Dejar de recibir",
+    );
   });
 });

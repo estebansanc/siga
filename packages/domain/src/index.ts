@@ -1,4 +1,5 @@
 export * from "./aulas";
+export * from "./avisos";
 export * from "./clases";
 export * from "./common";
 export * from "./enums";

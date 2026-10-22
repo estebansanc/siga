@@ -414,6 +414,47 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
   });
 });
 
+describe("avisos institucionales por HTTP", () => {
+  const nuevoAviso = {
+    titulo: "Corte de luz",
+    cuerpo: "Hoy no hay clases",
+    destinatarios: { todos: true, perfiles: [], carreraIds: [], anios: [], comisionIds: [] },
+    hasta: new Date(Date.now() + 3_600_000).toISOString(),
+  };
+
+  it("publica Bedel y el resto recibe 403; los datos inválidos devuelven 422 con el texto exacto", async () => {
+    const institution = await createInstitution();
+    const estudiante = await createUserWithPerfil(institution, "ESTUDIANTE");
+    const docente = await createUserWithPerfil(institution, "DOCENTE");
+    for (const perfil of [estudiante, docente]) {
+      getAuthContext.mockResolvedValueOnce(authOf(institution, perfil));
+      expect((await call("/avisos", json(nuevoAviso))).status).toBe(403);
+      getAuthContext.mockResolvedValueOnce(authOf(institution, perfil));
+      expect((await call("/avisos/x/notificaciones")).status).toBe(403);
+      getAuthContext.mockResolvedValueOnce(authOf(institution, perfil));
+      expect((await call("/avisos?vista=PUBLICADOS")).status).toBe(403);
+    }
+
+    getAuthContext.mockResolvedValue(authOf(institution, institution));
+    const invalido = await call("/avisos", json({ ...nuevoAviso, titulo: "", hasta: "" }));
+    expect(invalido.status).toBe(422);
+    expect(await invalido.json()).toMatchObject({
+      error: {
+        issues: [
+          { path: "titulo", message: "Ingresá el título" },
+          { path: "hasta", message: "Indicá hasta cuándo está vigente" },
+        ],
+      },
+    });
+
+    const creado = await call("/avisos", json(nuevoAviso));
+    expect(creado.status).toBe(201);
+    getAuthContext.mockResolvedValue(authOf(institution, estudiante));
+    const vigentes = await call("/avisos");
+    expect(await vigentes.json()).toMatchObject([{ titulo: "Corte de luz", prioridad: "NORMAL" }]);
+  });
+});
+
 describe("baja de correos sin sesión", () => {
   it("con token válido desactiva la opción y con uno alterado responde 400", async () => {
     const institution = await createInstitution();
@@ -434,10 +475,31 @@ describe("baja de correos sin sesión", () => {
 
     const valida = await call("/preferencias/baja-correo", json({ token }));
     expect(valida.status).toBe(200);
+    expect(await valida.json()).toEqual({ ok: true, tipo: "novedades" });
     expect(
       (await prisma.userProfile.findUniqueOrThrow({ where: { userId: estudiante.userId } }))
         .notificarNovedadesPorCorreo,
     ).toBe(false);
+  });
+
+  it("el token de avisos desactiva solo la opción de avisos", async () => {
+    const institution = await createInstitution();
+    const estudiante = await createUserWithPerfil(institution, "ESTUDIANTE");
+    await prisma.userProfile.update({
+      where: { userId: estudiante.userId },
+      data: { notificarNovedadesPorCorreo: true, notificarAvisosPorCorreo: true },
+    });
+    getAuthContext.mockResolvedValue(null);
+    const { crearTokenBajaAvisos } = await import("../services/notificaciones");
+
+    const respuesta = await call(
+      "/preferencias/baja-correo",
+      json({ token: crearTokenBajaAvisos(estudiante.userId) }),
+    );
+    expect(await respuesta.json()).toEqual({ ok: true, tipo: "avisos" });
+    expect(
+      await prisma.userProfile.findUniqueOrThrow({ where: { userId: estudiante.userId } }),
+    ).toMatchObject({ notificarNovedadesPorCorreo: true, notificarAvisosPorCorreo: false });
   });
 });
 

@@ -2,6 +2,7 @@ import { z } from "@hono/zod-openapi";
 import {
   alumnosSolicitudSchema,
   equipamientoSchema,
+  emailStatusSchema,
   estadoAulaSchema,
   estadoSolicitudAulaSchema,
   estadoClaseSchema,
@@ -11,6 +12,8 @@ import {
   memberRoleSchema,
   modalidadSchema,
   perfilSchema,
+  prioridadAvisoSchema,
+  segmentoAvisoSchema,
   tipoNovedadSchema,
   turnoSchema,
 } from "@repo/domain";
@@ -268,6 +271,10 @@ export const novedadSchema = z
   .openapi("Novedad");
 export type NovedadDto = z.infer<typeof novedadSchema>;
 
+export const bajaCorreoResultadoSchema = z
+  .object({ ok: z.literal(true), tipo: z.enum(["novedades", "avisos"]) })
+  .openapi("BajaCorreoResultado");
+
 export const preferenciasSchema = z
   .object({
     comisiones: z.array(comisionSchema),
@@ -424,3 +431,28 @@ export const sesionQrSchema = z
 export type SesionQrDto = z.infer<typeof sesionQrSchema>;
 
 export const clasesDelTurnoSchema = z.array(claseSchema).openapi("ClasesDelTurno");
+
+export const avisoSchema = z
+  .object({
+    id: z.string(),
+    titulo: z.string(),
+    cuerpo: z.string(),
+    prioridad: prioridadAvisoSchema,
+    destinatarios: segmentoAvisoSchema,
+    desde: z.string(),
+    hasta: z.string(),
+    enviarPorCorreo: z.boolean(),
+    publicadoPor: z.object({ id: z.string(), nombre: z.string() }),
+    createdAt: z.string(),
+  })
+  .openapi("Aviso");
+export type AvisoDto = z.infer<typeof avisoSchema>;
+
+export const notificacionAvisoSchema = z
+  .object({
+    id: z.string(),
+    destinatario: z.object({ id: z.string(), nombre: z.string(), email: z.string() }),
+    estado: emailStatusSchema,
+  })
+  .openapi("NotificacionAviso");
+export type NotificacionAvisoDto = z.infer<typeof notificacionAvisoSchema>;

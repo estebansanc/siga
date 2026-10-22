@@ -9,6 +9,7 @@ const auditedModels = [
   "UserProfile",
   "EstadoInstitucional",
   "Novedad",
+  "Aviso",
   "ClaseProgramada",
   "Aula",
   "SesionQr",

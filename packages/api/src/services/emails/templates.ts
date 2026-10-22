@@ -1,4 +1,4 @@
-import { tipoNovedadLabels, type TipoNovedad } from "@repo/domain";
+import { tipoNovedadLabels, type PrioridadAviso, type TipoNovedad } from "@repo/domain";
 
 import { apiEnv } from "../../env";
 
@@ -138,6 +138,52 @@ export const novedadEmail = (context: NovedadEmailContext): EmailContent => {
       lines.map(escapeHtml),
       [],
       { label: "Ver mis clases", url: context.clasesUrl },
+      footer,
+    ),
+  };
+};
+
+export type AvisoEmailContext = {
+  titulo: string;
+  cuerpo: string;
+  prioridad: PrioridadAviso;
+  desde: Date;
+  hasta: Date;
+  avisosUrl: string;
+  bajaUrl: string | null;
+};
+
+const dateTimeFormatter = new Intl.DateTimeFormat("es-AR", {
+  timeZone: apiEnv.timeZone,
+  day: "numeric",
+  month: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+const parrafosDe = (texto: string) =>
+  texto
+    .split(/\r?\n+/)
+    .filter((linea) => linea.trim() !== "")
+    .map(escapeHtml);
+
+// El estudiante que no activó la opción no recibe el correo; quien sí, puede darse de baja sin
+// iniciar sesión. Los demás perfiles no tienen esa opción, así que no llevan el enlace.
+export const avisoEmail = (context: AvisoEmailContext): EmailContent => {
+  const subject = `${context.prioridad === "URGENTE" ? "Aviso urgente" : "Aviso institucional"}: ${context.titulo}`;
+  const footer = context.bajaUrl
+    ? `<p style="margin:16px 0 0;font-size:12px"><a href="${escapeHtml(context.bajaUrl)}" style="color:#6b7280">Dejar de recibir avisos institucionales por correo</a></p>`
+    : "";
+  return {
+    subject,
+    html: emailLayout(
+      context.titulo,
+      parrafosDe(context.cuerpo),
+      [
+        ["Vigente desde", dateTimeFormatter.format(context.desde)],
+        ["Vigente hasta", dateTimeFormatter.format(context.hasta)],
+      ],
+      { label: "Ver los avisos", url: context.avisosUrl },
       footer,
     ),
   };

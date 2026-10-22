@@ -1,3 +1,4 @@
+export * from "./avisos";
 export * from "./clases";
 export * from "./datos-academicos";
 export * from "./estado-institucional";

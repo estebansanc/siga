@@ -3,7 +3,7 @@ import { actualizarPreferenciasSchema, bajaCorreoSchema } from "@repo/domain";
 
 import type { ApiEnv } from "../context";
 import { perfilOnly, rateLimit } from "../middleware";
-import { okSchema, preferenciasSchema } from "../schemas";
+import { bajaCorreoResultadoSchema, preferenciasSchema } from "../schemas";
 import * as notificaciones from "../services/notificaciones";
 import * as preferencias from "../services/preferencias";
 
@@ -44,15 +44,18 @@ export const preferenciaRoutes = new OpenAPIHono<ApiEnv>()
       method: "post",
       path: "/baja-correo",
       tags,
-      summary: "Dejar de recibir novedades de clase por correo",
+      summary: "Dejar de recibir novedades de clase o avisos institucionales por correo",
       description:
-        "Público: el token firmado del correo identifica al estudiante. Desactiva solo la opción de novedades. 400 si el token no es válido.",
+        "Público: el token firmado del correo identifica al estudiante. Desactiva solo la opción que indica el token (novedades o avisos) y la devuelve en `tipo`. 400 si el token no es válido.",
       request: { body: jsonBody(bajaCorreoSchema) },
       middleware: [rateLimit({ scope: "baja-correo", limit: 20, windowSeconds: 600 })] as const,
-      responses: { 200: jsonResponse(okSchema, "Baja registrada"), ...commonErrors },
+      responses: {
+        200: jsonResponse(bajaCorreoResultadoSchema, "Baja registrada"),
+        ...commonErrors,
+      },
     }),
     async (c) => {
-      await notificaciones.darDeBajaNovedadesPorCorreo(c.req.valid("json").token);
-      return c.json({ ok: true as const }, 200);
+      const tipo = await notificaciones.darDeBajaPorCorreo(c.req.valid("json").token);
+      return c.json({ ok: true as const, tipo }, 200);
     },
   );
