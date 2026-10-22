@@ -4,6 +4,7 @@ import {
   estadoIncidenciaLabels,
   estadosIncidenciaPorDefecto,
   fotoComprimidaMaxBytes,
+  fotoTiposPermitidos,
   puedeAvanzarIncidencia,
   type CambiarEstadoIncidencia,
   type CrearIncidencia,
@@ -17,7 +18,8 @@ import {
   assertStorageConfigured,
   createReadUrl,
   createUploadUrl,
-  getObjectSize,
+  deleteObjects,
+  getObjectInfo,
 } from "../integrations/storage";
 import type { FotoSubidaDto, IncidenciaDetalleDto, IncidenciaDto } from "../schemas";
 import { toIso } from "../serializers";
@@ -92,10 +94,15 @@ const assertPuedeReportar = async (auth: AuthContext, input: CrearIncidencia) =>
 const assertFotoSubida = async (auth: AuthContext, fotoKey: string) => {
   assertStorageConfigured();
   if (!fotoKey.startsWith(prefijoDeFotos(auth))) throw unprocessable("La foto no es válida");
-  const size = await getObjectSize(fotoKey);
-  if (size === null) throw unprocessable("No se pudo subir la foto. Probá de nuevo.");
-  if (size > fotoComprimidaMaxBytes)
-    throw unprocessable("La foto comprimida no puede superar 1 MB");
+  const info = await getObjectInfo(fotoKey);
+  if (info === null) throw unprocessable("No se pudo subir la foto. Probá de nuevo.");
+  const valida =
+    (fotoTiposPermitidos as readonly string[]).includes(info.contentType) &&
+    info.size <= fotoComprimidaMaxBytes;
+  if (!valida) {
+    await deleteObjects([fotoKey]);
+    throw unprocessable("La foto debe ser JPG o PNG de hasta 1 MB");
+  }
 };
 
 export const crearIncidencia = async (

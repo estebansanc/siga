@@ -2,7 +2,12 @@ import { prisma } from "@repo/db";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type * as Env from "../env";
-import { createReadUrl, createUploadUrl, getObjectSize } from "../integrations/storage";
+import {
+  createReadUrl,
+  createUploadUrl,
+  deleteObjects,
+  getObjectInfo,
+} from "../integrations/storage";
 import {
   asOrganization,
   authOf,
@@ -34,7 +39,8 @@ vi.mock("../integrations/storage", () => ({
   assertStorageConfigured: vi.fn(),
   createUploadUrl: vi.fn((key: string) => Promise.resolve(`https://r2.test/upload/${key}`)),
   createReadUrl: vi.fn((key: string) => Promise.resolve(`https://r2.test/read/${key}`)),
-  getObjectSize: vi.fn(() => Promise.resolve(800_000)),
+  getObjectInfo: vi.fn(() => Promise.resolve({ size: 800_000, contentType: "image/jpeg" })),
+  deleteObjects: vi.fn(() => Promise.resolve()),
 }));
 
 let institution: TestOrganization;
@@ -160,15 +166,24 @@ describe("foto de la incidencia", () => {
     ).rejects.toMatchObject({ status: 422 });
 
     const { key } = await crearUrlFotoIncidencia(bedel(), { contentType: "image/jpeg", size: 10 });
-    vi.mocked(getObjectSize).mockResolvedValueOnce(null);
+    vi.mocked(getObjectInfo).mockResolvedValueOnce(null);
     await expect(crearIncidencia(bedel(), reporte({ fotoKey: key }))).rejects.toMatchObject({
       status: 422,
       message: "No se pudo subir la foto. Probá de nuevo.",
     });
-    vi.mocked(getObjectSize).mockResolvedValueOnce(1024 * 1024 + 1);
+    vi.mocked(getObjectInfo).mockResolvedValueOnce({
+      size: 1024 * 1024 + 1,
+      contentType: "image/png",
+    });
     await expect(crearIncidencia(bedel(), reporte({ fotoKey: key }))).rejects.toMatchObject({
       status: 422,
     });
+    vi.mocked(getObjectInfo).mockResolvedValueOnce({ size: 1000, contentType: "application/pdf" });
+    await expect(crearIncidencia(bedel(), reporte({ fotoKey: key }))).rejects.toMatchObject({
+      status: 422,
+      message: "La foto debe ser JPG o PNG de hasta 1 MB",
+    });
+    expect(deleteObjects).toHaveBeenCalledWith([key]);
     expect(await prisma.incidencia.count()).toBe(0);
   });
 });

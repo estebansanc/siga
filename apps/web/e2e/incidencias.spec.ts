@@ -7,6 +7,11 @@ import {
   seededUsers,
   test,
 } from "./support/fixtures";
+import {
+  crearClaseDeHoyConAula,
+  eliminarClaseConAula,
+  incidenciasDelAula,
+} from "./support/clase-de-hoy";
 
 type AulaCreada = { id: string; codigo: string };
 
@@ -130,24 +135,34 @@ test.describe("Incidencias de aulas", () => {
   }
 
   test("el docente reporta una incidencia desde una clase suya con aula", async ({ page }) => {
-    await loginViaUi(page, seededUsers.docente);
-    await page.goto("/");
-    await expect(
-      page
-        .getByText(/^\d+ clases?$/)
-        .or(page.getByText("No tenés clases hoy"))
-        .first(),
-    ).toBeVisible();
-    const boton = page.getByRole("button", { name: /Reportar incidencia en/ }).first();
-    test.skip(!(await boton.isVisible()), "Hoy el docente no tiene clases con aula");
+    const { aulaId, aulaCodigo, claseId } = await crearClaseDeHoyConAula();
+    try {
+      await loginViaUi(page, seededUsers.docente);
+      await page.goto("/");
+      const tarjeta = page.locator(`[data-clase-id="${claseId}"]`);
+      await tarjeta.getByRole("button", { name: /Reportar incidencia en/ }).click();
+      const reporte = page.getByRole("dialog", { name: "Nueva incidencia" });
+      await expect(reporte.getByLabel("Aula", { exact: true })).toHaveCount(0);
+      await expect(reporte.getByText(new RegExp(`en ${aulaCodigo}`))).toBeVisible();
+      await reporte.getByRole("button", { name: "Reportar" }).click();
+      await expect(reporte.getByText("Elegí el elemento afectado")).toBeVisible();
+      await expect(reporte.getByText("Ingresá una descripción")).toBeVisible();
 
-    await boton.click();
-    const reporte = page.getByRole("dialog", { name: "Nueva incidencia" });
-    await expect(reporte.getByLabel("Aula", { exact: true })).toHaveCount(0);
-    await reporte.getByLabel("Elemento afectado").selectOption("CLIMATIZACION");
-    await reporte.getByLabel("Descripción").fill("El aire no enfría");
-    await reporte.getByRole("button", { name: "Reportar" }).click();
-    await expect(page.getByText("Incidencia reportada")).toBeVisible();
-    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+      await reporte.getByLabel("Elemento afectado").selectOption("CLIMATIZACION");
+      await reporte.getByLabel("Descripción").fill("El aire no enfría");
+      await reporte.getByRole("button", { name: "Reportar" }).click();
+      await expect(page.getByText("Incidencia reportada")).toBeVisible();
+      await expect(page.getByRole("alertdialog")).toHaveCount(0);
+
+      const creadas = await incidenciasDelAula(aulaId);
+      expect(creadas).toHaveLength(1);
+      expect(creadas[0]).toMatchObject({
+        estado: "ABIERTA",
+        elemento: "CLIMATIZACION",
+        reportadaPor: { email: seededUsers.docente.email },
+      });
+    } finally {
+      await eliminarClaseConAula(claseId, aulaId);
+    }
   });
 });

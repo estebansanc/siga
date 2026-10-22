@@ -55,12 +55,12 @@ export const createReadUrl = async (key: string) =>
     expiresIn: readUrlTtlSeconds,
   });
 
-export const getObjectSize = async (key: string) => {
+export const getObjectInfo = async (key: string) => {
   try {
     const head = await getClient().send(
       new HeadObjectCommand({ Bucket: apiEnv.storage.bucket, Key: key }),
     );
-    return head.ContentLength ?? null;
+    return { size: head.ContentLength ?? 0, contentType: head.ContentType ?? "" };
   } catch {
     return null;
   }

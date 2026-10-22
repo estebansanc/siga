@@ -60,7 +60,7 @@ export function ReportarIncidenciaDialog({
   onReportada?: (incidencia: IncidenciaDto) => void;
 }) {
   const reportar = useReportarIncidencia();
-  const aulas = useAulas(false);
+  const aulas = useAulas(false, !aula);
   const [foto, setFoto] = useState<File | null>(null);
   const [errorFoto, setErrorFoto] = useState<string | null>(null);
   const form = useForm<CrearIncidenciaInput, unknown, CrearIncidencia>({

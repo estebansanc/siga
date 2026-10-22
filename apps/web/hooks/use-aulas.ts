@@ -9,8 +9,9 @@ import { queryKeys } from "@/lib/query-keys";
 
 import { realtimeQueryOptions } from "./use-estado-institucional";
 
-export const useAulas = (bajas: boolean) =>
+export const useAulas = (bajas: boolean, enabled = true) =>
   useQuery({
+    enabled,
     queryKey: queryKeys.aulas(bajas),
     queryFn: () =>
       unwrap<AulaGestionDto[]>(api.aulas.$get({ query: { bajas: bajas ? "true" : "false" } })),
