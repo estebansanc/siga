@@ -14,9 +14,9 @@ import type { ClaseDto, ClasesSinAulaDto, NovedadDto, SolicitudAulaDto } from ".
 
 import { registrarCambioMasivo } from "./auditoria";
 import { claseInclude, finalizarClasesVencidas, toClaseDto } from "./clases";
-import { crearNovedadCambioAula } from "./novedades";
-import { entregarCorreosDeAula, registrarCorreosDeAula } from "./notificaciones-aula";
 import { notificarNovedadPublicada } from "./notificaciones";
+import { entregarCorreosDeAula, registrarCorreosDeAula } from "./notificaciones-aula";
+import { crearNovedadCambioAula } from "./novedades";
 import { assertPerfil } from "./permisos";
 import {
   asignarAulaALaClase,

@@ -7,11 +7,13 @@ import { SolicitudesAulaSection } from "@/components/solicitudes/solicitudes-aul
 import { RequestError } from "@/lib/api-client";
 import { renderWithProviders } from "@/test/render";
 
-const state = vi.hoisted(() => ({
-  solicitudes: {} as Record<string, SolicitudAulaDto[]>,
-  clasesSinAula: [] as ClaseDto[],
-  aulas: [] as AulaDto[],
-}));
+type Estado = {
+  solicitudes: Record<string, SolicitudAulaDto[]>;
+  clasesSinAula: ClaseDto[];
+  aulas: AulaDto[];
+};
+const state = vi.hoisted((): Estado => ({ solicitudes: {}, clasesSinAula: [], aulas: [] }));
+
 const aprobar = vi.hoisted(() => vi.fn());
 const rechazar = vi.hoisted(() => vi.fn());
 const reasignar = vi.hoisted(() => vi.fn());
@@ -85,7 +87,7 @@ beforeEach(() => {
 });
 
 describe("SolicitudesAulaSection", () => {
-  it("las cinco pestañas muestran los datos de la solicitud", async () => {
+  it("las cinco pestañas muestran los datos de la solicitud", () => {
     state.solicitudes.PENDIENTE = [solicitud({ comentario: "Con parlantes" })];
     renderWithProviders(<SolicitudesAulaSection />);
 
