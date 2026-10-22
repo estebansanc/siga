@@ -11,6 +11,7 @@ test.describe("Avisos institucionales", () => {
     baseURL,
   }) => {
     const titulo = `QA urgente ${Date.now().toString(36)}`;
+    const avisoItem = page.locator("[data-slot=item]", { hasText: titulo });
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/avisos");
     await page.getByRole("button", { name: "Nuevo aviso" }).click();
@@ -47,15 +48,18 @@ test.describe("Avisos institucionales", () => {
     await dialog.getByRole("button", { name: "Publicar" }).click();
     await expect(page.getByText("Aviso publicado")).toBeVisible();
 
-    await expect(page.getByText(titulo)).toBeVisible();
-    await expect(page.getByText("Urgente", { exact: true })).toBeVisible();
+    await expect(avisoItem).toBeVisible();
+    await expect(avisoItem.getByText("Urgente", { exact: true })).toBeVisible();
     await page.getByRole("tab", { name: "Historial" }).click();
-    await expect(page.getByText(titulo)).toHaveCount(0);
+    await expect(avisoItem).toHaveCount(0);
     await page.getByRole("tab", { name: "Publicados" }).click();
-    await expect(page.getByText(titulo)).toBeVisible();
-    await expect(page.getByText("Urgente", { exact: true })).toBeVisible();
+    await expect(avisoItem).toBeVisible();
+    await expect(avisoItem.getByText("Urgente", { exact: true })).toBeVisible();
 
-    await expect(page.getByRole("link", { name: `Aviso urgente: ${titulo}` })).toBeVisible();
+    // Si un reintento dejó otro urgente vigente, el indicador resume la cantidad.
+    await expect(
+      page.getByRole("link", { name: new RegExp(`Aviso urgente: ${titulo}|\\d+ avisos urgentes`) }),
+    ).toBeVisible();
     await page.goto("/estado-institucional");
     const vigentes = page.locator("[data-slot=card]", { hasText: "Avisos vigentes" });
     await expect(vigentes.getByText(titulo)).toBeVisible();
@@ -74,7 +78,7 @@ test.describe("Avisos institucionales", () => {
     await loginViaUi(paginaEstudiante, seededUsers.estudiante);
     await paginaEstudiante.goto("/avisos");
     await expect(paginaEstudiante.getByRole("tab", { name: "Vigentes" })).toBeVisible();
-    await expect(paginaEstudiante.getByText(titulo)).toHaveCount(0);
+    await expect(paginaEstudiante.locator("[data-slot=item]", { hasText: titulo })).toHaveCount(0);
     await expect(paginaEstudiante.getByRole("button", { name: "Nuevo aviso" })).toHaveCount(0);
     await estudiante.close();
   });
