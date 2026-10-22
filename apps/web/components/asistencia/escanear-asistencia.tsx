@@ -106,7 +106,8 @@ function CamaraEscaner({
         <Alert variant="destructive">
           <AlertTitle>No pudimos abrir la cámara</AlertTitle>
           <AlertDescription>
-            Probá desde otro navegador o dispositivo, o pedí el registro manual al bedel.
+            Probá desde otro navegador o dispositivo, o pedí el registro manual al bedel: puede
+            cargar tu asistencia desde bedelía.
           </AlertDescription>
         </Alert>
       ) : null}

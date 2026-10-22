@@ -9,12 +9,23 @@ type DetectorConstructor = new (opciones: { formats: string[] }) => Detector;
 
 const intervaloLecturaMs = 250;
 
+const wasmDelDecodificador = "/zxing_reader.wasm";
+const erroresSeguidosMax = 5;
+
 // Chrome y Android traen BarcodeDetector; Safari iOS no, y ahí entra el ponyfill (se descarga
-// solo cuando hace falta).
+// solo cuando hace falta). Su decodificador WASM se sirve desde la app (`public/`), no desde un
+// CDN, para no depender de un tercero ni exponerle la IP del docente.
 const crearDetector = async (): Promise<Detector> => {
   const nativo = (globalThis as { BarcodeDetector?: DetectorConstructor }).BarcodeDetector;
   if (nativo) return new nativo({ formats: ["qr_code"] });
-  const { BarcodeDetector } = await import("barcode-detector/ponyfill");
+  const { BarcodeDetector, prepareZXingModule } = await import("barcode-detector/ponyfill");
+  await prepareZXingModule({
+    overrides: {
+      locateFile: (archivo: string, prefijo: string) =>
+        archivo.endsWith(".wasm") ? wasmDelDecodificador : prefijo + archivo,
+    },
+    fireImmediately: true,
+  });
   return new BarcodeDetector({ formats: ["qr_code"] });
 };
 
@@ -41,11 +52,21 @@ export function useEscanerQr(alDetectar: (codigo: string) => void, pausado: bool
     let flujo: MediaStream | null = null;
     let temporizador: ReturnType<typeof setTimeout> | undefined;
 
+    let erroresSeguidos = 0;
     const leer = async (detector: Detector, video: HTMLVideoElement) => {
       if (!activo) return;
       if (!pausadoRef.current && video.readyState >= 2) {
-        const [codigo] = await detector.detect(video).catch(() => []);
-        if (codigo && activo && !pausadoRef.current) alDetectarRef.current(codigo.rawValue);
+        try {
+          const [codigo] = await detector.detect(video);
+          erroresSeguidos = 0;
+          if (codigo && activo && !pausadoRef.current) alDetectarRef.current(codigo.rawValue);
+        } catch {
+          erroresSeguidos += 1;
+          if (erroresSeguidos >= erroresSeguidosMax) {
+            setEstado("no-disponible");
+            return;
+          }
+        }
       }
       temporizador = setTimeout(() => void leer(detector, video), intervaloLecturaMs);
     };

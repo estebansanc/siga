@@ -137,7 +137,11 @@ export const cronResultSchema = z
   .openapi("CronResult");
 
 export const dailyCronResultSchema = z
-  .object({ emails: cronResultSchema, purgedRateLimitBuckets: z.number() })
+  .object({
+    emails: cronResultSchema,
+    purgedRateLimitBuckets: z.number(),
+    purgedIntentosAsistencia: z.number(),
+  })
   .openapi("DailyCronResult");
 export type DailyCronResultDto = z.infer<typeof dailyCronResultSchema>;
 

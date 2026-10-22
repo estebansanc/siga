@@ -1955,11 +1955,15 @@
           },
           "purgedRateLimitBuckets": {
             "type": "number"
+          },
+          "purgedIntentosAsistencia": {
+            "type": "number"
           }
         },
         "required": [
           "emails",
-          "purgedRateLimitBuckets"
+          "purgedRateLimitBuckets",
+          "purgedIntentosAsistencia"
         ]
       },
       "CronResult": {
@@ -7674,7 +7678,7 @@
           "Cron"
         ],
         "summary": "Tareas diarias",
-        "description": "Reintenta los emails pendientes y limpia el rate limit viejo.",
+        "description": "Reintenta los emails pendientes y limpia el rate limit y los intentos fallidos de asistencia viejos.",
         "responses": {
           "200": {
             "description": "Resultado",

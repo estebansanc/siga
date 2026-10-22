@@ -126,6 +126,8 @@ const errorCodigoInvalido =
 const errorSinClase = "No tenés una clase en esta aula y turno.";
 const errorFueraDeLaInstitucion =
   "No pudimos confirmar que estés en la institución. Pedí el registro manual al bedel.";
+const errorSinUbicacion =
+  "No pudimos obtener tu ubicación ni confirmar la red institucional. Habilitá el permiso de ubicación o pedí el registro manual al bedel.";
 
 const bloqueoPorIntentos = (liberaEn: Date) =>
   new ApiError(
@@ -134,18 +136,34 @@ const bloqueoPorIntentos = (liberaEn: Date) =>
     `Superaste los ${intentosFallidosMax} intentos fallidos. No podés volver a escanear hasta que pasen ${bloqueoIntentosMinutos} minutos: se libera a las ${horaArgentina(liberaEn)}.`,
   );
 
-// SEG-9: por usuario y no por IP, que en la institución se comparte. Con 10 fallos en 15 minutos
-// el bloqueo dura 15 minutos desde el último, cuando los 10 ya salieron de la ventana.
+// SEG-9: por usuario y no por IP, que en la institución se comparte. Se bloquea cuando en los
+// 15 minutos que terminan en el último fallo hubo 10; el bloqueo dura 15 minutos desde ese
+// último fallo (un intento bloqueado no suma otro).
 const bloqueoVigente = async (auth: AuthContext, ahora: Date) => {
-  const desde = new Date(ahora.getTime() - ventanaIntentosMinutos * 60_000);
-  const { _count, _max } = await prisma.intentoAsistenciaFallido.aggregate({
-    where: { userId: auth.userId, organizationId: auth.organizationId, createdAt: { gt: desde } },
-    _count: true,
-    _max: { createdAt: true },
+  const propios = { userId: auth.userId, organizationId: auth.organizationId };
+  const ultimo = await prisma.intentoAsistenciaFallido.findFirst({
+    where: propios,
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
   });
-  if (_count < intentosFallidosMax || !_max.createdAt) return null;
-  const liberaEn = new Date(_max.createdAt.getTime() + bloqueoIntentosMinutos * 60_000);
-  return liberaEn > ahora ? bloqueoPorIntentos(liberaEn) : null;
+  if (!ultimo) return null;
+  const liberaEn = new Date(ultimo.createdAt.getTime() + bloqueoIntentosMinutos * 60_000);
+  if (liberaEn <= ahora) return null;
+  const desde = new Date(ultimo.createdAt.getTime() - ventanaIntentosMinutos * 60_000);
+  const enLaVentana = await prisma.intentoAsistenciaFallido.count({
+    where: { ...propios, createdAt: { gt: desde, lte: ultimo.createdAt } },
+  });
+  return enLaVentana >= intentosFallidosMax ? bloqueoPorIntentos(liberaEn) : null;
+};
+
+export const purgarIntentosFallidos = async (ahora = new Date()) => {
+  const umbral = new Date(
+    ahora.getTime() - (ventanaIntentosMinutos + bloqueoIntentosMinutos) * 60_000,
+  );
+  const { count } = await prisma.intentoAsistenciaFallido.deleteMany({
+    where: { createdAt: { lt: umbral } },
+  });
+  return count;
 };
 
 const rechazarIntento = async (auth: AuthContext, motivo: string, mensaje: string, ahora: Date) => {
@@ -227,7 +245,13 @@ export const registrarAsistenciaQr = async (
 
   const validacion = await validarPresencia(auth, input, ip);
   if (!validacion) {
-    throw await rechazarIntento(auth, "fuera_de_la_institucion", errorFueraDeLaInstitucion, ahora);
+    const sinUbicacion = !input.ubicacion;
+    throw await rechazarIntento(
+      auth,
+      sinUbicacion ? "sin_ubicacion" : "fuera_de_la_institucion",
+      sinUbicacion ? errorSinUbicacion : errorFueraDeLaInstitucion,
+      ahora,
+    );
   }
 
   try {

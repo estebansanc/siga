@@ -103,6 +103,7 @@ describe("contrato HTTP", () => {
     expect(await daily.json()).toEqual({
       emails: { processed: 0, failed: 0 },
       purgedRateLimitBuckets: 0,
+      purgedIntentosAsistencia: 0,
     });
   });
 

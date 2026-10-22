@@ -138,7 +138,8 @@ function PresenciaForm({ presencia }: { presencia: Presencia }) {
             {...form.register("redes")}
           />
           <FieldDescription>
-            Un rango CIDR IPv4 por línea. Vacía, solo vale la ubicación.
+            Un rango CIDR IPv4 por línea (por ahora no se admite IPv6). Vacía, solo vale la
+            ubicación.
           </FieldDescription>
           <FieldError>{errors.redes?.message}</FieldError>
         </Field>

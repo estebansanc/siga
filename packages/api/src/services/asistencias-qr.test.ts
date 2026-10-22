@@ -17,7 +17,11 @@ import {
   type TestUser,
 } from "../test/db";
 
-import { registrarAsistenciaManual, registrarAsistenciaQr } from "./asistencias";
+import {
+  purgarIntentosFallidos,
+  registrarAsistenciaManual,
+  registrarAsistenciaQr,
+} from "./asistencias";
 import type * as Auditoria from "./auditoria";
 import { generarQr } from "./qr";
 import { updateSettings } from "./settings";
@@ -356,6 +360,34 @@ describe("límite de intentos fallidos (SEG-9)", () => {
     });
     expect(await fallos()).toBe(10);
     expect(await prisma.asistenciaDocente.count()).toBe(0);
+  });
+
+  it("el bloqueo dura 15 minutos desde el último fallo, no desde el primero", async () => {
+    for (let i = 0; i < 10; i++) await fallar(a(`19:0${i}`)).catch(() => undefined);
+    for (const hora of ["19:15", "19:16", "19:23"]) {
+      await expect(fallar(a(hora))).rejects.toMatchObject({
+        status: 429,
+        code: "ATTEMPTS_BLOCKED",
+      });
+    }
+    await expect(fallar(a("19:24"))).rejects.toMatchObject({ status: 422 });
+  });
+
+  it("purga los intentos de más de 30 minutos", async () => {
+    await fallar(a("19:00")).catch(() => undefined);
+    await fallar(a("19:50")).catch(() => undefined);
+    expect(await purgarIntentosFallidos(a("19:20"))).toBe(0);
+    expect(await purgarIntentosFallidos(a("19:50"))).toBe(1);
+    expect(await fallos()).toBe(1);
+  });
+
+  it("sin ubicación ni red el mensaje habla del permiso de ubicación", async () => {
+    await createClase(institution, fixture, hoy, "19:00", "23:00");
+    const token = await emitir(a("19:10"));
+    await expect(escanear(token, a("19:10"), {})).rejects.toMatchObject({
+      status: 422,
+      message: expect.stringContaining("Habilitá el permiso de ubicación"),
+    });
   });
 
   it("a los 15 minutos del último fallo vuelve a poder escanear", async () => {

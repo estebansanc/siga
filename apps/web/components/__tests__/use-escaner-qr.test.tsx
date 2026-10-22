@@ -69,6 +69,33 @@ describe("useEscanerQr", () => {
     await waitFor(() => expect(result.current.estado).toBe("no-disponible"));
   });
 
+  it("si el detector falla al leer informa que no está disponible", async () => {
+    detect.mockRejectedValue(new Error("wasm"));
+    const { result } = renderHook(() => {
+      const escaner = useEscanerQr(vi.fn(), false);
+      if (!escaner.videoRef.current) conVideo(escaner);
+      return escaner;
+    });
+    await waitFor(() => expect(result.current.estado).toBe("no-disponible"), { timeout: 3000 });
+  });
+
+  it("si el detector no se puede crear informa que no está disponible", async () => {
+    vi.stubGlobal(
+      "BarcodeDetector",
+      class {
+        constructor() {
+          throw new Error("sin soporte");
+        }
+      },
+    );
+    const { result } = renderHook(() => {
+      const escaner = useEscanerQr(vi.fn(), false);
+      if (!escaner.videoRef.current) conVideo(escaner);
+      return escaner;
+    });
+    await waitFor(() => expect(result.current.estado).toBe("no-disponible"));
+  });
+
   it("al desmontar apaga la cámara", async () => {
     const { result, unmount } = renderHook(() => {
       const escaner = useEscanerQr(vi.fn(), false);
