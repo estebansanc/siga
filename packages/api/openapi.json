@@ -1145,7 +1145,16 @@
           "recursos": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "Proyector",
+                "Pantalla",
+                "Computadora",
+                "Climatizacion",
+                "Ventilacion",
+                "Pizarra",
+                "Conectividad"
+              ]
             }
           },
           "comentario": {

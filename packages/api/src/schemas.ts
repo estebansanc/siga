@@ -380,7 +380,7 @@ export const solicitudAulaSchema = z
     id: z.string(),
     estado: estadoSolicitudAulaSchema,
     alumnos: z.number().int(),
-    recursos: z.array(z.string()),
+    recursos: z.array(equipamientoSchema),
     comentario: z.string().nullable(),
     motivoRechazo: z.string().nullable(),
     createdAt: z.string(),

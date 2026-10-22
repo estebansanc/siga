@@ -7,6 +7,7 @@ import {
   horaArgentina,
   maxSugerenciasAula,
   type BuscarAulaSolicitud,
+  type Equipamiento,
   type CrearSolicitudAula,
 } from "@repo/domain";
 
@@ -22,6 +23,8 @@ import { toIso } from "../serializers";
 import { claseInclude, finalizarClasesVencidas, toClaseDto } from "./clases";
 import { assertPerfil, accesoDenegado, esBedel } from "./permisos";
 
+const aulaOcupada = "El aula ya está asignada en esa franja";
+const pendienteDuplicada = "Esta clase ya tiene una solicitud pendiente.";
 const estadosSinSolicitud = ["VIRTUAL", "SUSPENDIDA", "AUSENTE", "FINALIZADA"] as const;
 
 const aulaSelect = {
@@ -52,7 +55,7 @@ const toSolicitudDto = (solicitud: SolicitudConDatos): SolicitudAulaDto => ({
   id: solicitud.id,
   estado: solicitud.estado,
   alumnos: solicitud.alumnos,
-  recursos: solicitud.recursos,
+  recursos: solicitud.recursos as Equipamiento[],
   comentario: solicitud.comentario,
   motivoRechazo: solicitud.motivoRechazo,
   createdAt: toIso(solicitud.createdAt),
@@ -173,14 +176,17 @@ const assertSinPendiente = async (tx: DbTransaction, claseId: string) => {
     where: { claseId, estado: "PENDIENTE" },
     select: { id: true },
   });
-  if (pendiente) throw conflict("Esta clase ya tiene una solicitud pendiente.");
+  if (pendiente) throw conflict(pendienteDuplicada);
 };
 
+// Serializa las asignaciones del mismo aula: sin el lock, dos pedidos a la vez pasarían ambos
+// la verificación de franja libre.
 const asignarAulaALaClase = async (
   tx: DbTransaction,
   clase: { id: string; inicio: Date; fin: Date },
   aulaId: string,
 ) => {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${aulaId}))`;
   const ocupada = await tx.claseProgramada.findFirst({
     where: {
       aulaId,
@@ -191,7 +197,7 @@ const asignarAulaALaClase = async (
     },
     select: { id: true },
   });
-  if (ocupada) throw conflict("El aula ya está asignada en esa franja");
+  if (ocupada) throw conflict(aulaOcupada);
   await tx.claseProgramada.update({ where: { id: clase.id }, data: { aulaId } });
 };
 
@@ -213,24 +219,30 @@ export const crearSolicitudAula = async (
   }
   const inmediata = clase.aulaId === null && esAsignacionInmediata(clase.inicio, ahora);
 
-  return prisma.$transaction(async (tx) => {
-    await assertSinPendiente(tx, clase.id);
-    if (inmediata) await asignarAulaALaClase(tx, clase, input.aulaId);
-    const solicitud = await tx.solicitudAula.create({
-      data: {
-        organizationId: auth.organizationId,
-        solicitanteId: auth.userId,
-        claseId: clase.id,
-        aulaId: input.aulaId,
-        alumnos: input.alumnos,
-        recursos: input.recursos,
-        comentario: input.comentario ?? null,
-        estado: inmediata ? "ASIGNADA" : "PENDIENTE",
-      },
-      include: solicitudInclude,
+  return prisma
+    .$transaction(async (tx) => {
+      await assertSinPendiente(tx, clase.id);
+      if (inmediata) await asignarAulaALaClase(tx, clase, input.aulaId);
+      const solicitud = await tx.solicitudAula.create({
+        data: {
+          organizationId: auth.organizationId,
+          solicitanteId: auth.userId,
+          claseId: clase.id,
+          aulaId: input.aulaId,
+          alumnos: input.alumnos,
+          recursos: input.recursos,
+          comentario: input.comentario ?? null,
+          estado: inmediata ? "ASIGNADA" : "PENDIENTE",
+        },
+        include: solicitudInclude,
+      });
+      return toSolicitudDto(solicitud);
+    })
+    .catch((error: unknown) => {
+      // El índice único parcial cubre el caso de dos pedidos simultáneos.
+      if ((error as { code?: string }).code === "P2002") throw conflict(pendienteDuplicada);
+      throw error;
     });
-    return toSolicitudDto(solicitud);
-  });
 };
 
 export const listarMisSolicitudesAula = async (auth: AuthContext): Promise<SolicitudAulaDto[]> => {

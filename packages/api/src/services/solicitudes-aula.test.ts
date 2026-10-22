@@ -286,6 +286,51 @@ describe("crear solicitud", () => {
     expect(await prisma.solicitudAula.count()).toBe(1);
   });
 
+  it("dos pedidos simultáneos para la misma clase dejan una sola Pendiente", async () => {
+    const clase = await createClase(institution, fixture, fecha, "15:00", "17:00");
+    const resultados = await Promise.allSettled([
+      crearSolicitudAula(docente(), pedido(clase.id, fixture.otraAulaId), ahora),
+      crearSolicitudAula(bedel(), pedido(clase.id, fixture.aulaId), ahora),
+    ]);
+    expect(resultados.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
+    expect(resultados.find(({ status }) => status === "rejected")).toMatchObject({
+      reason: { status: 409, message: "Esta clase ya tiene una solicitud pendiente." },
+    });
+    expect(await prisma.solicitudAula.count()).toBe(1);
+  });
+
+  it("dos clases sin aula que piden la misma aula a la vez: una sola se asigna", async () => {
+    const otraComision = await prisma.comision.create({
+      data: {
+        organizationId: institution.organizationId,
+        materiaId: fixture.materiaId,
+        periodoLectivoId: fixture.periodoLectivoId,
+        codigo: "5K1",
+        turno: "NOCHE",
+        anioLectivo: 2026,
+      },
+    });
+    const primera = await createClase(institution, fixture, fecha, "10:10", "12:00", null);
+    const segunda = await createClase(
+      institution,
+      { comisionId: otraComision.id, aulaId: null },
+      fecha,
+      "10:10",
+      "12:00",
+      null,
+    );
+    const resultados = await Promise.allSettled(
+      [primera, segunda].map((clase) =>
+        crearSolicitudAula(bedel(), pedido(clase.id, fixture.otraAulaId), ahora),
+      ),
+    );
+    expect(resultados.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
+    expect(resultados.find(({ status }) => status === "rejected")).toMatchObject({
+      reason: { status: 409, message: "El aula ya está asignada en esa franja" },
+    });
+    expect(await prisma.claseProgramada.count({ where: { aulaId: fixture.otraAulaId } })).toBe(1);
+  });
+
   it("rechaza clases terminadas, suspendidas y aulas no disponibles", async () => {
     const terminada = await createClase(institution, fixture, fecha, "06:00", "09:00");
     await expect(

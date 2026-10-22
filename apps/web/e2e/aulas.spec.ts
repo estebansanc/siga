@@ -1,3 +1,5 @@
+import { diaSemanaDe, fechaArgentina, sumarDias } from "@repo/domain";
+
 import {
   expect,
   expectNoHorizontalPageScroll,
@@ -92,9 +94,9 @@ test.describe("Aulas", () => {
 });
 
 const proximoDiaHabil = () => {
-  const fecha = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  while ([0, 6].includes(fecha.getUTCDay())) fecha.setUTCDate(fecha.getUTCDate() + 1);
-  return fecha.toISOString().slice(0, 10);
+  let fecha = sumarDias(fechaArgentina(new Date()), 1);
+  while ([6, 7].includes(diaSemanaDe(fecha))) fecha = sumarDias(fecha, 1);
+  return fecha;
 };
 
 test.describe("Solicitar aula", () => {

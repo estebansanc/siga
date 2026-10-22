@@ -20,10 +20,10 @@ import { formatFechaCorta } from "@/lib/dates";
 
 import { SolicitudEstadoBadge } from "./solicitud-estado-badge";
 
-const describirRecursos = (recursos: string[]) =>
+const describirRecursos = (recursos: Equipamiento[]) =>
   recursos.length === 0
     ? "Sin recursos"
-    : recursos.map((recurso) => equipamientoLabels[recurso as Equipamiento] ?? recurso).join(", ");
+    : recursos.map((recurso) => equipamientoLabels[recurso]).join(", ");
 
 function SolicitudItem({ solicitud }: { solicitud: SolicitudAulaDto }) {
   const { clase, aula } = solicitud;

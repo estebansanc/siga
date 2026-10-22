@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { isoDate, optionalText } from "./common";
+import { optionalText } from "./common";
 import { equipamientoLabels, equipamientoSchema, type Equipamiento } from "./enums";
 
 export const estadoSolicitudAulaSchema = z.enum(["PENDIENTE", "ASIGNADA", "APROBADA", "RECHAZADA"]);
@@ -23,8 +23,6 @@ export const alumnosSolicitudSchema = z.coerce
   .number(mensajeAlumnosInvalidos)
   .int(mensajeAlumnosInvalidos)
   .min(1, mensajeAlumnosInvalidos);
-
-export const clasesSolicitablesQuerySchema = z.object({ fecha: isoDate.optional() });
 
 export const buscarAulaSolicitudSchema = z.object({
   claseId: z.string().min(1),
