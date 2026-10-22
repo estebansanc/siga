@@ -1,11 +1,13 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { listarClasesQuerySchema } from "@repo/domain";
+import { elegirAulaSchema, listarClasesQuerySchema } from "@repo/domain";
 
 import type { ApiEnv } from "../context";
-import { claseSchema, clasesDelDiaSchema, idParamSchema } from "../schemas";
+import { perfilOnly } from "../middleware";
+import { claseSchema, clasesDelDiaSchema, clasesSinAulaSchema, idParamSchema } from "../schemas";
+import * as asignacion from "../services/asignacion-aulas";
 import * as clases from "../services/clases";
 
-import { commonErrors, jsonResponse } from "./shared";
+import { commonErrors, jsonBody, jsonResponse } from "./shared";
 
 const tags = ["Clases"];
 
@@ -26,6 +28,19 @@ export const claseRoutes = new OpenAPIHono<ApiEnv>()
   .openapi(
     createRoute({
       method: "get",
+      path: "/sin-aula",
+      tags,
+      summary: "Clases presenciales sin aula, de hoy a 7 días (Bedel)",
+      description:
+        "Solo Bedel. Excluye las terminadas y las Suspendidas, Ausentes, Virtuales o Finalizadas.",
+      middleware: [perfilOnly("BEDEL")] as const,
+      responses: { 200: jsonResponse(clasesSinAulaSchema, "Clases sin aula"), ...commonErrors },
+    }),
+    async (c) => c.json(await asignacion.listarClasesSinAula(c.get("auth")), 200),
+  )
+  .openapi(
+    createRoute({
+      method: "get",
       path: "/{id}",
       tags,
       summary: "Detalle de una clase con el historial de novedades del día",
@@ -33,4 +48,26 @@ export const claseRoutes = new OpenAPIHono<ApiEnv>()
       responses: { 200: jsonResponse(claseSchema, "Clase"), ...commonErrors },
     }),
     async (c) => c.json(await clases.obtenerClase(c.get("auth"), c.req.valid("param").id), 200),
+  )
+  .openapi(
+    createRoute({
+      method: "post",
+      path: "/{id}/aula",
+      tags,
+      summary: "Asignar aula a una clase sin aula (Bedel)",
+      description:
+        "Solo Bedel. No publica novedad y envía un correo a los docentes de la comisión. 409 si el aula ya está asignada en esa franja o la clase ya tiene aula; 422 si la clase ya no admite asignación.",
+      request: { params: idParamSchema, body: jsonBody(elegirAulaSchema) },
+      middleware: [perfilOnly("BEDEL")] as const,
+      responses: { 200: jsonResponse(claseSchema, "Clase con aula"), ...commonErrors },
+    }),
+    async (c) =>
+      c.json(
+        await asignacion.asignarAulaAClaseSinAula(
+          c.get("auth"),
+          c.req.valid("param").id,
+          c.req.valid("json"),
+        ),
+        200,
+      ),
   );

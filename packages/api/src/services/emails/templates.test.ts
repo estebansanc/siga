@@ -6,6 +6,7 @@ import {
   formatEmailDate,
   invitationEmail,
   novedadEmail,
+  solicitudAulaEmail,
 } from "./templates";
 
 describe("plantillas de email", () => {
@@ -118,6 +119,49 @@ describe("correo de novedad", () => {
     );
     expect(avisoEmail({ ...base, prioridad: "NORMAL", bajaUrl: null }).html).not.toContain(
       "Dejar de recibir",
+    );
+  });
+});
+
+describe("correo de solicitud de aula", () => {
+  const base = {
+    materia: "Proyecto Final",
+    comision: "5K2",
+    fecha: "2026-10-23",
+    horaInicio: "19:00",
+    horaFin: "23:00",
+    aula: "Aula 3",
+    aulaAnterior: null,
+    motivo: null,
+    url: "https://app.test/clases",
+  };
+
+  it("cada resolución lleva su asunto y sus datos", () => {
+    const aprobada = solicitudAulaEmail({ ...base, resolucion: "APROBADA" });
+    expect(aprobada.subject).toBe("Solicitud de aula aprobada: Proyecto Final 5K2");
+    expect(aprobada.html).toContain("23/10/2026");
+    expect(aprobada.html).toContain("19:00 a 23:00");
+    expect(aprobada.html).toContain("Aula 3");
+
+    const rechazada = solicitudAulaEmail({
+      ...base,
+      resolucion: "RECHAZADA",
+      motivo: "Hay <obras>",
+    });
+    expect(rechazada.html).toContain("Aula pedida");
+    expect(rechazada.html).toContain("Hay &lt;obras&gt;");
+
+    const reasignada = solicitudAulaEmail({
+      ...base,
+      resolucion: "REASIGNADA",
+      aulaAnterior: "Aula 12",
+    });
+    expect(reasignada.subject).toBe("Cambio de aula: Proyecto Final 5K2");
+    expect(reasignada.html).toContain("Aula anterior");
+    expect(reasignada.html).toContain("Aula 12");
+
+    expect(solicitudAulaEmail({ ...base, resolucion: "ASIGNADA" }).subject).toBe(
+      "Aula asignada: Proyecto Final 5K2",
     );
   });
 });

@@ -1,13 +1,13 @@
 import type { AuthContext } from "@repo/auth";
-import { fromDateColumn, prisma, toDateColumn, type DbTransaction, type Prisma } from "@repo/db";
+import { fromDateColumn, prisma, Prisma, toDateColumn, type DbTransaction } from "@repo/db";
 import {
   criteriosQueFallan,
+  equipamientoSchema,
   esAsignacionInmediata,
   fechaArgentina,
   horaArgentina,
   maxSugerenciasAula,
   type BuscarAulaSolicitud,
-  type Equipamiento,
   type CrearSolicitudAula,
 } from "@repo/domain";
 
@@ -18,14 +18,15 @@ import type {
   ClasesDelDiaDto,
   SolicitudAulaDto,
 } from "../schemas";
-import { toIso } from "../serializers";
+import { toIso, toIsoOrNull } from "../serializers";
 
 import { claseInclude, finalizarClasesVencidas, toClaseDto } from "./clases";
 import { assertPerfil, accesoDenegado, esBedel } from "./permisos";
 
-const aulaOcupada = "El aula ya está asignada en esa franja";
+export const aulaOcupada = "El aula ya está asignada en esa franja";
+const claseCambiada = "La clase cambió mientras se resolvía. Actualizá la pantalla.";
 const pendienteDuplicada = "Esta clase ya tiene una solicitud pendiente.";
-const estadosSinSolicitud = ["VIRTUAL", "SUSPENDIDA", "AUSENTE", "FINALIZADA"] as const;
+export const estadosSinSolicitud = ["VIRTUAL", "SUSPENDIDA", "AUSENTE", "FINALIZADA"] as const;
 
 const aulaSelect = {
   id: true,
@@ -36,32 +37,47 @@ const aulaSelect = {
   equipamiento: true,
 } satisfies Prisma.AulaSelect;
 
-const solicitudInclude = {
-  aula: { select: { id: true, codigo: true, edificio: true, piso: true } },
+const aulaResumenSelect = {
+  id: true,
+  codigo: true,
+  edificio: true,
+  piso: true,
+} satisfies Prisma.AulaSelect;
+
+export const solicitudInclude = {
+  aula: { select: aulaResumenSelect },
+  solicitante: { select: { id: true, name: true } },
   clase: {
     select: {
       id: true,
       fecha: true,
       inicio: true,
       fin: true,
+      comisionId: true,
+      aula: { select: aulaResumenSelect },
       comision: { select: { codigo: true, materia: { select: { nombre: true } } } },
     },
   },
 } satisfies Prisma.SolicitudAulaInclude;
 
-type SolicitudConDatos = Prisma.SolicitudAulaGetPayload<{ include: typeof solicitudInclude }>;
+export type SolicitudConDatos = Prisma.SolicitudAulaGetPayload<{
+  include: typeof solicitudInclude;
+}>;
 
-const toSolicitudDto = (solicitud: SolicitudConDatos): SolicitudAulaDto => ({
+export const toSolicitudDto = (solicitud: SolicitudConDatos): SolicitudAulaDto => ({
   id: solicitud.id,
   estado: solicitud.estado,
   alumnos: solicitud.alumnos,
-  recursos: solicitud.recursos as Equipamiento[],
+  recursos: equipamientoSchema.array().parse(solicitud.recursos),
   comentario: solicitud.comentario,
   motivoRechazo: solicitud.motivoRechazo,
   createdAt: toIso(solicitud.createdAt),
+  resueltaEn: toIsoOrNull(solicitud.resueltaEn),
+  solicitante: { id: solicitud.solicitante.id, nombre: solicitud.solicitante.name },
   aula: solicitud.aula,
   clase: {
     id: solicitud.clase.id,
+    aula: solicitud.clase.aula,
     fecha: fromDateColumn(solicitud.clase.fecha),
     horaInicio: horaArgentina(solicitud.clase.inicio),
     horaFin: horaArgentina(solicitud.clase.fin),
@@ -180,10 +196,11 @@ const assertSinPendiente = async (tx: DbTransaction, claseId: string) => {
 };
 
 // Serializa las asignaciones del mismo aula: sin el lock, dos pedidos a la vez pasarían ambos
-// la verificación de franja libre.
-const asignarAulaALaClase = async (
+// la verificación de franja libre. El update condicionado al aula que se leyó evita pisar el
+// cambio de otra operación sobre la misma clase.
+export const asignarAulaALaClase = async (
   tx: DbTransaction,
-  clase: { id: string; inicio: Date; fin: Date },
+  clase: { id: string; inicio: Date; fin: Date; aulaId: string | null },
   aulaId: string,
 ) => {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${aulaId}))`;
@@ -198,7 +215,11 @@ const asignarAulaALaClase = async (
     select: { id: true },
   });
   if (ocupada) throw conflict(aulaOcupada);
-  await tx.claseProgramada.update({ where: { id: clase.id }, data: { aulaId } });
+  const { count } = await tx.claseProgramada.updateMany({
+    where: { id: clase.id, aulaId: clase.aulaId },
+    data: { aulaId },
+  });
+  if (count === 0) throw conflict(claseCambiada);
 };
 
 // Pendiente no reserva el aula. Si la clase no tiene aula y empieza en menos de 30 minutos,
@@ -240,7 +261,9 @@ export const crearSolicitudAula = async (
     })
     .catch((error: unknown) => {
       // El índice único parcial cubre el caso de dos pedidos simultáneos.
-      if ((error as { code?: string }).code === "P2002") throw conflict(pendienteDuplicada);
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw conflict(pendienteDuplicada);
+      }
       throw error;
     });
 };

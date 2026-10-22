@@ -1,5 +1,10 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { crearSolicitudAulaSchema } from "@repo/domain";
+import {
+  crearSolicitudAulaSchema,
+  elegirAulaSchema,
+  listarSolicitudesAulaQuerySchema,
+  rechazarSolicitudAulaSchema,
+} from "@repo/domain";
 
 import type { ApiEnv } from "../context";
 import { perfilOnly } from "../middleware";
@@ -8,14 +13,17 @@ import {
   busquedaAulaSchema,
   clasesDelDiaSchema,
   clasesSolicitablesQuerySchema,
+  idParamSchema,
   solicitudAulaSchema,
 } from "../schemas";
+import * as asignacion from "../services/asignacion-aulas";
 import * as solicitudes from "../services/solicitudes-aula";
 
 import { commonErrors, jsonBody, jsonResponse } from "./shared";
 
 const tags = ["Solicitudes de aula"];
 const solicitantes = perfilOnly("DOCENTE", "BEDEL");
+const soloBedel = perfilOnly("BEDEL");
 
 export const solicitudAulaRoutes = new OpenAPIHono<ApiEnv>()
   .openapi(
@@ -79,4 +87,94 @@ export const solicitudAulaRoutes = new OpenAPIHono<ApiEnv>()
     }),
     async (c) =>
       c.json(await solicitudes.crearSolicitudAula(c.get("auth"), c.req.valid("json")), 201),
+  )
+  .openapi(
+    createRoute({
+      method: "get",
+      path: "/",
+      tags,
+      summary: "Solicitudes de aula de un estado (Bedel)",
+      description:
+        "Solo Bedel. Pendientes y Asignadas (inmediatas) por franja más próxima; Aprobadas y Rechazadas, las resueltas más recientes primero.",
+      request: { query: listarSolicitudesAulaQuerySchema },
+      middleware: [soloBedel] as const,
+      responses: {
+        200: jsonResponse(z.array(solicitudAulaSchema), "Solicitudes"),
+        ...commonErrors,
+      },
+    }),
+    async (c) =>
+      c.json(
+        await asignacion.listarSolicitudesAulaPorEstado(c.get("auth"), c.req.valid("query").estado),
+        200,
+      ),
+  )
+  .openapi(
+    createRoute({
+      method: "post",
+      path: "/{id}/aprobar",
+      tags,
+      summary: "Aprobar una solicitud Pendiente con el aula elegida",
+      description:
+        "Solo Bedel. La clase toma el aula; si ya tenía otra se publica un Cambio de aula. Envía un correo a los docentes de la comisión. 409 si el aula ya está asignada en esa franja o la solicitud ya no está pendiente.",
+      request: { params: idParamSchema, body: jsonBody(elegirAulaSchema) },
+      middleware: [soloBedel] as const,
+      responses: { 200: jsonResponse(solicitudAulaSchema, "Solicitud aprobada"), ...commonErrors },
+    }),
+    async (c) =>
+      c.json(
+        await asignacion.aprobarSolicitudAula(
+          c.get("auth"),
+          c.req.valid("param").id,
+          c.req.valid("json"),
+        ),
+        200,
+      ),
+  )
+  .openapi(
+    createRoute({
+      method: "post",
+      path: "/{id}/rechazar",
+      tags,
+      summary: "Rechazar una solicitud Pendiente con un motivo",
+      description:
+        "Solo Bedel. Motivo obligatorio de hasta 280 caracteres; la clase conserva su aula. Envía un correo a los docentes de la comisión. 409 si la solicitud ya no está pendiente (una Asignada no se rechaza).",
+      request: { params: idParamSchema, body: jsonBody(rechazarSolicitudAulaSchema) },
+      middleware: [soloBedel] as const,
+      responses: { 200: jsonResponse(solicitudAulaSchema, "Solicitud rechazada"), ...commonErrors },
+    }),
+    async (c) =>
+      c.json(
+        await asignacion.rechazarSolicitudAula(
+          c.get("auth"),
+          c.req.valid("param").id,
+          c.req.valid("json"),
+        ),
+        200,
+      ),
+  )
+  .openapi(
+    createRoute({
+      method: "post",
+      path: "/{id}/reasignar",
+      tags,
+      summary: "Reasignar el aula de una solicitud Asignada",
+      description:
+        "Solo Bedel. La solicitud sigue Asignada con el aula nueva y se publica un Cambio de aula. Envía un correo a los docentes de la comisión. 409 si el aula ya está asignada en esa franja o la solicitud no está asignada.",
+      request: { params: idParamSchema, body: jsonBody(elegirAulaSchema) },
+      middleware: [soloBedel] as const,
+      responses: {
+        200: jsonResponse(solicitudAulaSchema, "Solicitud reasignada"),
+        ...commonErrors,
+      },
+    }),
+    async (c) =>
+      c.json(
+        await asignacion.reasignarSolicitudAula(
+          c.get("auth"),
+          c.req.valid("param").id,
+          c.req.valid("json"),
+        ),
+        200,
+      ),
   );

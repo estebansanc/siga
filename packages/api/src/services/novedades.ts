@@ -108,6 +108,34 @@ const assertAulaLibre = async (
   }
 };
 
+// Novedad de bedelía que acompaña, en la misma transacción, un cambio de aula hecho al
+// resolver una solicitud (RF-16): los estudiantes ven el aula nueva sin acción del docente.
+export const crearNovedadCambioAula = async (
+  tx: DbTransaction,
+  datos: {
+    organizationId: string;
+    publicadaPorId: string;
+    comisionId: string;
+    claseId: string;
+    aulaAnteriorId: string;
+    aulaNuevaId: string;
+  },
+): Promise<NovedadDto> => {
+  const novedad = await tx.novedad.create({
+    data: {
+      organizationId: datos.organizationId,
+      comisionId: datos.comisionId,
+      tipo: "CAMBIO_AULA",
+      aulaNuevaId: datos.aulaNuevaId,
+      publicadaPorId: datos.publicadaPorId,
+      publicadaPorBedelia: true,
+      clases: { create: { claseId: datos.claseId, aulaAnteriorId: datos.aulaAnteriorId } },
+    },
+    include: novedadInclude,
+  });
+  return toNovedadDto(novedad);
+};
+
 // RF-05: una novedad sobre una o varias clases de la misma comisión. Registra quién la
 // publica, cambia el estado de cada clase según el tipo y, si es Cambio de aula, reserva el
 // aula nueva; todo o nada (FIAB-6).

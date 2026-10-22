@@ -6,6 +6,8 @@ import {
   crearSolicitudAulaSchema,
   esAsignacionInmediata,
   mensajeAlumnosInvalidos,
+  mensajeMotivoRechazoVacio,
+  rechazarSolicitudAulaSchema,
 } from "./solicitudes-aula";
 
 describe("alumnosSolicitudSchema", () => {
@@ -64,5 +66,20 @@ describe("esAsignacionInmediata", () => {
 
   it("no lo es a 30 minutos o más", () => {
     expect(esAsignacionInmediata(new Date("2026-10-21T15:30:00Z"), ahora)).toBe(false);
+  });
+});
+
+describe("rechazarSolicitudAulaSchema", () => {
+  it("exige un motivo no vacío", () => {
+    for (const motivo of ["", "   "]) {
+      const resultado = rechazarSolicitudAulaSchema.safeParse({ motivo });
+      expect(resultado.error?.issues[0]?.message).toBe(mensajeMotivoRechazoVacio);
+    }
+  });
+
+  it("recorta el motivo y lo limita a 280 caracteres", () => {
+    expect(rechazarSolicitudAulaSchema.parse({ motivo: "  Obras  " }).motivo).toBe("Obras");
+    expect(rechazarSolicitudAulaSchema.safeParse({ motivo: "x".repeat(280) }).success).toBe(true);
+    expect(rechazarSolicitudAulaSchema.safeParse({ motivo: "x".repeat(281) }).success).toBe(false);
   });
 });

@@ -185,6 +185,69 @@ export const avisoEmail = (context: AvisoEmailContext): EmailContent => {
       ],
       { label: "Ver los avisos", url: context.avisosUrl },
       footer,
+export type ResolucionAula = "APROBADA" | "RECHAZADA" | "REASIGNADA" | "ASIGNADA";
+
+export type SolicitudAulaEmailContext = {
+  resolucion: ResolucionAula;
+  materia: string;
+  comision: string;
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+  aula: string;
+  aulaAnterior: string | null;
+  motivo: string | null;
+  url: string;
+};
+
+const asuntosAula: Record<ResolucionAula, string> = {
+  APROBADA: "Solicitud de aula aprobada",
+  RECHAZADA: "Solicitud de aula rechazada",
+  REASIGNADA: "Cambio de aula",
+  ASIGNADA: "Aula asignada",
+};
+
+const introsAula: Record<ResolucionAula, string> = {
+  APROBADA: "Bedelía aprobó la solicitud de aula para tu clase.",
+  RECHAZADA: "Bedelía rechazó la solicitud de aula para tu clase y la clase conserva su aula.",
+  REASIGNADA: "Bedelía cambió el aula de tu clase.",
+  ASIGNADA: "Bedelía asignó un aula a tu clase.",
+};
+
+const filasAula = (context: SolicitudAulaEmailContext): SummaryRow[] => {
+  switch (context.resolucion) {
+    case "RECHAZADA":
+      return [
+        ["Aula pedida", context.aula],
+        ["Motivo", context.motivo ?? ""],
+      ];
+    case "REASIGNADA":
+      return [
+        ["Aula anterior", context.aulaAnterior ?? ""],
+        ["Aula nueva", context.aula],
+      ];
+    default:
+      return [["Aula", context.aula]];
+  }
+};
+
+// Les llega a los docentes de la comisión cuando bedelía resuelve un pedido de aula o asigna
+// una a una clase sin aula.
+export const solicitudAulaEmail = (context: SolicitudAulaEmailContext): EmailContent => {
+  const subject = `${asuntosAula[context.resolucion]}: ${context.materia} ${context.comision}`;
+  return {
+    subject,
+    html: emailLayout(
+      asuntosAula[context.resolucion],
+      [introsAula[context.resolucion]],
+      [
+        ["Materia", context.materia],
+        ["Comisión", context.comision],
+        ["Fecha", isoToArgentine(context.fecha)],
+        ["Franja", `${context.horaInicio} a ${context.horaFin}`],
+        ...filasAula(context),
+      ],
+      { label: "Ver mis clases", url: context.url },
     ),
   };
 };

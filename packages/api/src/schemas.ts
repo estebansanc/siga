@@ -420,9 +420,14 @@ export const solicitudAulaSchema = z
     comentario: z.string().nullable(),
     motivoRechazo: z.string().nullable(),
     createdAt: z.string(),
+    resueltaEn: z.string().nullable(),
+    solicitante: usuarioResumenSchema,
     aula: aulaResumenSchema,
     clase: z.object({
       id: z.string(),
+      aula: aulaResumenSchema.nullable().openapi({
+        description: "El aula que tiene hoy la clase; null si no tiene",
+      }),
       fecha: z.string(),
       horaInicio: z.string(),
       horaFin: z.string(),
@@ -517,3 +522,8 @@ export const opcionesHistoricoSchema = z
   })
   .openapi("OpcionesHistorico");
 export type OpcionesHistoricoDto = z.infer<typeof opcionesHistoricoSchema>;
+
+export const clasesSinAulaSchema = z
+  .object({ clases: z.array(claseSchema) })
+  .openapi("ClasesSinAula");
+export type ClasesSinAulaDto = z.infer<typeof clasesSinAulaSchema>;
