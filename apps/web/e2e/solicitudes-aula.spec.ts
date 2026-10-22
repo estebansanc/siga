@@ -2,8 +2,11 @@ import type { Page } from "@playwright/test";
 
 import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
 
-const item = (page: Page, texto: string | RegExp) =>
-  page.locator('[data-slot="item"]').filter({ hasText: texto });
+const item = (page: Page, ...textos: (string | RegExp)[]) =>
+  textos.reduce(
+    (items, texto) => items.filter({ hasText: texto }),
+    page.locator('[data-slot="item"]'),
+  );
 
 const cantidadCambiosDeAula = async (page: Page) => {
   const response = await page.request.get("/api/v1/novedades");
@@ -24,9 +27,9 @@ test.describe("Solicitudes de aula", () => {
     await page.goto("/solicitudes");
     await expect(page.getByRole("heading", { name: "Solicitudes de aula" })).toBeVisible();
 
-    const proyectoFinal = item(page, /Proyecto Final · 5K2/);
-    const sistemasDeGestion = item(page, /Sistemas de Gestión · 4K2/);
-    await expect(proyectoFinal).toContainText("Aula pedida: Laboratorio 3");
+    const proyectoFinal = item(page, /Proyecto Final · 5K2/, "Aula pedida: Laboratorio 3");
+    const sistemasDeGestion = item(page, /Sistemas de Gestión · 4K2/, "Aula pedida: Aula 12");
+    await expect(proyectoFinal).toHaveCount(1);
     await expect(sistemasDeGestion).toContainText("Marcos Álvarez");
 
     await proyectoFinal.getByRole("button", { name: "Aprobar" }).click();
@@ -37,7 +40,7 @@ test.describe("Solicitudes de aula", () => {
     await expect(page.getByText("Solicitud aprobada")).toBeVisible();
     await expect(proyectoFinal).toHaveCount(0);
     await page.getByRole("tab", { name: "Aprobadas" }).click();
-    await expect(item(page, /Proyecto Final · 5K2/)).toContainText("Aprobada");
+    await expect(item(page, /Proyecto Final · 5K2/, "Aprobada", "Aula 3 (")).toHaveCount(1);
 
     await page.goto("/novedades");
     await expect(page.getByText("Cambio de aula").first()).toBeVisible();
@@ -51,9 +54,9 @@ test.describe("Solicitudes de aula", () => {
     await rechazo.getByRole("button", { name: "Rechazar" }).click();
     await expect(page.getByText("Solicitud rechazada")).toBeVisible();
     await page.getByRole("tab", { name: "Rechazadas" }).click();
-    await expect(item(page, /Sistemas de Gestión · 4K2/)).toContainText(
-      "Motivo del rechazo: Hay obras en el aula",
-    );
+    await expect(
+      item(page, /Sistemas de Gestión · 4K2/, "Motivo del rechazo: Hay obras en el aula"),
+    ).toHaveCount(1);
 
     await page.getByRole("tab", { name: "Asignadas" }).click();
     const asignada = item(page, /Administración Gerencial · 5K2/);

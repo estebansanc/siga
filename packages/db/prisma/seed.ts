@@ -385,9 +385,16 @@ const resetOperationalData = async () => {
   });
 };
 
-const proximaClase = async (comisionId: string, diaSemana?: number, fecha?: string) => {
+const proximaClase = async (
+  comisionId: string,
+  {
+    diaSemana,
+    fecha,
+    despuesDe = hoy,
+  }: { diaSemana?: number; fecha?: string; despuesDe?: string } = {},
+) => {
   const candidatas = await prisma.claseProgramada.findMany({
-    where: { comisionId, fecha: fecha ? toDateColumn(fecha) : { gt: toDateColumn(hoy) } },
+    where: { comisionId, fecha: fecha ? toDateColumn(fecha) : { gt: toDateColumn(despuesDe) } },
     orderBy: { inicio: "asc" },
     take: 14,
   });
@@ -399,13 +406,14 @@ const proximaClase = async (comisionId: string, diaSemana?: number, fecha?: stri
 };
 
 // Datos de RF-16 para QA y e2e, anclados a fechas futuras para no depender de la hora: dos
-// solicitudes Pendientes (docente-1), una Asignada y tres clases sin aula en los próximos días.
+// solicitudes Pendientes (docente-1), una Asignada y dos clases sin aula en los próximos días.
+// La de Proyecto Final queda pasado el próximo día hábil, que usan los e2e de Solicitar aula.
 // La Pendiente de 4K2 y la clase sin aula de Simulación coinciden en día y franja.
 const sembrarSolicitudesDeAula = async () => {
-  const simulacion = await proximaClase("comision-5k2-sim", 2);
+  const simulacion = await proximaClase("comision-5k2-sim", { diaSemana: 2 });
   const fechaSimulacion = fromDateColumn(simulacion.fecha);
-  const proyectoFinal = await proximaClase("comision-5k2-pf");
-  const sistemasDeGestion = await proximaClase("comision-4k2-sg", undefined, fechaSimulacion);
+  const proyectoFinal = await proximaClase("comision-5k2-pf", { despuesDe: sumarDias(hoy, 3) });
+  const sistemasDeGestion = await proximaClase("comision-4k2-sg", { fecha: fechaSimulacion });
   const administracion = await proximaClase("comision-5k2-ag");
   const inteligencia = await proximaClase("comision-5k2-ia");
   await prisma.claseProgramada.updateMany({
