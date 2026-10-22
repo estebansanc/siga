@@ -38,7 +38,7 @@ Con la CLI (`npm i -g neon && neon login`) todo se puede hacer sin copiar creden
 
 1. Crear el proyecto apuntando a `apps/web` con root directory `apps/web`, framework Next.js, pero **sin** conectar Git (o conectarlo y dejar `git.deploymentEnabled: false`).
 2. Agregar los dominios de producción y de staging al proyecto, y asignar los de staging a la rama `develop` por API (ver "Dominios"). Sin eso Vercel los trata como dominios de producción y cada deploy de producción se los queda.
-3. Variables por environment (Production y Preview): `DATABASE_URL`, `DIRECT_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CRON_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM` y, si el producto sube archivos, `STORAGE_*`. Las de Production se cargan con `vercel env add <NOMBRE> production`; las de Preview, que son las de staging, desde el dashboard y **sin scope de rama**: sin Git conectado, Vercel no permite scope por rama y la CLI falla con "does not have a connected Git repository". `BETTER_AUTH_URL` y `NEXT_PUBLIC_APP_URL` valen `https://app.<dominio>` en Production y `https://staging.<dominio>` en Preview; como `NEXT_PUBLIC_*` se fija en el build, cambiarlas exige un redeploy. `RATE_LIMIT` y `AUTH_RATE_LIMIT` no hacen falta en Vercel: vienen activos y solo se apagan (`off`) en los e2e. `NEXT_PUBLIC_APP_URL` es además la base de los links que van por email.
+3. Variables por environment (Production y Preview): `DATABASE_URL`, `DIRECT_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CRON_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM` y `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY_ID` y `STORAGE_SECRET_ACCESS_KEY` (Cloudflare R2, fotos de incidencias). Las de Production se cargan con `vercel env add <NOMBRE> production`; las de Preview, que son las de staging, desde el dashboard y **sin scope de rama**: sin Git conectado, Vercel no permite scope por rama y la CLI falla con "does not have a connected Git repository". `BETTER_AUTH_URL` y `NEXT_PUBLIC_APP_URL` valen `https://app.<dominio>` en Production y `https://staging.<dominio>` en Preview; como `NEXT_PUBLIC_*` se fija en el build, cambiarlas exige un redeploy. `RATE_LIMIT` y `AUTH_RATE_LIMIT` no hacen falta en Vercel: vienen activos y solo se apagan (`off`) en los e2e. `NEXT_PUBLIC_APP_URL` es además la base de los links que van por email.
 4. Token de Vercel (`VERCEL_TOKEN`), `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
 5. **Región y pooler.** Cada viaje a la base pesa lo que la distancia entre la función y Neon: la región de las funciones (`vercel project inspect`; por defecto `iad1`, Washington) tiene que coincidir con la del proyecto de Neon (`neon projects get <id>`; `aws-us-east-1` para `iad1`, `aws-sa-east-1` para `gru1`). Si no coinciden, fijar `"regions": ["<región>"]` en `apps/web/vercel.json` o mover el proyecto de Neon. `DATABASE_URL` tiene que ser la URL **pooled** de Neon (host con `-pooler`): `neon connection-string <branch> --pooled`; `DIRECT_URL` la directa, solo para migraciones. La ruta de la API declara `maxDuration = 60` para que lo diferido termine después de responder.
 
@@ -93,9 +93,18 @@ Environments:
 
 Cliente OAuth 2.0 (Google Auth Platform → Clientes) con un redirect URI por ambiente: `http://localhost:3000/api/auth/callback/google`, `https://staging.<dominio>/api/auth/callback/google` y `https://app.<dominio>/api/auth/callback/google`. En Branding, `<dominio>` como dominio autorizado.
 
-### Cloudflare R2 (opcional)
+### Cloudflare R2
 
-Solo si el producto sube archivos. Un bucket por ambiente, token con permisos de lectura/escritura de objetos. La política CORS de cada bucket (Settings → CORS Policy) lleva en `AllowedOrigins` el origen exacto de su ambiente, `https://staging.<dominio>` o `https://app.<dominio>`: el navegador hace el `PUT` directo al bucket y sin ese origen la subida falla.
+SiGA lo usa para las fotos de las incidencias de aulas (RF-15, ADR 006): sin él, reportar una incidencia con foto responde 503 nombrando las variables que faltan, y el resto de la app funciona igual. Un bucket privado por ambiente (staging y producción) y un token con permisos de lectura y escritura de objetos. Variables de Vercel, en Production y Preview:
+
+| Variable                    | Valor                                           |
+| --------------------------- | ----------------------------------------------- |
+| `STORAGE_ENDPOINT`          | `https://<account-id>.r2.cloudflarestorage.com` |
+| `STORAGE_BUCKET`            | Nombre del bucket del ambiente                  |
+| `STORAGE_ACCESS_KEY_ID`     | Access Key ID del token de R2                   |
+| `STORAGE_SECRET_ACCESS_KEY` | Secret Access Key del token de R2               |
+
+Las cuatro son obligatorias a la vez; localmente se dejan vacías (ver `.env.example`). La política CORS de cada bucket (Settings → CORS Policy) lleva en `AllowedOrigins` el origen exacto de su ambiente, `https://staging.<dominio>` o `https://app.<dominio>`: el navegador hace el `PUT` directo al bucket y sin ese origen la subida falla.
 
 ### Resend
 
