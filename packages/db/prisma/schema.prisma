@@ -597,6 +597,8 @@ model SolicitudAula {
   @@index([organizationId, solicitanteId, createdAt])
   @@index([claseId, estado])
   @@map("solicitud_aula")
+}
+
 // Cada código de QR de asistencia emitido por un bedel. `token` es único y firmado; `venceEn`
 // es el menor entre 60 s desde `emitidoEn` y el fin del turno.
 model SesionQr {
