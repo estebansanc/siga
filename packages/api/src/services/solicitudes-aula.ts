@@ -197,13 +197,13 @@ const assertSinPendiente = async (tx: DbTransaction, claseId: string) => {
 };
 
 // Serializa las asignaciones del mismo aula: sin el lock, dos pedidos a la vez pasarían ambos
-// la verificación de franja libre. El update condicionado al aula que se leyó evita pisar el
-// cambio de otra operación sobre la misma clase.
+// la verificación de franja libre.
 export const bloquearAula = (tx: DbTransaction, aulaId: string) =>
   tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${aulaId}))`;
 
 // El estado del aula se lee con el lock tomado: así no cambia entre la verificación y la
-// asignación. Devuelve el aula para quien necesite su código.
+// asignación. El update condicionado al aula que se leyó evita pisar el cambio de otra
+// operación sobre la misma clase. Devuelve el aula para quien necesite su código.
 export const asignarAulaALaClase = async (
   tx: DbTransaction,
   organizationId: string,
