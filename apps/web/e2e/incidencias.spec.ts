@@ -1,17 +1,17 @@
 import type { Page } from "@playwright/test";
 
 import {
+  crearClaseDeHoyConAula,
+  eliminarClaseConAula,
+  incidenciasDelAula,
+} from "./support/clase-de-hoy";
+import {
   expect,
   expectNoHorizontalPageScroll,
   loginViaUi,
   seededUsers,
   test,
 } from "./support/fixtures";
-import {
-  crearClaseDeHoyConAula,
-  eliminarClaseConAula,
-  incidenciasDelAula,
-} from "./support/clase-de-hoy";
 
 type AulaCreada = { id: string; codigo: string };
 
