@@ -1,12 +1,38 @@
 "use client";
 
-import type { GenerarQrInput } from "@repo/domain";
+import type { ClaseDto } from "@repo/api/client";
+import { metodoAsistenciaLabels, type GenerarQrInput } from "@repo/domain";
 import { Badge } from "@repo/ui/components/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/card";
-import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@repo/ui/components/item";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from "@repo/ui/components/item";
 import { Skeleton } from "@repo/ui/components/skeleton";
+import { CircleCheckIcon, CircleDashedIcon } from "lucide-react";
 
 import { useClasesDelTurno } from "@/hooks/use-qr";
+
+function AsistenciaBadge({ asistencia }: { asistencia: ClaseDto["asistencia"] }) {
+  if (!asistencia) {
+    return (
+      <Badge variant="outline">
+        <CircleDashedIcon />
+        Sin registro
+      </Badge>
+    );
+  }
+  return (
+    <Badge>
+      <CircleCheckIcon />
+      {metodoAsistenciaLabels[asistencia.metodo]} · {asistencia.horaLlegada}
+    </Badge>
+  );
+}
 
 export function ClasesDelTurno({ consulta }: { consulta: GenerarQrInput }) {
   const clases = useClasesDelTurno(consulta);
@@ -35,6 +61,9 @@ export function ClasesDelTurno({ consulta }: { consulta: GenerarQrInput }) {
                       "Sin docente asignado"}
                   </ItemDescription>
                 </ItemContent>
+                <ItemActions>
+                  <AsistenciaBadge asistencia={clase.asistencia} />
+                </ItemActions>
               </Item>
             ))}
           </ItemGroup>

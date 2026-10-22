@@ -11,6 +11,8 @@ export const useClasesDelTurno = (consulta: GenerarQrInput) =>
   useQuery({
     queryKey: queryKeys.clasesDelTurno(consulta),
     queryFn: () => unwrap<ClaseDto[]>(api.qr.clases.$get({ query: consulta })),
+    // El bedel ve aparecer las asistencias a medida que los docentes escanean.
+    refetchInterval: 15_000,
   });
 
 export const useGenerarQr = () =>

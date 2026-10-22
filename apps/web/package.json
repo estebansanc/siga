@@ -22,6 +22,7 @@
     "@repo/ui": "workspace:*",
     "@serwist/turbopack": "^9.5.12",
     "@tanstack/react-query": "^5.102.8",
+    "barcode-detector": "^3.2.3",
     "better-auth": "^1.7.2",
     "date-fns": "^4.4.0",
     "hono": "^4.13.5",

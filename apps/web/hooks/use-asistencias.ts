@@ -1,7 +1,7 @@
 "use client";
 
-import type { AsistenciaDto } from "@repo/api/client";
-import type { RegistroManualInput } from "@repo/domain";
+import type { AsistenciaDto, RegistroQrResultadoDto } from "@repo/api/client";
+import type { RegistroManualInput, RegistroQrInput } from "@repo/domain";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api, unwrap } from "@/lib/api-client";
@@ -17,5 +17,18 @@ export const useRegistrarAsistenciaManual = () => {
     mutationFn: (input: RegistroManualInput) =>
       unwrap<AsistenciaDto>(api.asistencias.manual.$post({ json: input })),
     onSettled: refrescarClases,
+  });
+};
+
+export const useRegistrarAsistenciaQr = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: RegistroQrInput) =>
+      unwrap<RegistroQrResultadoDto>(api.asistencias.qr.$post({ json: input })),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["clases"] }),
+        queryClient.invalidateQueries({ queryKey: ["clase"] }),
+      ]),
   });
 };
