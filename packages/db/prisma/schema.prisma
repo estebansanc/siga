@@ -27,15 +27,15 @@ model User {
   comisionesDictadas       ComisionDocente[]
   comisionesSeguidas       ComisionSeguida[]
   notificaciones           Notificacion[]
-  novedadesPublicadas      Novedad[]             @relation("NovedadPublicadaPor")
-  novedadesFinalizadas     Novedad[]             @relation("NovedadFinalizadaPor")
-  avisosPublicados         Aviso[]               @relation("AvisoPublicadoPor")
+  novedadesPublicadas      Novedad[]                  @relation("NovedadPublicadaPor")
+  novedadesFinalizadas     Novedad[]                  @relation("NovedadFinalizadaPor")
+  avisosPublicados         Aviso[]                    @relation("AvisoPublicadoPor")
   estadosInstitucionales   EstadoInstitucional[]
   solicitudesAula          SolicitudAula[]
   sesionesQr               SesionQr[]
-  asistencias              AsistenciaDocente[]   @relation("AsistenciaDocente")
-  asistenciasRegistradas   AsistenciaDocente[]   @relation("AsistenciaRegistrada")
-  solicitudesAulaResueltas SolicitudAula[]       @relation("SolicitudAulaResueltaPor")
+  asistencias              AsistenciaDocente[]        @relation("AsistenciaDocente")
+  asistenciasRegistradas   AsistenciaDocente[]        @relation("AsistenciaRegistrada")
+  solicitudesAulaResueltas SolicitudAula[]            @relation("SolicitudAulaResueltaPor")
   incidenciasReportadas    Incidencia[]
   incidenciaEstados        IncidenciaEstado[]
   intentosAsistencia       IntentoAsistenciaFallido[]
@@ -625,18 +625,18 @@ model SolicitudAula {
 // Cada código de QR de asistencia emitido por un bedel. `token` es único y firmado; `venceEn`
 // es el menor entre 60 s desde `emitidoEn` y el fin del turno.
 model SesionQr {
-  id             String       @id @default(cuid())
+  id             String              @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   aulaId         String
-  aula           Aula         @relation(fields: [aulaId], references: [id], onDelete: Cascade)
-  fecha          DateTime     @db.Date
+  aula           Aula                @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+  fecha          DateTime            @db.Date
   turno          Turno
   token          String
-  emitidoEn      DateTime     @default(now())
+  emitidoEn      DateTime            @default(now())
   venceEn        DateTime
   bedelId        String
-  bedel          User         @relation(fields: [bedelId], references: [id], onDelete: Cascade)
+  bedel          User                @relation(fields: [bedelId], references: [id], onDelete: Cascade)
   asistencias    AsistenciaDocente[]
 
   @@unique([token])
@@ -694,22 +694,22 @@ enum ValidacionPresencia {
 // es el instante de llegada; `registradaPorId` es quien la cargó (el Bedel en el registro
 // manual, el propio docente en el QR). `motivo` solo existe en el registro manual.
 model AsistenciaDocente {
-  id              String           @id @default(cuid())
+  id              String               @id @default(cuid())
   organizationId  String
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  claseId         String           @unique
-  clase           ClaseProgramada  @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  claseId         String               @unique
+  clase           ClaseProgramada      @relation(fields: [claseId], references: [id], onDelete: Cascade)
   docenteId       String
-  docente         User             @relation("AsistenciaDocente", fields: [docenteId], references: [id], onDelete: Cascade)
+  docente         User                 @relation("AsistenciaDocente", fields: [docenteId], references: [id], onDelete: Cascade)
   metodo          MetodoAsistencia
   horaLlegada     DateTime
   motivo          String?
   validacion      ValidacionPresencia?
   sesionQrId      String?
-  sesionQr        SesionQr?        @relation(fields: [sesionQrId], references: [id], onDelete: SetNull)
+  sesionQr        SesionQr?            @relation(fields: [sesionQrId], references: [id], onDelete: SetNull)
   registradaPorId String
-  registradaPor   User             @relation("AsistenciaRegistrada", fields: [registradaPorId], references: [id], onDelete: Cascade)
-  createdAt       DateTime         @default(now())
+  registradaPor   User                 @relation("AsistenciaRegistrada", fields: [registradaPorId], references: [id], onDelete: Cascade)
+  createdAt       DateTime             @default(now())
 
   @@unique([sesionQrId, docenteId])
   @@index([organizationId, createdAt])
@@ -729,6 +729,8 @@ model IntentoAsistenciaFallido {
 
   @@index([userId, createdAt])
   @@map("intento_asistencia_fallido")
+}
+
 // ---------- SiGA: incidencias de infraestructura ----------
 
 enum ElementoIncidencia {
