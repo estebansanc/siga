@@ -1,5 +1,6 @@
 "use client";
 
+import type { BajaCorreoResultadoDto } from "@repo/api/client";
 import { useMutation } from "@tanstack/react-query";
 
 import { api, unwrap } from "@/lib/api-client";
@@ -7,5 +8,5 @@ import { api, unwrap } from "@/lib/api-client";
 export const useBajaCorreo = () =>
   useMutation({
     mutationFn: (token: string) =>
-      unwrap<{ ok: true }>(api.preferencias["baja-correo"].$post({ json: { token } })),
+      unwrap<BajaCorreoResultadoDto>(api.preferencias["baja-correo"].$post({ json: { token } })),
   });

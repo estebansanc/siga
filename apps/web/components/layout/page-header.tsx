@@ -2,6 +2,7 @@ import { Separator } from "@repo/ui/components/separator";
 import { SidebarTrigger } from "@repo/ui/components/sidebar";
 import type { ReactNode } from "react";
 
+import { AvisosUrgentesIndicator } from "@/components/avisos/avisos-urgentes-indicator";
 import { EstadoIndicator } from "@/components/estado-institucional/estado-indicator";
 
 // El indicador de estado institucional va en todas las pantallas (RF-08); solo el esqueleto
@@ -25,7 +26,12 @@ export function PageHeader({
       <h1 className="truncate text-base font-semibold">{title}</h1>
       <div className="ml-auto flex min-w-0 items-center gap-2">
         {children}
-        {estado ? <EstadoIndicator /> : null}
+        {estado ? (
+          <>
+            <AvisosUrgentesIndicator />
+            <EstadoIndicator />
+          </>
+        ) : null}
       </div>
     </header>
   );

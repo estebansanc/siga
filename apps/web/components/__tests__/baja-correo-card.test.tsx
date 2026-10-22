@@ -15,7 +15,7 @@ beforeEach(() => baja.mockReset());
 
 describe("BajaCorreoCard", () => {
   it("da de baja al apretar el botón y confirma", async () => {
-    baja.mockResolvedValue({ ok: true });
+    baja.mockResolvedValue({ ok: true, tipo: "novedades" });
     renderWithProviders(<BajaCorreoCard token="abc.def" />);
     expect(baja).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole("button", { name: /Dejar de recibir/ }));
@@ -25,6 +25,19 @@ describe("BajaCorreoCard", () => {
       ),
     ).toBeInTheDocument();
     expect(baja).toHaveBeenCalledWith("abc.def");
+  });
+
+  it("la baja de avisos confirma con el texto de avisos institucionales", async () => {
+    baja.mockResolvedValue({ ok: true, tipo: "avisos" });
+    renderWithProviders(<BajaCorreoCard token="avisos.abc.def" />);
+    expect(
+      screen.getByText("Dejás de recibir los avisos institucionales por correo."),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /Dejar de recibir/ }));
+    expect(
+      await screen.findByText("Listo, ya no vas a recibir avisos institucionales por correo."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("con un enlace alterado muestra el error exacto", async () => {

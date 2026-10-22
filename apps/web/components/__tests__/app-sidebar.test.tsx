@@ -130,10 +130,17 @@ describe("AppSidebar", () => {
     );
   });
 
-  it("el docente ve Asistencia, Novedades y Aulas; la autoridad, Consultas históricas y Estado", () => {
+  it("el docente ve Asistencia, Novedades, Avisos y Aulas; la autoridad, Consultas históricas y Estado", () => {
     pathnameState.current = "/novedades";
     const docente = renderSidebar("member", meOf([ownOrganization], "DOCENTE"));
-    expect(linkNames()).toEqual(["Mis clases", "Asistencia", "Novedades", "Aulas", "Buscar"]);
+    expect(linkNames()).toEqual([
+      "Mis clases",
+      "Asistencia",
+      "Novedades",
+      "Avisos",
+      "Aulas",
+      "Buscar",
+    ]);
     expect(screen.getByRole("link", { name: "Novedades" })).toHaveAttribute("data-active");
     expect(screen.getByRole("link", { name: "Mis clases" })).not.toHaveAttribute("data-active");
     docente.unmount();

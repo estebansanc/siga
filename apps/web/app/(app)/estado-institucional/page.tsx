@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { AvisosVigentesCard } from "@/components/avisos/avisos-vigentes-card";
 import { CambiarEstadoForm } from "@/components/estado-institucional/cambiar-estado-form";
 import { EstadoActualCard } from "@/components/estado-institucional/estado-actual-card";
 import { HistorialTable } from "@/components/estado-institucional/historial-table";
@@ -23,7 +24,10 @@ export default async function EstadoInstitucionalPage() {
             <EstadoActualCard />
             {esBedel ? <CambiarEstadoForm /> : null}
           </div>
-          <HistorialTable />
+          <div className="flex flex-col gap-4">
+            <AvisosVigentesCard />
+            <HistorialTable />
+          </div>
         </div>
       </PageBody>
     </>

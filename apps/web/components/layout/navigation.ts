@@ -70,6 +70,7 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     misClases,
     { title: "Asistencia", href: "/asistencia", icon: QrCodeIcon },
     novedades,
+    avisos,
     aulas,
     buscar,
   ],

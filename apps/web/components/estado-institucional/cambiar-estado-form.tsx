@@ -31,11 +31,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import { OfrecerAvisoDialog } from "@/components/avisos/ofrecer-aviso-dialog";
 import { ConfirmDialog } from "@/components/settings/confirm-dialog";
 import {
   useCambiarEstadoInstitucional,
   useEstadoInstitucional,
 } from "@/hooks/use-estado-institucional";
+import { ofreceAviso, type CambioDeEstado } from "@/lib/aviso-precargado";
 import { showRequestError } from "@/lib/form-errors";
 
 const motivoMax = 280;
@@ -48,6 +50,7 @@ export function CambiarEstadoForm() {
   const estadoActual = useEstadoInstitucional();
   const cambiar = useCambiarEstadoInstitucional();
   const [pendiente, setPendiente] = useState<CambiarEstadoInstitucional | null>(null);
+  const [avisoOfrecido, setAvisoOfrecido] = useState<CambioDeEstado | null>(null);
   const form = useForm<CambiarEstadoInstitucionalInput, unknown, CambiarEstadoInstitucional>({
     resolver: zodResolver(cambiarEstadoInstitucionalSchema),
     defaultValues: { estado: "ABIERTA", motivo: "", vigenciaHasta: "" },
@@ -66,6 +69,10 @@ export function CambiarEstadoForm() {
       );
       form.reset({ estado: values.estado, motivo: "", vigenciaHasta: "" });
       setPendiente(null);
+      const registrado = cambio.estado;
+      if (ofreceAviso(registrado.estado)) {
+        setAvisoOfrecido({ ...registrado, estado: registrado.estado });
+      }
     } catch (error) {
       showRequestError(error, form.setError);
     }
@@ -144,6 +151,9 @@ export function CambiarEstadoForm() {
           pending={cambiar.isPending}
           onConfirm={() => void enviar(pendiente)}
         />
+      ) : null}
+      {avisoOfrecido ? (
+        <OfrecerAvisoDialog cambio={avisoOfrecido} onClose={() => setAvisoOfrecido(null)} />
       ) : null}
     </Card>
   );

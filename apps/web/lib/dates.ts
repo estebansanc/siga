@@ -1,4 +1,4 @@
-import { argentinaTimeZone } from "@repo/domain";
+import { argentinaTimeZone, fechaArgentina, horaArgentina } from "@repo/domain";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -38,3 +38,13 @@ export const formatFechaLarga = (fecha: string) =>
 
 // "14/10/2026", a partir de una fecha `yyyy-mm-dd`.
 export const formatFechaCorta = (fecha: string) => fecha.split("-").reverse().join("/");
+
+// El `datetime-local` entrega "2026-10-14T23:30" sin zona: es hora argentina (DAT-1). Vacío
+// queda como "" para que el esquema lo trate como no informado.
+export const inputArgentinoAIso = (value: unknown) =>
+  typeof value === "string" && value ? `${value}:00-03:00` : "";
+
+export const isoAInputArgentino = (iso: string) => {
+  const instante = new Date(iso);
+  return `${fechaArgentina(instante)}T${horaArgentina(instante)}`;
+};
