@@ -9,7 +9,6 @@ import { runWithDefer, type DeferAdapter } from "./deferred";
 import { ApiError } from "./errors";
 import { requireSession } from "./middleware";
 import { aulaRoutes } from "./routes/aulas";
-import { solicitudAulaRoutes } from "./routes/solicitudes-aula";
 import { claseRoutes } from "./routes/clases";
 import { cronRoutes } from "./routes/cron";
 import { carreraRoutes, comisionRoutes, materiaRoutes } from "./routes/datos-academicos";
@@ -20,6 +19,7 @@ import { memberRoutes } from "./routes/members";
 import { novedadRoutes } from "./routes/novedades";
 import { preferenciaRoutes } from "./routes/preferencias";
 import { settingsRoutes } from "./routes/settings";
+import { solicitudAulaRoutes } from "./routes/solicitudes-aula";
 import { measureRequest } from "./timing";
 
 export const apiBasePath = "/api/v1";

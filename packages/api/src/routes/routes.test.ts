@@ -429,16 +429,18 @@ describe("Solicitudes de aula por HTTP", () => {
       `/solicitudes-aula/aulas?claseId=${clase.id}&alumnos=40&recursos=Proyector`,
     );
     expect(busqueda.status).toBe(200);
-    expect((await busqueda.json()).aulas.map((aula: { codigo: string }) => aula.codigo)).toEqual([
-      "Aula 12",
-    ]);
+    expect(
+      ((await busqueda.json()) as { aulas: { codigo: string }[] }).aulas.map(
+        (aula: { codigo: string }) => aula.codigo,
+      ),
+    ).toEqual(["Aula 12"]);
 
     const pedido = { claseId: clase.id, aulaId: fixture.otraAulaId, alumnos: 40, recursos: [] };
     const creada = await call("/solicitudes-aula", json(pedido));
     expect(creada.status).toBe(201);
-    expect((await creada.json()).estado).toBe("PENDIENTE");
+    expect(((await creada.json()) as { estado: string }).estado).toBe("PENDIENTE");
     const duplicada = await call("/solicitudes-aula", json(pedido));
     expect(duplicada.status).toBe(409);
-    expect((await (await call("/solicitudes-aula/mias")).json()).length).toBe(1);
+    expect(((await (await call("/solicitudes-aula/mias")).json()) as unknown[]).length).toBe(1);
   });
 });
