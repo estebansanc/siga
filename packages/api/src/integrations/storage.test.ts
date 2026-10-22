@@ -16,7 +16,10 @@ describe("storage", () => {
   it("falla con 503 cuando no está configurado", async () => {
     vi.stubEnv("STORAGE_ENDPOINT", "");
     const { createUploadUrl } = await import("./storage");
-    await expect(createUploadUrl("k", "image/webp", 10)).rejects.toMatchObject({ status: 503 });
+    await expect(createUploadUrl("k", "image/webp", 10)).rejects.toMatchObject({
+      status: 503,
+      message: expect.stringContaining("STORAGE_ENDPOINT"),
+    });
   });
 
   it("firma URLs de subida y lectura contra el bucket configurado", async () => {

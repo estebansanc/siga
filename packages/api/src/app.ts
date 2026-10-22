@@ -16,6 +16,7 @@ import { cronRoutes } from "./routes/cron";
 import { carreraRoutes, comisionRoutes, materiaRoutes } from "./routes/datos-academicos";
 import { estadoInstitucionalRoutes } from "./routes/estado-institucional";
 import { historicoRoutes } from "./routes/historico";
+import { incidenciaRoutes } from "./routes/incidencias";
 import { invitationRoutes } from "./routes/invitations";
 import { meRoutes } from "./routes/me";
 import { memberRoutes } from "./routes/members";
@@ -87,7 +88,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
       title: "SiGA API",
       version: "1.0.0",
       description:
-        "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante y datos académicos base. Autenticación por cookie (web) o bearer token (móvil).",
+        "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante, datos académicos base, aulas, solicitudes de aula, asistencia docente e incidencias de infraestructura. Autenticación por cookie (web) o bearer token (móvil).",
     },
     security: [{ bearerAuth: [] }, { cookieAuth: [] }],
   });
@@ -113,6 +114,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
     .route("/comisiones", comisionRoutes)
     .route("/aulas", aulaRoutes)
     .route("/solicitudes-aula", solicitudAulaRoutes)
+    .route("/incidencias", incidenciaRoutes)
     .route("/qr", qrRoutes)
     .route("/asistencias", asistenciaRoutes)
     .route("/cron", cronRoutes);

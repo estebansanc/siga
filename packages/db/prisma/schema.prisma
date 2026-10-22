@@ -23,20 +23,22 @@ model User {
   invitations   Invitation[]
   auditLogs     AuditLog[]
 
-  profile                UserProfile?
-  comisionesDictadas     ComisionDocente[]
-  comisionesSeguidas     ComisionSeguida[]
-  notificaciones         Notificacion[]
-  novedadesPublicadas    Novedad[]             @relation("NovedadPublicadaPor")
-  novedadesFinalizadas   Novedad[]             @relation("NovedadFinalizadaPor")
-  avisosPublicados       Aviso[]               @relation("AvisoPublicadoPor")
-  estadosInstitucionales EstadoInstitucional[]
-  solicitudesAula        SolicitudAula[]
-  sesionesQr             SesionQr[]
-  asistencias            AsistenciaDocente[]   @relation("AsistenciaDocente")
-  asistenciasRegistradas AsistenciaDocente[]   @relation("AsistenciaRegistrada")
-  solicitudesAulaResueltas SolicitudAula[]     @relation("SolicitudAulaResueltaPor")
-  intentosAsistencia     IntentoAsistenciaFallido[]
+  profile                  UserProfile?
+  comisionesDictadas       ComisionDocente[]
+  comisionesSeguidas       ComisionSeguida[]
+  notificaciones           Notificacion[]
+  novedadesPublicadas      Novedad[]             @relation("NovedadPublicadaPor")
+  novedadesFinalizadas     Novedad[]             @relation("NovedadFinalizadaPor")
+  avisosPublicados         Aviso[]               @relation("AvisoPublicadoPor")
+  estadosInstitucionales   EstadoInstitucional[]
+  solicitudesAula          SolicitudAula[]
+  sesionesQr               SesionQr[]
+  asistencias              AsistenciaDocente[]   @relation("AsistenciaDocente")
+  asistenciasRegistradas   AsistenciaDocente[]   @relation("AsistenciaRegistrada")
+  solicitudesAulaResueltas SolicitudAula[]       @relation("SolicitudAulaResueltaPor")
+  incidenciasReportadas    Incidencia[]
+  incidenciaEstados        IncidenciaEstado[]
+  intentosAsistencia       IntentoAsistenciaFallido[]
 
   @@unique([email])
   @@map("user")
@@ -127,6 +129,7 @@ model Organization {
   sesionesQr             SesionQr[]
   asistencias            AsistenciaDocente[]
   intentosAsistencia     IntentoAsistenciaFallido[]
+  incidencias            Incidencia[]
 
   @@unique([slug])
   @@map("organization")
@@ -407,6 +410,7 @@ model Aula {
   novedadesAnteriores NovedadClase[]    @relation("NovedadClaseAulaAnterior")
   solicitudes         SolicitudAula[]
   sesionesQr          SesionQr[]
+  incidencias         Incidencia[]
 
   @@unique([organizationId, codigo])
   @@map("aula")
@@ -451,22 +455,22 @@ enum EstadoInstitucion {
 // Instancia de dictado. `fecha` es el día en hora argentina; `inicio` y `fin` son los
 // instantes exactos de la franja, para comparar con "ahora" sin convertir zonas.
 model ClaseProgramada {
-  id              String          @id @default(cuid())
+  id              String             @id @default(cuid())
   organizationId  String
-  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   comisionId      String
-  comision        Comision        @relation(fields: [comisionId], references: [id], onDelete: Cascade)
+  comision        Comision           @relation(fields: [comisionId], references: [id], onDelete: Cascade)
   horarioId       String?
-  horario         Horario?        @relation(fields: [horarioId], references: [id], onDelete: SetNull)
-  fecha           DateTime        @db.Date
+  horario         Horario?           @relation(fields: [horarioId], references: [id], onDelete: SetNull)
+  fecha           DateTime           @db.Date
   inicio          DateTime
   fin             DateTime
   aulaId          String?
-  aula            Aula?           @relation(fields: [aulaId], references: [id], onDelete: SetNull)
-  modalidad       Modalidad       @default(PRESENCIAL)
-  estado          EstadoClase     @default(PROGRAMADA)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  aula            Aula?              @relation(fields: [aulaId], references: [id], onDelete: SetNull)
+  modalidad       Modalidad          @default(PRESENCIAL)
+  estado          EstadoClase        @default(PROGRAMADA)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
   novedades       NovedadClase[]
   solicitudesAula SolicitudAula[]
   asistencia      AsistenciaDocente?
@@ -650,12 +654,12 @@ enum PrioridadAviso {
 // `carreraIds`, `anios` y `comisionIds` (estos tres, sobre las comisiones que el destinatario
 // sigue o dicta). Vigente entre `desde` y `hasta`; vencido pasa al historial.
 model Aviso {
-  id              String           @id @default(cuid())
+  id              String         @id @default(cuid())
   organizationId  String
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   titulo          String
   cuerpo          String
-  prioridad       PrioridadAviso   @default(NORMAL)
+  prioridad       PrioridadAviso @default(NORMAL)
   todos           Boolean
   perfiles        Perfil[]
   carreraIds      String[]
@@ -663,10 +667,10 @@ model Aviso {
   comisionIds     String[]
   desde           DateTime
   hasta           DateTime
-  enviarPorCorreo Boolean          @default(false)
+  enviarPorCorreo Boolean        @default(false)
   publicadoPorId  String
-  publicadoPor    User             @relation("AvisoPublicadoPor", fields: [publicadoPorId], references: [id], onDelete: Cascade)
-  createdAt       DateTime         @default(now())
+  publicadoPor    User           @relation("AvisoPublicadoPor", fields: [publicadoPorId], references: [id], onDelete: Cascade)
+  createdAt       DateTime       @default(now())
   notificaciones  Notificacion[]
 
   @@index([organizationId, hasta])
@@ -725,4 +729,64 @@ model IntentoAsistenciaFallido {
 
   @@index([userId, createdAt])
   @@map("intento_asistencia_fallido")
+// ---------- SiGA: incidencias de infraestructura ----------
+
+enum ElementoIncidencia {
+  PROYECTOR
+  CLIMATIZACION
+  ILUMINACION
+  MOBILIARIO
+  CONECTIVIDAD
+  OTRO
+}
+
+enum GravedadIncidencia {
+  LEVE
+  IMPIDE_USO
+}
+
+enum EstadoIncidencia {
+  ABIERTA
+  EN_CURSO
+  RESUELTA
+}
+
+// `fotoKey` es la clave del objeto en el bucket (ya comprimido a 1 MB o menos); la base no
+// guarda el archivo. Nace ABIERTA y el estado solo avanza; el historial vive en `IncidenciaEstado`.
+model Incidencia {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  aulaId         String
+  aula           Aula               @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+  elemento       ElementoIncidencia
+  descripcion    String
+  gravedad       GravedadIncidencia
+  estado         EstadoIncidencia   @default(ABIERTA)
+  fotoKey        String?
+  reportadaPorId String
+  reportadaPor   User               @relation(fields: [reportadaPorId], references: [id], onDelete: Cascade)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  historial      IncidenciaEstado[]
+
+  @@index([organizationId, estado, createdAt])
+  @@index([aulaId, createdAt])
+  @@map("incidencia")
+}
+
+// Solo inserts: una fila por estado que tomó la incidencia, con quién y cuándo.
+model IncidenciaEstado {
+  id            String           @id @default(cuid())
+  incidenciaId  String
+  incidencia    Incidencia       @relation(fields: [incidenciaId], references: [id], onDelete: Cascade)
+  estado        EstadoIncidencia
+  observaciones String?
+  userId        String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime         @default(now())
+
+  @@index([incidenciaId, createdAt])
+  @@index([userId])
+  @@map("incidencia_estado")
 }

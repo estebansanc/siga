@@ -1,13 +1,16 @@
 import { z } from "@hono/zod-openapi";
 import {
   alumnosSolicitudSchema,
+  elementoIncidenciaSchema,
   equipamientoSchema,
   emailStatusSchema,
   estadoAulaSchema,
   estadoSolicitudAulaSchema,
   estadoClaseSchema,
+  estadoIncidenciaSchema,
   estadoInstitucionSchema,
   estadoNovedadSchema,
+  gravedadIncidenciaSchema,
   invitationStatusSchema,
   metodoAsistenciaSchema,
   memberRoleSchema,
@@ -379,6 +382,58 @@ export const aulaClaseSchema = z
   .openapi("AulaClase");
 export type AulaClaseDto = z.infer<typeof aulaClaseSchema>;
 
+export const incidenciaSchema = z
+  .object({
+    id: z.string(),
+    aula: aulaGestionSchema.pick({
+      id: true,
+      codigo: true,
+      edificio: true,
+      piso: true,
+      estado: true,
+    }),
+    elemento: elementoIncidenciaSchema,
+    descripcion: z.string(),
+    gravedad: gravedadIncidenciaSchema,
+    estado: estadoIncidenciaSchema,
+    tieneFoto: z.boolean(),
+    createdAt: z.string(),
+    reportadaPor: usuarioResumenSchema,
+  })
+  .openapi("Incidencia");
+export type IncidenciaDto = z.infer<typeof incidenciaSchema>;
+
+export const incidenciaEstadoSchema = z
+  .object({
+    estado: estadoIncidenciaSchema,
+    observaciones: z.string().nullable(),
+    createdAt: z.string(),
+    usuario: usuarioResumenSchema,
+  })
+  .openapi("IncidenciaEstado");
+
+export const incidenciaDetalleSchema = incidenciaSchema
+  .extend({
+    fotoUrl: z.string().nullable().openapi({
+      description: "URL firmada de lectura, válida 1 hora; null si no tiene foto",
+    }),
+    historial: z.array(incidenciaEstadoSchema).openapi({
+      description: "Cada estado con fecha, hora y usuario, del más antiguo al más nuevo",
+    }),
+  })
+  .openapi("IncidenciaDetalle");
+export type IncidenciaDetalleDto = z.infer<typeof incidenciaDetalleSchema>;
+
+export const fotoSubidaSchema = z
+  .object({
+    key: z.string().openapi({ description: "Se envía como `fotoKey` al crear la incidencia" }),
+    uploadUrl: z
+      .string()
+      .openapi({ description: "URL firmada para un PUT directo, válida 5 minutos" }),
+  })
+  .openapi("FotoSubida");
+export type FotoSubidaDto = z.infer<typeof fotoSubidaSchema>;
+
 export const aulaDetalleSchema = aulaGestionSchema
   .extend({
     clases: z.array(aulaClaseSchema).openapi({ description: "Hoy y los próximos 7 días" }),
@@ -386,6 +441,9 @@ export const aulaDetalleSchema = aulaGestionSchema
       description:
         "Clases asignadas que todavía no terminaron: las que afecta pasar el aula a Fuera de servicio, En mantenimiento o darla de baja",
     }),
+    incidencias: z
+      .array(incidenciaSchema)
+      .openapi({ description: "Las incidencias del aula, recientes primero" }),
   })
   .openapi("AulaDetalle");
 export type AulaDetalleDto = z.infer<typeof aulaDetalleSchema>;

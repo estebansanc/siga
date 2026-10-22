@@ -642,3 +642,101 @@ describe("Solicitudes de aula por HTTP", () => {
     expect(((await asignada.json()) as { aula: { codigo: string } }).aula.codigo).toBe("Aula 7");
   });
 });
+
+describe("Incidencias por HTTP", () => {
+  const reporte = (aulaId: string, datos: object = {}) => ({
+    aulaId,
+    elemento: "PROYECTOR",
+    descripcion: "  No enciende  ",
+    gravedad: "IMPIDE_USO",
+    ...datos,
+  });
+
+  it("Estudiante y Autoridad no ven ni reportan; el Docente reporta pero no gestiona", async () => {
+    const institution = await createInstitution();
+    const fixture = await seedAcademicFixture(institution);
+    const clase = await createClase(institution, fixture, "2099-10-14");
+    for (const perfil of ["ESTUDIANTE", "AUTORIDAD"] as const) {
+      getAuthContext.mockResolvedValue(
+        authOf(institution, await createUserWithPerfil(institution, perfil)),
+      );
+      expect((await call("/incidencias")).status).toBe(403);
+      expect((await call("/incidencias", json(reporte(fixture.aulaId)))).status).toBe(403);
+      expect(
+        (await call("/incidencias/fotos", json({ contentType: "image/png", size: 10 }))).status,
+      ).toBe(403);
+    }
+
+    getAuthContext.mockResolvedValue(authOf(institution, fixture.docente));
+    const creada = await call("/incidencias", json(reporte(fixture.aulaId, { claseId: clase.id })));
+    expect(creada.status).toBe(201);
+    const { id } = (await creada.json()) as { id: string };
+    expect((await call("/incidencias")).status).toBe(403);
+    expect((await call(`/incidencias/${id}`)).status).toBe(403);
+    expect((await call(`/incidencias/${id}/estado`, json({ estado: "EN_CURSO" }))).status).toBe(
+      403,
+    );
+  });
+
+  it("valida con el detalle por campo y el Bedel gestiona la incidencia", async () => {
+    const institution = await createInstitution();
+    const fixture = await seedAcademicFixture(institution);
+    getAuthContext.mockResolvedValue(authOf(institution, institution));
+
+    const invalida = await call(
+      "/incidencias",
+      json({ aulaId: fixture.aulaId, descripcion: "x".repeat(501) }),
+    );
+    expect(invalida.status).toBe(422);
+    const detalleError = JSON.stringify(await invalida.json());
+    expect(detalleError).toContain("Elegí el elemento afectado");
+    expect(detalleError).toContain("La descripción admite hasta 500 caracteres");
+    const sinDescripcion = await call(
+      "/incidencias",
+      json({ aulaId: fixture.aulaId, elemento: "OTRO" }),
+    );
+    expect(JSON.stringify(await sinDescripcion.json())).toContain("Ingresá una descripción");
+
+    const creada = await call("/incidencias", json(reporte(fixture.aulaId)));
+    expect(creada.status).toBe(201);
+    const incidencia = (await creada.json()) as { id: string; descripcion: string; estado: string };
+    expect(incidencia).toMatchObject({ descripcion: "No enciende", estado: "ABIERTA" });
+
+    const lista = await call("/incidencias");
+    expect(((await lista.json()) as unknown[]).length).toBe(1);
+    expect(((await (await call("/incidencias?estados=RESUELTA")).json()) as unknown[]).length).toBe(
+      0,
+    );
+
+    const enCurso = await call(
+      `/incidencias/${incidencia.id}/estado`,
+      json({ estado: "EN_CURSO", observaciones: "En camino" }),
+    );
+    expect(enCurso.status).toBe(200);
+    const retroceso = await call(
+      `/incidencias/${incidencia.id}/estado`,
+      json({ estado: "ABIERTA" }),
+    );
+    expect(retroceso.status).toBe(409);
+    const detalle = await call(`/incidencias/${incidencia.id}`);
+    expect(((await detalle.json()) as { historial: unknown[] }).historial).toHaveLength(2);
+  });
+
+  it("falla con un 503 claro cuando falta el almacenamiento de archivos", async () => {
+    const institution = await createInstitution();
+    getAuthContext.mockResolvedValue(authOf(institution, institution));
+    const respuesta = await call(
+      "/incidencias/fotos",
+      json({ contentType: "image/jpeg", size: 1000 }),
+    );
+    expect(respuesta.status).toBe(503);
+    expect(JSON.stringify(await respuesta.json())).toContain("STORAGE_BUCKET");
+
+    const pdf = await call(
+      "/incidencias/fotos",
+      json({ contentType: "application/pdf", size: 1000 }),
+    );
+    expect(pdf.status).toBe(422);
+    expect(JSON.stringify(await pdf.json())).toContain("La foto debe ser JPG o PNG");
+  });
+});

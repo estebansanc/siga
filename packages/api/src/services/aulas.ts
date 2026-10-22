@@ -11,6 +11,8 @@ import {
 import { conflict, notFound, unprocessable } from "../errors";
 import type { AulaClaseDto, AulaDetalleDto, AulaDto, AulaGestionDto } from "../schemas";
 
+import { listarIncidenciasDeAula } from "./incidencias";
+
 const diasProximos = 7;
 const estadosSinOcupacion = ["SUSPENDIDA", "AUSENTE", "VIRTUAL", "FINALIZADA"] as const;
 const estadosTerminados = ["SUSPENDIDA", "AUSENTE", "FINALIZADA"] as const;
@@ -104,7 +106,7 @@ export const obtenerAula = async (
   const aula = await buscarAula(organizationId, id);
   const hoy = fechaArgentina(ahora);
   const orderBy = { inicio: "asc" } as const;
-  const [clases, afectadas, ocupadas] = await Promise.all([
+  const [clases, afectadas, ocupadas, incidencias] = await Promise.all([
     prisma.claseProgramada.findMany({
       where: {
         aulaId: id,
@@ -122,11 +124,13 @@ export const obtenerAula = async (
       orderBy,
     }),
     idsOcupadas([id], ahora),
+    listarIncidenciasDeAula(organizationId, id),
   ]);
   return {
     ...toGestionDto(aula, ocupadas.has(id)),
     clases: clases.map(toClaseDto),
     clasesAfectadas: afectadas.map(toClaseDto),
+    incidencias,
   };
 };
 

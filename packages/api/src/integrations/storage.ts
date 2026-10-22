@@ -7,7 +7,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-import { apiEnv, isStorageConfigured } from "../env";
+import { apiEnv, missingStorageVariables } from "../env";
 import { unavailable } from "../errors";
 
 export const uploadUrlTtlSeconds = 300;
@@ -15,9 +15,17 @@ export const readUrlTtlSeconds = 3600;
 
 let client: S3Client | undefined;
 
+export const assertStorageConfigured = () => {
+  const missing = missingStorageVariables();
+  if (missing.length > 0) {
+    throw unavailable(
+      `El almacenamiento de archivos no está configurado: faltan ${missing.join(", ")}`,
+    );
+  }
+};
+
 const getClient = () => {
-  if (!isStorageConfigured())
-    throw unavailable("El almacenamiento de archivos no está configurado");
+  assertStorageConfigured();
   client ??= new S3Client({
     region: "auto",
     endpoint: apiEnv.storage.endpoint,

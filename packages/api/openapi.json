@@ -3,7 +3,7 @@
   "info": {
     "title": "SiGA API",
     "version": "1.0.0",
-    "description": "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante y datos académicos base. Autenticación por cookie (web) o bearer token (móvil)."
+    "description": "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante, datos académicos base, aulas, solicitudes de aula, asistencia docente e incidencias de infraestructura. Autenticación por cookie (web) o bearer token (móvil)."
   },
   "security": [
     {
@@ -1541,11 +1541,19 @@
                   "$ref": "#/components/schemas/AulaClase"
                 },
                 "description": "Clases asignadas que todavía no terminaron: las que afecta pasar el aula a Fuera de servicio, En mantenimiento o darla de baja"
+              },
+              "incidencias": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Incidencia"
+                },
+                "description": "Las incidencias del aula, recientes primero"
               }
             },
             "required": [
               "clases",
-              "clasesAfectadas"
+              "clasesAfectadas",
+              "incidencias"
             ]
           }
         ]
@@ -1592,6 +1600,107 @@
           "estado",
           "materia",
           "comision"
+        ]
+      },
+      "Incidencia": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "aula": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "codigo": {
+                "type": "string"
+              },
+              "edificio": {
+                "type": "string"
+              },
+              "piso": {
+                "type": "string"
+              },
+              "estado": {
+                "type": "string",
+                "enum": [
+                  "DISPONIBLE",
+                  "FUERA_DE_SERVICIO",
+                  "EN_MANTENIMIENTO"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "codigo",
+              "edificio",
+              "piso",
+              "estado"
+            ]
+          },
+          "elemento": {
+            "type": "string",
+            "enum": [
+              "PROYECTOR",
+              "CLIMATIZACION",
+              "ILUMINACION",
+              "MOBILIARIO",
+              "CONECTIVIDAD",
+              "OTRO"
+            ]
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "gravedad": {
+            "type": "string",
+            "enum": [
+              "LEVE",
+              "IMPIDE_USO"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ABIERTA",
+              "EN_CURSO",
+              "RESUELTA"
+            ]
+          },
+          "tieneFoto": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "reportadaPor": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nombre"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "aula",
+          "elemento",
+          "descripcion",
+          "gravedad",
+          "estado",
+          "tieneFoto",
+          "createdAt",
+          "reportadaPor"
         ]
       },
       "BusquedaAula": {
@@ -1807,6 +1916,96 @@
           "solicitante",
           "aula",
           "clase"
+        ]
+      },
+      "FotoSubida": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Se envía como `fotoKey` al crear la incidencia"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "description": "URL firmada para un PUT directo, válida 5 minutos"
+          }
+        },
+        "required": [
+          "key",
+          "uploadUrl"
+        ]
+      },
+      "IncidenciaDetalle": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Incidencia"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "fotoUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "URL firmada de lectura, válida 1 hora; null si no tiene foto"
+              },
+              "historial": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IncidenciaEstado"
+                },
+                "description": "Cada estado con fecha, hora y usuario, del más antiguo al más nuevo"
+              }
+            },
+            "required": [
+              "fotoUrl",
+              "historial"
+            ]
+          }
+        ]
+      },
+      "IncidenciaEstado": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ABIERTA",
+              "EN_CURSO",
+              "RESUELTA"
+            ]
+          },
+          "observaciones": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "usuario": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nombre"
+            ]
+          }
+        },
+        "required": [
+          "estado",
+          "observaciones",
+          "createdAt",
+          "usuario"
         ]
       },
       "SesionQr": {
@@ -7127,6 +7326,563 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SolicitudAula"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidencias/fotos": {
+      "post": {
+        "tags": [
+          "Incidencias"
+        ],
+        "summary": "URL firmada para subir la foto de una incidencia",
+        "description": "Docente o Bedel. Body `{ contentType, size }` con la foto ya comprimida (JPG o PNG, hasta 1 MB). El cliente hace un PUT directo a `uploadUrl` y envía `key` como `fotoKey` al crear la incidencia. 503 si el almacenamiento (`STORAGE_*`) no está configurado.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "contentType": {
+                    "type": "string",
+                    "enum": [
+                      "image/jpeg",
+                      "image/png"
+                    ]
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1048576
+                  }
+                },
+                "required": [
+                  "contentType",
+                  "size"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "URL de subida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FotoSubida"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidencias": {
+      "post": {
+        "tags": [
+          "Incidencias"
+        ],
+        "summary": "Reportar una incidencia de infraestructura",
+        "description": "Docente (desde una clase suya con esa aula, `claseId`) o Bedel (cualquier aula activa). Nace `ABIERTA` con fecha, hora y quién reportó. 422 ante datos inválidos o si la foto no está subida; 403 si el Docente no dicta la clase.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "aulaId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "claseId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 1
+                  },
+                  "elemento": {
+                    "type": "string",
+                    "enum": [
+                      "PROYECTOR",
+                      "CLIMATIZACION",
+                      "ILUMINACION",
+                      "MOBILIARIO",
+                      "CONECTIVIDAD",
+                      "OTRO"
+                    ]
+                  },
+                  "descripcion": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "gravedad": {
+                    "type": "string",
+                    "enum": [
+                      "LEVE",
+                      "IMPIDE_USO"
+                    ],
+                    "default": "LEVE"
+                  },
+                  "fotoKey": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "aulaId",
+                  "elemento",
+                  "descripcion"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Incidencia creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Incidencia"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Incidencias"
+        ],
+        "summary": "Incidencias por estado, las más recientes primero",
+        "description": "Solo Bedel. `estados` separados por coma; sin él, Abiertas y En curso.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "estados",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incidencias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Incidencia"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidencias/{id}": {
+      "get": {
+        "tags": [
+          "Incidencias"
+        ],
+        "summary": "Detalle de una incidencia con foto e historial",
+        "description": "Solo Bedel. `fotoUrl` es una URL firmada de lectura.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Incidencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidenciaDetalle"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidencias/{id}/estado": {
+      "post": {
+        "tags": [
+          "Incidencias"
+        ],
+        "summary": "Avanzar el estado de una incidencia",
+        "description": "Solo Bedel. Abierta → En curso → Resuelta con `observaciones` opcionales (hasta 500); sin retroceso y Resuelta es final (409). Al resolver, `rehabilitarAula` pasa el aula a Disponible.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "estado": {
+                    "type": "string",
+                    "enum": [
+                      "ABIERTA",
+                      "EN_CURSO",
+                      "RESUELTA"
+                    ]
+                  },
+                  "observaciones": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500
+                  },
+                  "rehabilitarAula": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "estado"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Incidencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidenciaDetalle"
                 }
               }
             }

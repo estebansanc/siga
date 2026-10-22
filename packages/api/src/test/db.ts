@@ -6,6 +6,8 @@ import { findOwnedOrganizationId } from "../services/memberships";
 
 const tables = [
   "intento_asistencia_fallido",
+  "incidencia_estado",
+  "incidencia",
   "asistencia_docente",
   "sesion_qr",
   "novedad_clase",
