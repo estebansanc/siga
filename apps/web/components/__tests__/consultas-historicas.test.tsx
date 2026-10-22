@@ -85,7 +85,7 @@ describe("ConsultasHistoricas", () => {
     expect(within(indicadores).getByText("Total").nextSibling).toHaveTextContent("25");
     expect(within(indicadores).getByText("Demora").nextSibling).toHaveTextContent("20");
     expect(within(indicadores).getByText("Virtual").nextSibling).toHaveTextContent("0");
-    const fila = screen.getAllByRole("row")[1]!;
+    const fila = screen.getAllByRole("row")[1];
     expect(fila).toHaveTextContent("14/10/2026 12:30");
     expect(fila).toHaveTextContent("Demora");
     expect(fila).toHaveTextContent("Proyecto Final · 5K2");
