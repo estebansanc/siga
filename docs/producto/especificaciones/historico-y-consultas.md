@@ -43,6 +43,15 @@ Requisitos cubiertos: RF-09, RNF-03. Criterio de aceptación: CA-06. Fuente: ERS
 
 **Salidas**: indicadores resumidos y listado detallado; error ante rango de fechas inválido.
 
+## Estado de implementación
+
+Hoy `/historico` entrega la consulta de **Novedades** para la Autoridad académica; asistencia docente, uso de aulas e incidencias dependen de funciones todavía sin implementar y van en tickets posteriores.
+
+- Solo la Autoridad ve la opción y consulta (la API responde 403 "Acceso denegado" y lo audita). Al Bedel `/historico` lo devuelve a su panel.
+- El rango filtra por fecha de publicación de la novedad (hora argentina, ambos días incluidos). Se precarga con los últimos 30 días y 12 meses justos (21/10/2025 a 21/10/2026) es válido.
+- Filtros: carrera, materia, comisión, docente (de la comisión), aula (la de las clases afectadas o el aula nueva de un Cambio de aula) y tipo.
+- Indicadores: total y cantidad por tipo del período filtrado completo. Detalle: de a 20, la más reciente primero, con fecha y hora de publicación, tipo, materia y comisión, fecha de la clase (o rango), docentes, quién publicó (docente o Bedelía) y estado.
+
 ## Pantallas
 
 - **Autoridad académica**: Consultas históricas (panel principal), con selección de tipo, rango de fechas, filtros, indicadores y detalle paginado.
