@@ -18,12 +18,13 @@ import {
 } from "../test/db";
 
 import { registrarAsistenciaManual, registrarAsistenciaQr } from "./asistencias";
+import type * as Auditoria from "./auditoria";
 import { generarQr } from "./qr";
 import { updateSettings } from "./settings";
 
 const auditoria = vi.hoisted(() => ({ fallar: false }));
 vi.mock("./auditoria", async (importOriginal) => {
-  const original = await importOriginal<typeof import("./auditoria")>();
+  const original = await importOriginal<typeof Auditoria>();
   return {
     ...original,
     registrarCambioMasivo: (...args: Parameters<typeof original.registrarCambioMasivo>) => {
@@ -46,7 +47,6 @@ const enLaSede = {
 const lejos = { latitud: -26.9, longitud: -65.2, precisionMetros: 15 };
 
 const bedel = () => authOf(institution, institution);
-const docente = () => authOf(institution, fixture.docente);
 const emitir = async (instante: Date) =>
   (
     await asOrganization(institution, () =>
