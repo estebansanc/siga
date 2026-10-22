@@ -1,0 +1,63 @@
+import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
+
+const fechaArgentina = (instante: Date) =>
+  new Date(instante.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+const haceDias = (dias: number) =>
+  fechaArgentina(new Date(Date.now() - dias * 24 * 60 * 60 * 1000));
+
+test.describe("Consultas históricas de novedades", () => {
+  test("la Autoridad consulta con el rango precargado, ve los errores y un período sin registros", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.autoridad);
+    await page.getByRole("link", { name: "Consultas históricas" }).click();
+    await expect(page.getByRole("heading", { name: "Consultas históricas" })).toBeVisible();
+    await expect(page.getByText("Próximamente")).toHaveCount(0);
+    await expect(page.getByLabel("Desde")).toHaveValue(haceDias(30));
+    await expect(page.getByLabel("Hasta")).toHaveValue(haceDias(0));
+    await expect(page.getByLabel("Indicadores")).toContainText("Total");
+
+    const consultar = page.getByRole("button", { name: "Consultar" });
+    await page.getByLabel("Desde").fill("");
+    await consultar.click();
+    await expect(page.getByText("Ingresá la fecha desde")).toBeVisible();
+    await page.getByLabel("Hasta").fill("");
+    await consultar.click();
+    await expect(page.getByText("Ingresá la fecha hasta")).toBeVisible();
+
+    await page.getByLabel("Desde").fill("2020-03-02");
+    await page.getByLabel("Hasta").fill("2020-03-01");
+    await consultar.click();
+    await expect(
+      page.getByText("La fecha desde no puede ser posterior a la fecha hasta"),
+    ).toBeVisible();
+
+    await page.getByLabel("Desde").fill("2020-01-01");
+    await page.getByLabel("Hasta").fill("2021-01-02");
+    await consultar.click();
+    await expect(page.getByText("El rango de fechas no puede superar los 12 meses")).toBeVisible();
+
+    await page.getByLabel("Hasta").fill("2021-01-01");
+    await consultar.click();
+    await expect(page.getByText("El rango de fechas no puede superar los 12 meses")).toHaveCount(0);
+    await expect(page.getByText("Sin registros para el período")).toBeVisible();
+    await expect(page.getByLabel("Indicadores")).toContainText("Total0");
+  });
+
+  test("el Bedel no ve la opción, /historico lo devuelve a su panel y la API le niega el acceso", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    await expect(page.getByRole("link", { name: "Consultas históricas" })).toHaveCount(0);
+
+    await page.goto("/historico");
+    await expect(page).toHaveURL(/\/estado-institucional$/);
+
+    const respuesta = await page.request.get(
+      "/api/v1/historico/novedades?desde=2026-01-01&hasta=2026-01-31",
+    );
+    expect(respuesta.status()).toBe(403);
+    expect((await respuesta.json()).error.message).toBe("Acceso denegado");
+  });
+});

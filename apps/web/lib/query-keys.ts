@@ -9,6 +9,8 @@ export const queryKeys = {
   clases: (query: Record<string, string | undefined>) => ["clases", query] as const,
   clase: (id: string) => ["clase", id] as const,
   novedades: ["novedades"] as const,
+  historicoNovedades: (query: Record<string, string>) => ["historico", "novedades", query] as const,
+  historicoOpciones: ["historico", "opciones"] as const,
   avisos: ["avisos"] as const,
   avisosVista: (vista: string) => ["avisos", vista] as const,
   avisoNotificaciones: (id: string) => ["avisos", id, "notificaciones"] as const,

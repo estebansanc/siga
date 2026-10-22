@@ -490,6 +490,7 @@ export const novedadHistoricaSchema = z
     publicadaPorBedelia: z.boolean(),
   })
   .openapi("NovedadHistorica");
+export type NovedadHistoricaDto = z.infer<typeof novedadHistoricaSchema>;
 
 export const consultaNovedadesResultadoSchema = z
   .object({

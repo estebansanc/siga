@@ -1,0 +1,33 @@
+"use client";
+
+import type { ConsultaNovedadesResultadoDto, OpcionesHistoricoDto } from "@repo/api/client";
+import type { ConsultaNovedades, ConsultaNovedadesInput } from "@repo/domain";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+
+import { api, unwrap } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
+
+const comoQuery = (consulta: ConsultaNovedades) =>
+  Object.fromEntries(
+    Object.entries(consulta)
+      .filter(([, valor]) => valor !== undefined && valor !== "")
+      .map(([campo, valor]) => [campo, String(valor)]),
+  ) as Record<string, string>;
+
+export const useConsultaNovedades = (consulta: ConsultaNovedades | null) =>
+  useQuery({
+    queryKey: queryKeys.historicoNovedades(consulta ? comoQuery(consulta) : {}),
+    queryFn: () =>
+      unwrap<ConsultaNovedadesResultadoDto>(
+        api.historico.novedades.$get({ query: comoQuery(consulta!) as ConsultaNovedadesInput }),
+      ),
+    enabled: consulta !== null,
+    placeholderData: keepPreviousData,
+  });
+
+export const useOpcionesHistorico = () =>
+  useQuery({
+    queryKey: queryKeys.historicoOpciones,
+    queryFn: () => unwrap<OpcionesHistoricoDto>(api.historico.opciones.$get()),
+    staleTime: 5 * 60_000,
+  });
