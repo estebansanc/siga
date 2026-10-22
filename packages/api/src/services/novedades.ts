@@ -20,6 +20,7 @@ import { registrarCambioMasivo } from "./auditoria";
 import { finalizarClasesVencidas } from "./clases";
 import { notificarNovedadPublicada } from "./notificaciones";
 import { accesoDenegado, assertPerfil, esBedel } from "./permisos";
+import { bloquearAula, estadosSinSolicitud } from "./solicitudes-aula";
 
 const novedadInclude = {
   aulaNueva: { select: { id: true, codigo: true, edificio: true, piso: true } },
@@ -94,6 +95,7 @@ const assertAulaLibre = async (
   aulaId: string,
   clases: { id: string; inicio: Date; fin: Date }[],
 ) => {
+  await bloquearAula(tx, aulaId);
   for (const clase of clases) {
     const ocupada = await tx.claseProgramada.findFirst({
       where: {
@@ -101,6 +103,7 @@ const assertAulaLibre = async (
         id: { not: clase.id },
         inicio: { lt: clase.fin },
         fin: { gt: clase.inicio },
+        estado: { notIn: [...estadosSinSolicitud] },
       },
       select: { id: true },
     });

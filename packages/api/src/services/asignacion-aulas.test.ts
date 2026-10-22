@@ -6,6 +6,7 @@ import {
   countAuditLogs,
   createClase,
   createInstitution,
+  createOrganization,
   resetDatabase,
   seedAcademicFixture,
   type AcademicFixture,
@@ -20,6 +21,7 @@ import {
   reasignarSolicitudAula,
   rechazarSolicitudAula,
 } from "./asignacion-aulas";
+import { publicarNovedad } from "./novedades";
 import { crearSolicitudAula } from "./solicitudes-aula";
 
 const fecha = "2026-10-14";
@@ -387,5 +389,109 @@ describe("listar solicitudes", () => {
     await expect(listarSolicitudesAulaPorEstado(docente(), "PENDIENTE")).rejects.toMatchObject({
       status: 403,
     });
+  });
+});
+
+describe("concurrencia con Cambio de aula de novedades", () => {
+  it("un Cambio de aula y una asignación a la misma aula y franja: una sola prospera", async () => {
+    const sinAula = await createClase(institution, fixture, "2099-10-14", "19:00", "20:00", null);
+    const otraComision = await prisma.comision.create({
+      data: {
+        organizationId: institution.organizationId,
+        materiaId: fixture.materiaId,
+        periodoLectivoId: fixture.periodoLectivoId,
+        codigo: "5K1",
+        turno: "NOCHE",
+        anioLectivo: 2026,
+      },
+    });
+    const conAula = await createClase(
+      institution,
+      { comisionId: otraComision.id, aulaId: fixture.aulaId },
+      "2099-10-14",
+      "19:00",
+      "20:00",
+    );
+
+    const resultados = await Promise.allSettled([
+      asignarAulaAClaseSinAula(bedel(), sinAula.id, { aulaId: terceraAulaId }, ahora),
+      publicarNovedad(bedel(), {
+        claseIds: [conAula.id],
+        tipo: "CAMBIO_AULA",
+        aulaNuevaId: terceraAulaId,
+      }),
+    ]);
+
+    expect(resultados.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
+    expect(resultados.find(({ status }) => status === "rejected")).toMatchObject({
+      reason: ocupada,
+    });
+    const ocupantes = await prisma.claseProgramada.count({ where: { aulaId: terceraAulaId } });
+    expect(ocupantes).toBe(1);
+  });
+});
+
+describe("aislamiento y permisos", () => {
+  it("un bedel de otra organización no ve ni resuelve nada, y un aula ajena da 404", async () => {
+    const { clase, solicitud } = await solicitarPendiente();
+    const sinAula = await createClase(institution, fixture, fecha, "19:00", "20:00", null);
+    const otra = await createOrganization("otra");
+    const ajeno = authOf(otra, otra);
+    const aulaAjena = await prisma.aula.create({
+      data: {
+        organizationId: otra.organizationId,
+        codigo: "Aula X",
+        edificio: "Edificio Z",
+        piso: "PB",
+        capacidad: 30,
+        equipamiento: [],
+      },
+    });
+
+    for (const intento of [
+      () => aprobarSolicitudAula(ajeno, solicitud.id, { aulaId: aulaAjena.id }, ahora),
+      () => rechazarSolicitudAula(ajeno, solicitud.id, { motivo: "No" }, ahora),
+      () => reasignarSolicitudAula(ajeno, solicitud.id, { aulaId: aulaAjena.id }, ahora),
+      () => asignarAulaAClaseSinAula(ajeno, sinAula.id, { aulaId: aulaAjena.id }, ahora),
+    ]) {
+      await expect(intento()).rejects.toMatchObject({ status: 404 });
+    }
+    expect(await listarSolicitudesAulaPorEstado(ajeno, "PENDIENTE")).toEqual([]);
+    expect((await listarClasesSinAula(ajeno, ahora)).clases).toEqual([]);
+
+    await expect(
+      aprobarSolicitudAula(bedel(), solicitud.id, { aulaId: aulaAjena.id }, ahora),
+    ).rejects.toMatchObject({ status: 404 });
+    await expect(
+      asignarAulaAClaseSinAula(bedel(), sinAula.id, { aulaId: aulaAjena.id }, ahora),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(await aulaDe(clase.id)).toBe(fixture.aulaId);
+    expect(
+      (await prisma.solicitudAula.findUniqueOrThrow({ where: { id: solicitud.id } })).estado,
+    ).toBe("PENDIENTE");
+  });
+
+  it("quien no es bedel recibe 403 en rechazar, reasignar, clases sin aula y asignar", async () => {
+    const { solicitud } = await solicitarPendiente();
+    const sinAula = await createClase(institution, fixture, fecha, "19:00", "20:00", null);
+
+    for (const intento of [
+      () => rechazarSolicitudAula(docente(), solicitud.id, { motivo: "No" }, ahora),
+      () => reasignarSolicitudAula(docente(), solicitud.id, { aulaId: terceraAulaId }, ahora),
+      () => listarClasesSinAula(docente(), ahora),
+      () => asignarAulaAClaseSinAula(docente(), sinAula.id, { aulaId: terceraAulaId }, ahora),
+    ]) {
+      await expect(intento()).rejects.toMatchObject({ status: 403 });
+    }
+  });
+
+  it("no asigna aula a una clase con solicitud Pendiente", async () => {
+    const { clase } = await solicitarPendiente();
+    await prisma.claseProgramada.update({ where: { id: clase.id }, data: { aulaId: null } });
+
+    await expect(
+      asignarAulaAClaseSinAula(bedel(), clase.id, { aulaId: terceraAulaId }, ahora),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(await aulaDe(clase.id)).toBeNull();
   });
 });

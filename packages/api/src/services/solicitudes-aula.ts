@@ -24,6 +24,7 @@ import { claseInclude, finalizarClasesVencidas, toClaseDto } from "./clases";
 import { assertPerfil, accesoDenegado, esBedel } from "./permisos";
 
 export const aulaOcupada = "El aula ya está asignada en esa franja";
+const aulaNoDisponible = "El aula no está disponible";
 const claseCambiada = "La clase cambió mientras se resolvía. Actualizá la pantalla.";
 const pendienteDuplicada = "Esta clase ya tiene una solicitud pendiente.";
 export const estadosSinSolicitud = ["VIRTUAL", "SUSPENDIDA", "AUSENTE", "FINALIZADA"] as const;
@@ -198,12 +199,24 @@ const assertSinPendiente = async (tx: DbTransaction, claseId: string) => {
 // Serializa las asignaciones del mismo aula: sin el lock, dos pedidos a la vez pasarían ambos
 // la verificación de franja libre. El update condicionado al aula que se leyó evita pisar el
 // cambio de otra operación sobre la misma clase.
+export const bloquearAula = (tx: DbTransaction, aulaId: string) =>
+  tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${aulaId}))`;
+
+// El estado del aula se lee con el lock tomado: así no cambia entre la verificación y la
+// asignación. Devuelve el aula para quien necesite su código.
 export const asignarAulaALaClase = async (
   tx: DbTransaction,
+  organizationId: string,
   clase: { id: string; inicio: Date; fin: Date; aulaId: string | null },
   aulaId: string,
 ) => {
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${aulaId}))`;
+  await bloquearAula(tx, aulaId);
+  const aula = await tx.aula.findFirst({
+    where: { id: aulaId, organizationId },
+    select: { codigo: true, activa: true, estado: true },
+  });
+  if (!aula) throw notFound("Aula");
+  if (!aula.activa || aula.estado !== "DISPONIBLE") throw unprocessable(aulaNoDisponible);
   const ocupada = await tx.claseProgramada.findFirst({
     where: {
       aulaId,
@@ -220,6 +233,7 @@ export const asignarAulaALaClase = async (
     data: { aulaId },
   });
   if (count === 0) throw conflict(claseCambiada);
+  return aula;
 };
 
 // Pendiente no reserva el aula. Si la clase no tiene aula y empieza en menos de 30 minutos,
@@ -236,14 +250,14 @@ export const crearSolicitudAula = async (
   });
   if (!aula) throw notFound("Aula");
   if (!aula.activa || aula.estado !== "DISPONIBLE") {
-    throw unprocessable("El aula no está disponible");
+    throw unprocessable(aulaNoDisponible);
   }
   const inmediata = clase.aulaId === null && esAsignacionInmediata(clase.inicio, ahora);
 
   return prisma
     .$transaction(async (tx) => {
       await assertSinPendiente(tx, clase.id);
-      if (inmediata) await asignarAulaALaClase(tx, clase, input.aulaId);
+      if (inmediata) await asignarAulaALaClase(tx, auth.organizationId, clase, input.aulaId);
       const solicitud = await tx.solicitudAula.create({
         data: {
           organizationId: auth.organizationId,

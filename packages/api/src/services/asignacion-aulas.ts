@@ -29,6 +29,7 @@ const claseSinAsignacion = "La clase ya no admite asignación de aula";
 const solicitudNoPendiente = "La solicitud ya no está pendiente";
 const solicitudNoAsignada = "La solicitud no está asignada";
 const claseConAula = "La clase ya tiene aula asignada";
+const claseConPendiente = "La clase tiene una solicitud pendiente: resolvela antes de asignar aula";
 
 type Resultado<T> = { valor: T; novedad: NovedadDto | null; correos: EmailOutbox[] };
 
@@ -75,17 +76,6 @@ export const listarClasesSinAula = async (
   return { clases: clases.map(toClaseDto) };
 };
 
-const assertAulaAsignable = async (organizationId: string, aulaId: string) => {
-  const aula = await prisma.aula.findFirst({
-    where: { id: aulaId, organizationId },
-    select: { codigo: true, activa: true, estado: true },
-  });
-  if (!aula) throw notFound("Aula");
-  if (!aula.activa || aula.estado !== "DISPONIBLE")
-    throw unprocessable("El aula no está disponible");
-  return aula;
-};
-
 const leerClaseAsignable = async (
   tx: DbTransaction,
   organizationId: string,
@@ -125,9 +115,9 @@ const cambiarAulaDeLaClase = async (
   clase: ClaseAsignable,
   aulaId: string,
 ) => {
-  await asignarAulaALaClase(tx, clase, aulaId);
-  if (!clase.aulaId || clase.aulaId === aulaId) return null;
-  return crearNovedadCambioAula(tx, {
+  const aula = await asignarAulaALaClase(tx, auth.organizationId, clase, aulaId);
+  if (!clase.aulaId || clase.aulaId === aulaId) return { aula, novedad: null };
+  const novedad = await crearNovedadCambioAula(tx, {
     organizationId: auth.organizationId,
     publicadaPorId: auth.userId,
     comisionId: clase.comisionId,
@@ -135,6 +125,7 @@ const cambiarAulaDeLaClase = async (
     aulaAnteriorId: clase.aulaId,
     aulaNuevaId: aulaId,
   });
+  return { aula, novedad };
 };
 
 const codigoDeAula = async (tx: DbTransaction, aulaId: string | null) =>
@@ -147,7 +138,6 @@ export const aprobarSolicitudAula = async (
   ahora = new Date(),
 ): Promise<SolicitudAulaDto> => {
   await assertPerfil(auth, "BEDEL");
-  const aula = await assertAulaAsignable(auth.organizationId, aulaId);
   const resultado = await prisma.$transaction(async (tx): Promise<Resultado<SolicitudAulaDto>> => {
     const { count } = await tx.solicitudAula.updateMany({
       where: { id: solicitudId, organizationId: auth.organizationId, estado: "PENDIENTE" },
@@ -159,7 +149,7 @@ export const aprobarSolicitudAula = async (
       include: solicitudInclude,
     });
     const clase = await leerClaseAsignable(tx, auth.organizationId, solicitud.claseId, ahora);
-    const novedad = await cambiarAulaDeLaClase(tx, auth, clase, aulaId);
+    const { aula, novedad } = await cambiarAulaDeLaClase(tx, auth, clase, aulaId);
     await registrarCambioMasivo(tx, auth.organizationId, "SolicitudAula", "solicitud_aprobada", {
       solicitudId,
       claseId: clase.id,
@@ -237,7 +227,6 @@ export const reasignarSolicitudAula = async (
   ahora = new Date(),
 ): Promise<SolicitudAulaDto> => {
   await assertPerfil(auth, "BEDEL");
-  const aula = await assertAulaAsignable(auth.organizationId, aulaId);
   const resultado = await prisma.$transaction(async (tx): Promise<Resultado<SolicitudAulaDto>> => {
     const previa = await tx.solicitudAula.findFirst({
       where: { id: solicitudId, organizationId: auth.organizationId },
@@ -248,7 +237,7 @@ export const reasignarSolicitudAula = async (
     const clase = await leerClaseAsignable(tx, auth.organizationId, previa.claseId, ahora);
     if (clase.aulaId === aulaId) throw unprocessable("La clase ya tiene esa aula");
     const aulaAnterior = await codigoDeAula(tx, clase.aulaId);
-    const novedad = await cambiarAulaDeLaClase(tx, auth, clase, aulaId);
+    const { aula, novedad } = await cambiarAulaDeLaClase(tx, auth, clase, aulaId);
     const solicitud = await tx.solicitudAula.update({
       where: { id: solicitudId },
       data: { aulaId, resueltaPorId: auth.userId, resueltaEn: ahora },
@@ -278,11 +267,15 @@ export const asignarAulaAClaseSinAula = async (
   ahora = new Date(),
 ): Promise<ClaseDto> => {
   await assertPerfil(auth, "BEDEL");
-  const aula = await assertAulaAsignable(auth.organizationId, aulaId);
   const resultado = await prisma.$transaction(async (tx): Promise<Resultado<ClaseDto>> => {
     const clase = await leerClaseAsignable(tx, auth.organizationId, claseId, ahora);
     if (clase.aulaId !== null) throw conflict(claseConAula);
-    await asignarAulaALaClase(tx, clase, aulaId);
+    const pendiente = await tx.solicitudAula.findFirst({
+      where: { claseId, estado: "PENDIENTE" },
+      select: { id: true },
+    });
+    if (pendiente) throw conflict(claseConPendiente);
+    const aula = await asignarAulaALaClase(tx, auth.organizationId, clase, aulaId);
     await registrarCambioMasivo(tx, auth.organizationId, "ClaseProgramada", "aula_asignada", {
       claseId,
       aulaId,

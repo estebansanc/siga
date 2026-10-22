@@ -577,4 +577,32 @@ describe("Solicitudes de aula por HTTP", () => {
     expect(duplicada.status).toBe(409);
     expect(((await (await call("/solicitudes-aula/mias")).json()) as unknown[]).length).toBe(1);
   });
+
+  it("las rutas de resolución y de clases sin aula son solo del Bedel", async () => {
+    const institution = await createInstitution();
+    const fixture = await seedAcademicFixture(institution);
+    const clase = await createClase(institution, fixture, "2099-10-14", "19:00", "23:00", null);
+    getAuthContext.mockResolvedValue(authOf(institution, fixture.docente));
+    const aulaId = fixture.otraAulaId;
+    for (const respuesta of [
+      await call("/solicitudes-aula?estado=PENDIENTE"),
+      await call("/solicitudes-aula/x/aprobar", json({ aulaId })),
+      await call("/solicitudes-aula/x/rechazar", json({ motivo: "No" })),
+      await call("/solicitudes-aula/x/reasignar", json({ aulaId })),
+      await call("/clases/sin-aula"),
+      await call(`/clases/${clase.id}/aula`, json({ aulaId })),
+    ]) {
+      expect(respuesta.status).toBe(403);
+    }
+
+    getAuthContext.mockResolvedValue(authOf(institution, institution));
+    const sinMotivo = await call("/solicitudes-aula/x/rechazar", json({ motivo: " " }));
+    expect(sinMotivo.status).toBe(422);
+    expect(JSON.stringify(await sinMotivo.json())).toContain("Ingresá el motivo del rechazo.");
+    const lista = await call("/clases/sin-aula");
+    expect(lista.status).toBe(200);
+    const asignada = await call(`/clases/${clase.id}/aula`, json({ aulaId }));
+    expect(asignada.status).toBe(200);
+    expect(((await asignada.json()) as { aula: { codigo: string } }).aula.codigo).toBe("Aula 7");
+  });
 });
