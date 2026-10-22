@@ -1,5 +1,9 @@
 import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
 
+// Las clases pendientes terminan antes de las 23:00, así que un minuto más no cruza la medianoche.
+const enUnMinuto = () =>
+  new Date(Date.now() + 60_000 - 3 * 60 * 60 * 1000).toISOString().slice(11, 16);
+
 // Depende de las clases de hoy del seed: sin ninguna pendiente (fin de semana o ya de noche)
 // el registro no tiene qué cargar y el test se saltea.
 test.describe("Registro manual de asistencia", () => {
@@ -26,7 +30,7 @@ test.describe("Registro manual de asistencia", () => {
     await expect(dialog.getByText("Ingresá el motivo del registro manual.")).toBeVisible();
 
     await dialog.getByLabel("Motivo").fill("Teléfono sin batería");
-    await dialog.getByLabel("Hora de llegada").fill("23:59");
+    await dialog.getByLabel("Hora de llegada").fill(enUnMinuto());
     await dialog.getByRole("button", { name: "Registrar asistencia" }).click();
     await expect(
       dialog.getByText("La hora de llegada no puede ser posterior a la hora actual."),

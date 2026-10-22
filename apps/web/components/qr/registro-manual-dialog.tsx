@@ -68,7 +68,7 @@ export function RegistroManualDialog({ onClose }: { onClose: () => void }) {
   const docentes = pendientes.find((clase) => clase.id === claseId)?.docentes ?? [];
 
   useEffect(() => {
-    form.setValue("docenteId", docentes.length === 1 ? docentes[0]!.id : "");
+    form.setValue("docenteId", docentes.length === 1 ? docentes[0].id : "");
     // Solo al cambiar de clase; `docentes` se recalcula en cada render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claseId]);

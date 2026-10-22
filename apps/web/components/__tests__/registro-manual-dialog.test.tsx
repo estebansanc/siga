@@ -3,7 +3,7 @@ import { fechaArgentina } from "@repo/domain";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RegistroManualDialog } from "@/components/qr/registro-manual-dialog";
 import { RequestError } from "@/lib/api-client";
@@ -41,6 +41,8 @@ const unaClase = (cambios: Partial<ClaseDto>): ClaseDto => ({
 });
 
 const abrir = () => renderWithProviders(<RegistroManualDialog onClose={vi.fn()} />);
+
+afterEach(() => vi.useRealTimers());
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -105,14 +107,20 @@ describe("RegistroManualDialog", () => {
   });
 
   it("rechaza una hora futura y un motivo de más de 500 caracteres", async () => {
+    clases = [unaClase({ fin: "2026-10-27T02:00:00Z" })];
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-26T15:00:00Z"));
     abrir();
     await userEvent.selectOptions(screen.getByLabelText("Clase"), "clase-1");
-    fireEvent.change(screen.getByLabelText("Hora de llegada"), { target: { value: "23:59" } });
+    fireEvent.change(screen.getByLabelText("Hora de llegada"), { target: { value: "12:01" } });
     await userEvent.click(screen.getByLabelText("Motivo"));
     await userEvent.paste("a".repeat(501));
     expect(screen.getByText("501 / 500")).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Registrar asistencia" }));
     expect(await screen.findByText("El motivo puede tener hasta 500 caracteres.")).toBeVisible();
+    expect(
+      screen.getByText("La hora de llegada no puede ser posterior a la hora actual."),
+    ).toBeVisible();
     expect(registrar).not.toHaveBeenCalled();
   });
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { esHoraFutura, registroManualSchema } from "./asistencias";
 
@@ -9,6 +9,8 @@ const mensajes = (input: unknown) => {
 };
 
 describe("registroManualSchema", () => {
+  afterEach(() => vi.useRealTimers());
+
   it("acepta un registro completo y recorta el motivo", () => {
     expect(registroManualSchema.parse({ ...valido, motivo: "  Sin batería  " }).motivo).toBe(
       "Sin batería",
@@ -38,7 +40,9 @@ describe("registroManualSchema", () => {
   });
 
   it("rechaza una hora de llegada posterior a la actual", () => {
-    expect(mensajes({ ...valido, horaLlegada: "23:59" })).toContain(
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-26T22:30:00Z"));
+    expect(mensajes({ ...valido, horaLlegada: "19:31" })).toContain(
       "La hora de llegada no puede ser posterior a la hora actual.",
     );
   });

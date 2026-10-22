@@ -8,6 +8,7 @@ import {
   countAuditLogs,
   createClase,
   createInstitution,
+  createOrganization,
   createUserWithPerfil,
   resetDatabase,
   seedAcademicFixture,
@@ -138,18 +139,24 @@ describe("registro manual de asistencia", () => {
     await expect(registrar({ claseId: "inexistente" })).rejects.toMatchObject({ status: 404 });
   });
 
-  it("es todo o nada: si falla la asistencia, la clase sigue Programada", async () => {
-    await prisma.asistenciaDocente.create({
-      data: {
-        organizationId: institution.organizationId,
-        claseId,
-        docenteId: fixture.docente.userId,
-        metodo: "QR",
-        horaLlegada: new Date(`${hoy}T19:10:00-03:00`),
-        registradaPorId: fixture.docente.userId,
-      },
-    });
-    await registrar().catch(() => undefined);
+  it("es todo o nada: si falla la creación de la asistencia se revierte el cambio de estado y su auditoría", async () => {
+    const registrante = { ...bedel(), userId: "usuario-inexistente" };
+    await expect(
+      asOrganization(institution, () => registrarAsistenciaManual(registrante, registro(), ahora)),
+    ).rejects.toBeInstanceOf(Error);
+    const clase = await prisma.claseProgramada.findUniqueOrThrow({ where: { id: claseId } });
+    expect(clase.estado).toBe("PROGRAMADA");
+    expect(await prisma.asistenciaDocente.count()).toBe(0);
+    expect(await countAuditLogs(institution.organizationId, "ClaseProgramada")).toBe(0);
+    expect(await countAuditLogs(institution.organizationId, "AsistenciaDocente")).toBe(0);
+  });
+
+  it("no deja registrar la clase de otra institución", async () => {
+    const otra = await createOrganization();
+    await expect(
+      asOrganization(otra, () => registrarAsistenciaManual(authOf(otra, otra), registro(), ahora)),
+    ).rejects.toMatchObject({ status: 404 });
+    expect(await prisma.asistenciaDocente.count()).toBe(0);
     const clase = await prisma.claseProgramada.findUniqueOrThrow({ where: { id: claseId } });
     expect(clase.estado).toBe("PROGRAMADA");
   });
