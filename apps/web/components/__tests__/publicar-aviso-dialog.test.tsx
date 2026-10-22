@@ -86,14 +86,14 @@ describe("PublicarAvisoDialog", () => {
     await userEvent.click(publicarBoton());
 
     await waitFor(() => expect(publicar).toHaveBeenCalledTimes(1));
-    expect(publicar.mock.calls[0]![0]).toMatchObject({
+    expect(publicar.mock.calls[0][0]).toMatchObject({
       titulo: "Corte de luz",
       cuerpo: "Hoy no hay clases",
       prioridad: "URGENTE",
       destinatarios: { todos: false, perfiles: ["BEDEL"], anios: [5], carreraIds: [] },
       enviarPorCorreo: true,
     });
-    expect(publicar.mock.calls[0]![0].hasta).toMatch(/-03:00$/);
+    expect(publicar.mock.calls[0][0].hasta).toMatch(/-03:00$/);
     const { toast } = await import("sonner");
     expect(toast.success).toHaveBeenCalledWith("Aviso publicado");
     expect(onClose).toHaveBeenCalled();

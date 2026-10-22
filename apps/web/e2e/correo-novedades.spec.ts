@@ -4,9 +4,9 @@ import { expect, readMeViaApi, test } from "./support/fixtures";
 
 // Misma firma que `packages/api/src/services/notificaciones.ts`, con el secreto de la config e2e.
 const e2eSecret = "e2e-secret-e2e-secret-e2e-secret-e2e";
-const tokenDeBaja = (userId: string) =>
-  `${Buffer.from(userId).toString("base64url")}.${createHmac("sha256", e2eSecret)
-    .update(`baja-novedades:${userId}`)
+const tokenDeBaja = (tipo: "novedades" | "avisos", userId: string) =>
+  `${tipo}.${Buffer.from(userId).toString("base64url")}.${createHmac("sha256", e2eSecret)
+    .update(`baja-${tipo}:${userId}`)
     .digest("base64url")}`;
 
 const switchNovedades = "Recibir novedades por correo";
@@ -43,7 +43,7 @@ test.describe("Correo de novedades", () => {
 
     const anonymous = await browser.newContext({ baseURL });
     const baja = await anonymous.newPage();
-    const token = tokenDeBaja(userId);
+    const token = tokenDeBaja("novedades", userId);
 
     await baja.goto(`/baja-correo?token=${token}x`);
     await baja.getByRole("button", { name: "Dejar de recibir" }).click();
@@ -64,5 +64,31 @@ test.describe("Correo de novedades", () => {
     await page.goto("/preferencias");
     await expect(page.getByRole("switch", { name: switchNovedades })).not.toBeChecked();
     await expect(page.getByRole("switch", { name: switchAvisos })).toBeChecked();
+  });
+
+  test("la baja de avisos funciona sin sesión y desactiva solo la opción de avisos", async ({
+    authenticatedPage: page,
+    browser,
+    baseURL,
+  }) => {
+    const { userId } = await readMeViaApi(page.request);
+    await page.goto("/preferencias");
+    await page.getByRole("switch", { name: switchNovedades }).click();
+    await page.getByRole("switch", { name: switchAvisos }).click();
+    await page.getByRole("button", { name: "Guardar" }).click();
+    await expect(page.getByText("Preferencias guardadas")).toBeVisible();
+
+    const anonymous = await browser.newContext({ baseURL });
+    const baja = await anonymous.newPage();
+    await baja.goto(`/baja-correo?token=${tokenDeBaja("avisos", userId)}`);
+    await baja.getByRole("button", { name: "Dejar de recibir" }).click();
+    await expect(
+      baja.getByText("Listo, ya no vas a recibir avisos institucionales por correo."),
+    ).toBeVisible();
+    await anonymous.close();
+
+    await page.goto("/preferencias");
+    await expect(page.getByRole("switch", { name: switchNovedades })).toBeChecked();
+    await expect(page.getByRole("switch", { name: switchAvisos })).not.toBeChecked();
   });
 });

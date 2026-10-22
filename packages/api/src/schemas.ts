@@ -274,6 +274,7 @@ export type NovedadDto = z.infer<typeof novedadSchema>;
 export const bajaCorreoResultadoSchema = z
   .object({ ok: z.literal(true), tipo: z.enum(["novedades", "avisos"]) })
   .openapi("BajaCorreoResultado");
+export type BajaCorreoResultadoDto = z.infer<typeof bajaCorreoResultadoSchema>;
 
 export const preferenciasSchema = z
   .object({

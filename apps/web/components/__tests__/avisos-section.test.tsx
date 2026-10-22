@@ -6,11 +6,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AvisosSection } from "@/components/avisos/avisos-section";
 import { renderWithProviders } from "@/test/render";
 
-const state = vi.hoisted(() => ({
-  avisos: {} as Record<string, AvisoDto[]>,
-  notificaciones: [] as NotificacionAvisoDto[],
-  search: "",
-}));
+type EstadoDelTest = {
+  avisos: Record<string, AvisoDto[]>;
+  notificaciones: NotificacionAvisoDto[];
+  search: string;
+};
+const state = vi.hoisted((): EstadoDelTest => ({ avisos: {}, notificaciones: [], search: "" }));
 
 vi.mock("@/hooks/use-avisos", () => ({
   useAvisos: (vista: string) => ({ data: state.avisos[vista] }),

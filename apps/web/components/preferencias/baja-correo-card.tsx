@@ -1,5 +1,6 @@
 "use client";
 
+import type { BajaCorreoResultadoDto } from "@repo/api/client";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
@@ -10,7 +11,6 @@ import {
   CardTitle,
 } from "@repo/ui/components/card";
 import { Spinner } from "@repo/ui/components/spinner";
-import type { BajaCorreoResultadoDto } from "@repo/api/client";
 import { useState } from "react";
 
 import { useBajaCorreo } from "@/hooks/use-baja-correo";

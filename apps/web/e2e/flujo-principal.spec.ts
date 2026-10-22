@@ -28,6 +28,7 @@ test.describe("Flujo principal de SiGA", () => {
     await page.getByLabel(/Motivo/).fill("Paro de transporte: las clases se dictan con normalidad");
     await page.getByRole("button", { name: "Cambiar estado" }).click();
     await expect(page.getByText("Estado registrado")).toBeVisible();
+    await page.getByRole("button", { name: "Ahora no" }).click();
     await expect(page.getByRole("link", { name: /Abierta con novedades/ })).toBeVisible();
     const historial = page.locator("table");
     await expect(historial.getByRole("row").nth(1)).toContainText("Abierta con novedades");
