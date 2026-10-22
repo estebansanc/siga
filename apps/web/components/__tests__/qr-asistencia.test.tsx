@@ -28,6 +28,10 @@ const aulas: AulaGestionDto[] = [
   },
 ];
 
+vi.mock("@/components/qr/registro-manual-dialog", () => ({
+  RegistroManualDialog: () => <div data-testid="registro-manual" />,
+}));
+
 vi.mock("@/hooks/use-aulas", () => ({ useAulas: () => ({ data: aulas }) }));
 vi.mock("@/hooks/use-settings", () => ({
   useSettings: () => ({
@@ -66,5 +70,13 @@ describe("QrAsistencia", () => {
     expect(await screen.findByTestId("qr-en-vivo")).toHaveTextContent(
       JSON.stringify({ aulaId: "a1", turno: "NOCHE", fecha: fechaArgentina(new Date()) }),
     );
+  });
+
+  it("abre el registro manual sin depender del QR", async () => {
+    renderWithProviders(<QrAsistencia />);
+    expect(screen.queryByTestId("registro-manual")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Registro manual" }));
+    expect(screen.getByTestId("registro-manual")).toBeInTheDocument();
+    expect(screen.queryByTestId("qr-en-vivo")).not.toBeInTheDocument();
   });
 });

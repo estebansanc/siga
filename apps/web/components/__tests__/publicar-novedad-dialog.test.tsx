@@ -38,6 +38,7 @@ const claseBase: ClaseDto = {
   aula: { id: "a1", codigo: "Aula 12", edificio: "Edificio A", piso: "1.º piso" },
   docentes: [],
   novedades: [],
+  asistencia: null,
 };
 
 const finalizada: ClaseDto = {

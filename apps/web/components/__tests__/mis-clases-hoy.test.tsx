@@ -46,6 +46,7 @@ const clase: ClaseDto = {
   carrera: comision.carrera,
   aula: { id: "a1", codigo: "Aula 12", edificio: "Edificio A", piso: "1.º piso" },
   docentes: comision.docentes,
+  asistencia: null,
   novedades: [
     {
       id: "n1",

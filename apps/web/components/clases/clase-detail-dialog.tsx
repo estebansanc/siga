@@ -1,6 +1,7 @@
 "use client";
 
-import { tipoNovedadLabels } from "@repo/domain";
+import type { AsistenciaDto } from "@repo/api/client";
+import { metodoAsistenciaLabels, tipoNovedadLabels } from "@repo/domain";
 import { Badge } from "@repo/ui/components/badge";
 import { Dialog, DialogDescription, DialogHeader, DialogTitle } from "@repo/ui/components/dialog";
 import { Skeleton } from "@repo/ui/components/skeleton";
@@ -11,6 +12,10 @@ import { formatFechaCorta, formatFechaHora } from "@/lib/dates";
 
 import { describirAula } from "./clase-card";
 import { EstadoClaseBadge } from "./estado-clase-badge";
+
+const describirAsistencia = (asistencia: AsistenciaDto) =>
+  `${metodoAsistenciaLabels[asistencia.metodo]} a las ${asistencia.horaLlegada}` +
+  (asistencia.metodo === "MANUAL" ? ` por ${asistencia.registradaPor.nombre}` : "");
 
 // Detalle de una clase: docente, aula e historial de novedades del día (CUR-02, paso 3).
 export function ClaseDetailDialog({
@@ -48,6 +53,17 @@ export function ClaseDetailDialog({
                   ? clase.data.docentes.map((docente) => docente.nombre).join(", ")
                   : "Sin docente asignado"}
               </dd>
+              {clase.data.asistencia ? (
+                <>
+                  <dt className="text-muted-foreground">Asistencia</dt>
+                  <dd>
+                    <p>{describirAsistencia(clase.data.asistencia)}</p>
+                    {clase.data.asistencia.motivo ? (
+                      <p className="text-muted-foreground">“{clase.data.asistencia.motivo}”</p>
+                    ) : null}
+                  </dd>
+                </>
+              ) : null}
               <dt className="text-muted-foreground">Carrera</dt>
               <dd>
                 {clase.data.carrera.nombre} · {clase.data.materia.anioCarrera}.º año

@@ -11,6 +11,7 @@ import {
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -27,6 +28,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { describirTurno } from "@/lib/turnos";
 
 import { QrEnVivo } from "./qr-en-vivo";
+import { RegistroManualDialog } from "./registro-manual-dialog";
 
 type Emision = { consulta: GenerarQrInput; numero: number };
 
@@ -35,6 +37,7 @@ export function QrAsistencia() {
   const settings = useSettings();
   const turnos = settings.data?.turnos ?? turnosIniciales;
   const [emision, setEmision] = useState<Emision | null>(null);
+  const [registroAbierto, setRegistroAbierto] = useState(false);
   const form = useForm<GenerarQrInput>({
     resolver: zodResolver(generarQrSchema),
     defaultValues: { aulaId: "", turno: "MANANA", fecha: fechaArgentina(new Date()) },
@@ -52,6 +55,11 @@ export function QrAsistencia() {
           <CardDescription>
             El docente lo escanea al llegar al aula. Cada código vale 60 segundos.
           </CardDescription>
+          <CardAction>
+            <Button type="button" variant="outline" onClick={() => setRegistroAbierto(true)}>
+              Registro manual
+            </Button>
+          </CardAction>
         </CardHeader>
         <CardContent>
           <form
@@ -95,6 +103,7 @@ export function QrAsistencia() {
           </form>
         </CardContent>
       </Card>
+      {registroAbierto ? <RegistroManualDialog onClose={() => setRegistroAbierto(false)} /> : null}
       {emision ? <QrEnVivo key={emision.numero} consulta={emision.consulta} /> : null}
     </div>
   );
