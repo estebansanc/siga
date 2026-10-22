@@ -1,4 +1,5 @@
 import { prisma } from "@repo/db";
+import { fechaArgentina, sumarDias } from "@repo/domain";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -66,7 +67,7 @@ const crear = (datos: Partial<Parameters<typeof crearAula>[1]> = {}) =>
     estado: "DISPONIBLE",
     ...datos,
   });
-const hoy = () => new Date().toISOString().slice(0, 10);
+const hoy = () => fechaArgentina(new Date());
 
 describe("gestión de aulas", () => {
   it("da de alta con defaults, la lista y rechaza un código repetido", async () => {
@@ -136,8 +137,7 @@ describe("gestión de aulas", () => {
   });
 
   it("el detalle lista las clases de hoy a 7 días y las afectadas sin terminar", async () => {
-    const dia = (desplazamiento: number) =>
-      new Date(Date.now() + desplazamiento * 86_400_000).toISOString().slice(0, 10);
+    const dia = (desplazamiento: number) => sumarDias(hoy(), desplazamiento);
     const hoyClase = await createClase(institution, fixture, dia(0), "23:00", "23:59");
     const proxima = await createClase(institution, fixture, dia(7), "10:00", "11:00");
     const lejana = await createClase(institution, fixture, dia(20), "10:00", "11:00");
