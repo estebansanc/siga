@@ -9,6 +9,7 @@ import { runWithDefer, type DeferAdapter } from "./deferred";
 import { ApiError } from "./errors";
 import { requireSession } from "./middleware";
 import { aulaRoutes } from "./routes/aulas";
+import { solicitudAulaRoutes } from "./routes/solicitudes-aula";
 import { claseRoutes } from "./routes/clases";
 import { cronRoutes } from "./routes/cron";
 import { carreraRoutes, comisionRoutes, materiaRoutes } from "./routes/datos-academicos";
@@ -105,6 +106,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
     .route("/materias", materiaRoutes)
     .route("/comisiones", comisionRoutes)
     .route("/aulas", aulaRoutes)
+    .route("/solicitudes-aula", solicitudAulaRoutes)
     .route("/cron", cronRoutes);
 };
 

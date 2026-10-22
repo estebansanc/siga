@@ -1075,6 +1075,161 @@
           "comision"
         ]
       },
+      "BusquedaAula": {
+        "type": "object",
+        "properties": {
+          "aulas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Aula"
+            },
+            "description": "Libres en la franja y con todo lo pedido, de menor a mayor capacidad"
+          },
+          "sugerencias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AulaSugerida"
+            },
+            "description": "Si ninguna cumple todo: hasta 5 libres que cumplen en parte, las que fallan menos primero"
+          },
+          "hayAulasLibres": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "aulas",
+          "sugerencias",
+          "hayAulasLibres"
+        ]
+      },
+      "AulaSugerida": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Aula"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "faltantes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Criterios que el aula no cumple, p. ej. \"Capacidad para 100 alumnos\""
+              }
+            },
+            "required": [
+              "faltantes"
+            ]
+          }
+        ]
+      },
+      "SolicitudAula": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "PENDIENTE",
+              "ASIGNADA",
+              "APROBADA",
+              "RECHAZADA"
+            ]
+          },
+          "alumnos": {
+            "type": "integer"
+          },
+          "recursos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "comentario": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "motivoRechazo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "aula": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "codigo": {
+                "type": "string"
+              },
+              "edificio": {
+                "type": "string"
+              },
+              "piso": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "codigo",
+              "edificio",
+              "piso"
+            ]
+          },
+          "clase": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "fecha": {
+                "type": "string"
+              },
+              "horaInicio": {
+                "type": "string"
+              },
+              "horaFin": {
+                "type": "string"
+              },
+              "materia": {
+                "type": "string"
+              },
+              "comision": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "fecha",
+              "horaInicio",
+              "horaFin",
+              "materia",
+              "comision"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "estado",
+          "alumnos",
+          "recursos",
+          "comentario",
+          "motivoRechazo",
+          "createdAt",
+          "aula",
+          "clase"
+        ]
+      },
       "DailyCronResult": {
         "type": "object",
         "properties": {
@@ -4490,6 +4645,428 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AulaGestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/solicitudes-aula/clases": {
+      "get": {
+        "tags": [
+          "Solicitudes de aula"
+        ],
+        "summary": "Clases para las que se puede solicitar aula",
+        "description": "Docente: las de sus comisiones; Bedel: todas. Excluye las terminadas y las Virtuales, Suspendidas, Ausentes o Finalizadas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "yyyy-mm-dd; por defecto hoy"
+            },
+            "required": false,
+            "description": "yyyy-mm-dd; por defecto hoy",
+            "name": "fecha",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Clases del día",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClasesDelDia"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/solicitudes-aula/aulas": {
+      "get": {
+        "tags": [
+          "Solicitudes de aula"
+        ],
+        "summary": "Aulas para una clase según alumnos y recursos",
+        "description": "Activas, Disponibles, libres en la franja de la clase y con capacidad y recursos suficientes, de menor a mayor capacidad. Sin coincidencias devuelve hasta 5 `sugerencias` con el criterio que falla. 422 si `alumnos` no es un entero mayor que 0.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "claseId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": true,
+            "name": "alumnos",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Recursos requeridos separados por coma",
+              "example": "Proyector,Pizarra"
+            },
+            "required": false,
+            "description": "Recursos requeridos separados por coma",
+            "name": "recursos",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aulas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusquedaAula"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/solicitudes-aula/mias": {
+      "get": {
+        "tags": [
+          "Solicitudes de aula"
+        ],
+        "summary": "Mis solicitudes de aula, las más recientes primero",
+        "responses": {
+          "200": {
+            "description": "Solicitudes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SolicitudAula"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/solicitudes-aula": {
+      "post": {
+        "tags": [
+          "Solicitudes de aula"
+        ],
+        "summary": "Solicitar un aula para una clase",
+        "description": "Queda Pendiente (no reserva el aula). Si la clase no tiene aula y empieza en menos de 30 minutos o ya empezó, nace Asignada y el aula pasa a la clase. 409 si el aula ya está asignada en esa franja o la clase ya tiene una solicitud pendiente.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "claseId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "alumnos": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "recursos": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "Proyector",
+                        "Pantalla",
+                        "Computadora",
+                        "Climatizacion",
+                        "Ventilacion",
+                        "Pizarra",
+                        "Conectividad"
+                      ]
+                    },
+                    "default": []
+                  },
+                  "aulaId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "comentario": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "claseId",
+                  "alumnos",
+                  "aulaId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Solicitud creada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudAula"
                 }
               }
             }

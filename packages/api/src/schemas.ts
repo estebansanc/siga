@@ -1,6 +1,9 @@
 import { z } from "@hono/zod-openapi";
 import {
+  alumnosSolicitudSchema,
+  equipamientoSchema,
   estadoAulaSchema,
+  estadoSolicitudAulaSchema,
   estadoClaseSchema,
   estadoInstitucionSchema,
   estadoNovedadSchema,
@@ -330,3 +333,66 @@ export const aulasGestionQuerySchema = z.object({
     .transform((value) => value === "true")
     .openapi({ description: "true lista las aulas dadas de baja en lugar de las activas" }),
 });
+
+export const buscarAulasQuerySchema = z.object({
+  claseId: z.string().min(1),
+  alumnos: alumnosSolicitudSchema,
+  recursos: z
+    .string()
+    .optional()
+    .transform((value) => (value ?? "").split(",").filter(Boolean))
+    .pipe(z.array(equipamientoSchema))
+    .openapi({
+      description: "Recursos requeridos separados por coma",
+      example: "Proyector,Pizarra",
+    }),
+});
+
+export const clasesSolicitablesQuerySchema = z.object({
+  fecha: z.iso.date().optional().openapi({ description: "yyyy-mm-dd; por defecto hoy" }),
+});
+
+export const aulaSugeridaSchema = aulaSchema
+  .extend({
+    faltantes: z.array(z.string()).openapi({
+      description: 'Criterios que el aula no cumple, p. ej. "Capacidad para 100 alumnos"',
+    }),
+  })
+  .openapi("AulaSugerida");
+export type AulaSugeridaDto = z.infer<typeof aulaSugeridaSchema>;
+
+export const busquedaAulaSchema = z
+  .object({
+    aulas: z.array(aulaSchema).openapi({
+      description: "Libres en la franja y con todo lo pedido, de menor a mayor capacidad",
+    }),
+    sugerencias: z.array(aulaSugeridaSchema).openapi({
+      description:
+        "Si ninguna cumple todo: hasta 5 libres que cumplen en parte, las que fallan menos primero",
+    }),
+    hayAulasLibres: z.boolean(),
+  })
+  .openapi("BusquedaAula");
+export type BusquedaAulaDto = z.infer<typeof busquedaAulaSchema>;
+
+export const solicitudAulaSchema = z
+  .object({
+    id: z.string(),
+    estado: estadoSolicitudAulaSchema,
+    alumnos: z.number().int(),
+    recursos: z.array(z.string()),
+    comentario: z.string().nullable(),
+    motivoRechazo: z.string().nullable(),
+    createdAt: z.string(),
+    aula: aulaResumenSchema,
+    clase: z.object({
+      id: z.string(),
+      fecha: z.string(),
+      horaInicio: z.string(),
+      horaFin: z.string(),
+      materia: z.string(),
+      comision: z.string(),
+    }),
+  })
+  .openapi("SolicitudAula");
+export type SolicitudAulaDto = z.infer<typeof solicitudAulaSchema>;

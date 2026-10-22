@@ -21,6 +21,7 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   pending,
+  confirmDisabled = false,
   onConfirm,
   children,
 }: {
@@ -30,6 +31,7 @@ export function ConfirmDialog({
   description: string;
   confirmLabel: string;
   pending: boolean;
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   children?: ReactNode;
 }) {
@@ -43,7 +45,7 @@ export function ConfirmDialog({
         {children}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Volver</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" disabled={pending} onClick={onConfirm}>
+          <AlertDialogAction variant="destructive" disabled={pending || confirmDisabled} onClick={onConfirm}>
             {pending ? <Spinner /> : null}
             {confirmLabel}
           </AlertDialogAction>

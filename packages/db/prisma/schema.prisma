@@ -30,6 +30,7 @@ model User {
   novedadesPublicadas    Novedad[]             @relation("NovedadPublicadaPor")
   novedadesFinalizadas   Novedad[]             @relation("NovedadFinalizadaPor")
   estadosInstitucionales EstadoInstitucional[]
+  solicitudesAula        SolicitudAula[]
 
   @@unique([email])
   @@map("user")
@@ -115,6 +116,7 @@ model Organization {
   estadosInstitucionales EstadoInstitucional[]
   novedades              Novedad[]
   comisionesSeguidas     ComisionSeguida[]
+  solicitudesAula        SolicitudAula[]
 
   @@unique([slug])
   @@map("organization")
@@ -387,6 +389,7 @@ model Aula {
   clases              ClaseProgramada[]
   novedadesNuevas     Novedad[]         @relation("NovedadAulaNueva")
   novedadesAnteriores NovedadClase[]    @relation("NovedadClaseAulaAnterior")
+  solicitudes         SolicitudAula[]
 
   @@unique([organizationId, codigo])
   @@map("aula")
@@ -431,23 +434,24 @@ enum EstadoInstitucion {
 // Instancia de dictado. `fecha` es el día en hora argentina; `inicio` y `fin` son los
 // instantes exactos de la franja, para comparar con "ahora" sin convertir zonas.
 model ClaseProgramada {
-  id             String         @id @default(cuid())
-  organizationId String
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  comisionId     String
-  comision       Comision       @relation(fields: [comisionId], references: [id], onDelete: Cascade)
-  horarioId      String?
-  horario        Horario?       @relation(fields: [horarioId], references: [id], onDelete: SetNull)
-  fecha          DateTime       @db.Date
-  inicio         DateTime
-  fin            DateTime
-  aulaId         String?
-  aula           Aula?          @relation(fields: [aulaId], references: [id], onDelete: SetNull)
-  modalidad      Modalidad      @default(PRESENCIAL)
-  estado         EstadoClase    @default(PROGRAMADA)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  novedades      NovedadClase[]
+  id              String          @id @default(cuid())
+  organizationId  String
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  comisionId      String
+  comision        Comision        @relation(fields: [comisionId], references: [id], onDelete: Cascade)
+  horarioId       String?
+  horario         Horario?        @relation(fields: [horarioId], references: [id], onDelete: SetNull)
+  fecha           DateTime        @db.Date
+  inicio          DateTime
+  fin             DateTime
+  aulaId          String?
+  aula            Aula?           @relation(fields: [aulaId], references: [id], onDelete: SetNull)
+  modalidad       Modalidad       @default(PRESENCIAL)
+  estado          EstadoClase     @default(PROGRAMADA)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  novedades       NovedadClase[]
+  solicitudesAula SolicitudAula[]
 
   @@unique([comisionId, inicio])
   @@index([organizationId, fecha])
@@ -554,4 +558,37 @@ model Notificacion {
   @@index([destinatarioId, createdAt])
   @@index([novedadId])
   @@map("notificacion")
+}
+
+enum EstadoSolicitudAula {
+  PENDIENTE
+  ASIGNADA
+  APROBADA
+  RECHAZADA
+}
+
+// Pedido de aula de un docente o bedel para una clase. Pendiente no reserva el aula (se
+// verifica al aprobar); Asignada nace cuando la clase no tenía aula y empieza en menos de 30
+// minutos. Hay a lo sumo una Pendiente por clase.
+model SolicitudAula {
+  id             String              @id @default(cuid())
+  organizationId String
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  solicitanteId  String
+  solicitante    User                @relation(fields: [solicitanteId], references: [id], onDelete: Cascade)
+  claseId        String
+  clase          ClaseProgramada     @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  aulaId         String
+  aula           Aula                @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+  alumnos        Int
+  recursos       String[]
+  comentario     String?
+  estado         EstadoSolicitudAula @default(PENDIENTE)
+  motivoRechazo  String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId, solicitanteId, createdAt])
+  @@index([claseId, estado])
+  @@map("solicitud_aula")
 }

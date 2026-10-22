@@ -407,3 +407,38 @@ describe("baja de correos sin sesión", () => {
     ).toBe(false);
   });
 });
+
+describe("Solicitudes de aula por HTTP", () => {
+  it("restringe a Docente y Bedel, valida alumnos con detalle y crea la solicitud", async () => {
+    const institution = await createInstitution();
+    const fixture = await seedAcademicFixture(institution);
+    const estudiante = await createUserWithPerfil(institution, "ESTUDIANTE");
+    const clase = await createClase(institution, fixture, "2099-10-14");
+    getAuthContext.mockResolvedValue(authOf(institution, estudiante));
+    expect((await call("/solicitudes-aula/clases")).status).toBe(403);
+    expect((await call("/solicitudes-aula/mias")).status).toBe(403);
+
+    getAuthContext.mockResolvedValue(authOf(institution, fixture.docente));
+    const sinAlumnos = await call(`/solicitudes-aula/aulas?claseId=${clase.id}&alumnos=0`);
+    expect(sinAlumnos.status).toBe(422);
+    expect(JSON.stringify(await sinAlumnos.json())).toContain(
+      "Ingresá una cantidad de alumnos mayor que 0.",
+    );
+
+    const busqueda = await call(
+      `/solicitudes-aula/aulas?claseId=${clase.id}&alumnos=40&recursos=Proyector`,
+    );
+    expect(busqueda.status).toBe(200);
+    expect((await busqueda.json()).aulas.map((aula: { codigo: string }) => aula.codigo)).toEqual([
+      "Aula 12",
+    ]);
+
+    const pedido = { claseId: clase.id, aulaId: fixture.otraAulaId, alumnos: 40, recursos: [] };
+    const creada = await call("/solicitudes-aula", json(pedido));
+    expect(creada.status).toBe(201);
+    expect((await creada.json()).estado).toBe("PENDIENTE");
+    const duplicada = await call("/solicitudes-aula", json(pedido));
+    expect(duplicada.status).toBe(409);
+    expect((await (await call("/solicitudes-aula/mias")).json()).length).toBe(1);
+  });
+});

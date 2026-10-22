@@ -63,4 +63,14 @@ describe("BajaAulaDialog", () => {
     renderWithProviders(<BajaAulaDialog aula={aula} onClose={() => {}} />);
     expect(await screen.findByRole("button", { name: /Dar de baja/ })).toBeDisabled();
   });
+
+  it("deja volver aunque no haya cargado el detalle", async () => {
+    state.detalle = undefined;
+    const onClose = vi.fn();
+    renderWithProviders(<BajaAulaDialog aula={aula} onClose={onClose} />);
+    const volver = await screen.findByRole("button", { name: "Volver" });
+    expect(volver).toBeEnabled();
+    await userEvent.click(volver);
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
 });

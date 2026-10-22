@@ -32,7 +32,8 @@ export function BajaAulaDialog({ aula, onClose }: { aula: AulaGestionDto; onClos
       title={`¿Dar de baja ${aula.codigo}?`}
       description="Deja de ofrecerse para asignar clases. El código queda reservado y se puede reactivar desde las dadas de baja."
       confirmLabel="Dar de baja"
-      pending={darDeBaja.isPending || !detalle.data}
+      pending={darDeBaja.isPending}
+      confirmDisabled={!detalle.data}
       onConfirm={() => void confirmar()}
     >
       {!detalle.data ? (

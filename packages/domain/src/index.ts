@@ -10,4 +10,5 @@ export * from "./preferencias";
 export * from "./profile";
 export * from "./settings";
 export * from "./slug";
+export * from "./solicitudes-aula";
 export * from "./tiempo";
