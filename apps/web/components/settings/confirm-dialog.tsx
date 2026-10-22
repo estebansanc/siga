@@ -45,7 +45,11 @@ export function ConfirmDialog({
         {children}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Volver</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" disabled={pending || confirmDisabled} onClick={onConfirm}>
+          <AlertDialogAction
+            variant="destructive"
+            disabled={pending || confirmDisabled}
+            onClick={onConfirm}
+          >
             {pending ? <Spinner /> : null}
             {confirmLabel}
           </AlertDialogAction>

@@ -31,6 +31,8 @@ export type NavigationHref =
   | "/avisos"
   | "/asistencia"
   | "/aulas"
+  | "/aulas/solicitar"
+  | "/aulas/mis-solicitudes"
   | "/qr"
   | "/solicitudes"
   | "/incidencias"

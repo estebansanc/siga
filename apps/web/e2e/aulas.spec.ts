@@ -70,10 +70,81 @@ test.describe("Aulas", () => {
     await expect(dialog.getByText("Clases de hoy y los próximos 7 días")).toBeVisible();
   });
 
-  test("un docente ve Próximamente en Aulas", async ({ page }) => {
+  test("el docente va de Aulas a sus solicitudes y desde su panel a Solicitar aula", async ({
+    page,
+  }) => {
     await loginViaUi(page, seededUsers.docente);
     await page.goto("/aulas");
-    await expect(page.getByText("Próximamente")).toBeVisible();
+    await expect(page).toHaveURL(/\/aulas\/mis-solicitudes$/);
     await expect(page.getByRole("button", { name: "Nueva aula" })).toHaveCount(0);
+
+    await page.goto("/");
+    await page.getByRole("link", { name: /Solicitar aula/ }).click();
+    await expect(page).toHaveURL(/\/aulas\/solicitar$/);
+    await expect(page.getByRole("heading", { name: "Solicitar aula" })).toBeVisible();
+  });
+
+  test("el estudiante no accede a Solicitar aula", async ({ page }) => {
+    await loginViaUi(page, seededUsers.estudiante);
+    await page.goto("/aulas/solicitar");
+    await expect(page).not.toHaveURL(/\/aulas\/solicitar/);
+  });
+});
+
+const proximoDiaHabil = () => {
+  const fecha = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  while ([0, 6].includes(fecha.getUTCDay())) fecha.setUTCDate(fecha.getUTCDate() + 1);
+  return fecha.toISOString().slice(0, 10);
+};
+
+test.describe("Solicitar aula", () => {
+  test("el bedel busca, solicita un aula y una segunda solicitud para la clase se rechaza", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/aulas/mis-solicitudes");
+    await page.getByRole("link", { name: "Solicitar aula" }).click();
+    await expect(page).toHaveURL(/\/aulas\/solicitar$/);
+    await expectNoHorizontalPageScroll(page);
+
+    await page.getByLabel("Fecha").fill(proximoDiaHabil());
+    const clase = page.getByLabel("Clase");
+    await expect(clase.locator("option")).not.toHaveCount(1);
+    await clase.selectOption({ index: 1 });
+    await expect(page.getByText(/Franja \d\d:\d\d a \d\d:\d\d/)).toBeVisible();
+
+    await page.getByLabel("Cantidad de alumnos").fill("0");
+    await page.getByRole("button", { name: "Buscar aulas" }).click();
+    await expect(page.getByText("Ingresá una cantidad de alumnos mayor que 0.")).toBeVisible();
+
+    await page.getByLabel("Cantidad de alumnos").fill("100");
+    await page.getByRole("button", { name: "Buscar aulas" }).click();
+    await expect(page.getByText("Ninguna aula cumple todos los criterios.")).toBeVisible();
+    await expect(page.getByText(/Capacidad para 100 alumnos/).first()).toBeVisible();
+
+    await page.getByLabel("Cantidad de alumnos").fill("40");
+    await page.getByRole("checkbox", { name: "Proyector" }).check();
+    await page.getByRole("button", { name: "Buscar aulas" }).click();
+    await page
+      .getByRole("button", { name: /^Elegir / })
+      .first()
+      .click();
+    await page.getByRole("button", { name: "Confirmar solicitud" }).click();
+
+    await expect(page).toHaveURL(/\/aulas\/mis-solicitudes$/);
+    await expect(page.getByText("Pendiente").first()).toBeVisible();
+
+    await page.goto("/aulas/solicitar");
+    await page.getByLabel("Fecha").fill(proximoDiaHabil());
+    await expect(page.getByLabel("Clase").locator("option")).not.toHaveCount(1);
+    await page.getByLabel("Clase").selectOption({ index: 1 });
+    await page.getByLabel("Cantidad de alumnos").fill("10");
+    await page.getByRole("button", { name: "Buscar aulas" }).click();
+    await page
+      .getByRole("button", { name: /^Elegir / })
+      .first()
+      .click();
+    await page.getByRole("button", { name: "Confirmar solicitud" }).click();
+    await expect(page.getByText("Esta clase ya tiene una solicitud pendiente.")).toBeVisible();
   });
 });

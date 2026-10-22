@@ -71,7 +71,7 @@ export function MisClasesDocente() {
           </ItemContent>
           <ChevronRightIcon className="text-muted-foreground size-4" />
         </Item>
-        <Item variant="outline" render={<Link href="/aulas" />}>
+        <Item variant="outline" render={<Link href="/aulas/solicitar" />}>
           <ItemMedia variant="icon">
             <DoorOpenIcon />
           </ItemMedia>

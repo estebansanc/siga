@@ -16,4 +16,7 @@ export const queryKeys = {
   aulas: (bajas: boolean) => ["aulas", { bajas }] as const,
   aula: (id: string) => ["aulas", id] as const,
   aulasDisponibles: (claseIds: string[]) => ["aulas-disponibles", claseIds] as const,
+  clasesSolicitables: (fecha: string) => ["solicitudes-aula", "clases", fecha] as const,
+  busquedaAulas: (pedido: object) => ["solicitudes-aula", "aulas", pedido] as const,
+  misSolicitudesAula: ["solicitudes-aula", "mias"] as const,
 };

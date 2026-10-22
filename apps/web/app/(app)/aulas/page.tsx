@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { AulasSection } from "@/components/aulas/aulas-section";
 import { PageBody } from "@/components/layout/page-body";
@@ -8,9 +9,10 @@ import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Aulas" };
 
-// Solo el bedel gestiona aulas (RF-02); para el docente la pantalla es Solicitar aula (RF-06).
+// Solo el bedel gestiona aulas (RF-02); el docente va a sus solicitudes de aula (RF-06).
 export default async function Page() {
   const session = await requireSession();
+  if (session.perfil === "DOCENTE") redirect("/aulas/mis-solicitudes");
   if (session.perfil !== "BEDEL") {
     return (
       <Proximamente
