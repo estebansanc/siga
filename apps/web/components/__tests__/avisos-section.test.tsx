@@ -22,7 +22,11 @@ vi.mock("@/hooks/use-datos-academicos", () => ({
   useCarreras: () => ({ data: [] }),
   useComisiones: () => ({ data: [] }),
 }));
-vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(state.search) }));
+const replace = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(state.search),
+  useRouter: () => ({ replace }),
+}));
 
 const aviso = (parcial: Partial<AvisoDto>): AvisoDto => ({
   id: "a1",
@@ -39,6 +43,7 @@ const aviso = (parcial: Partial<AvisoDto>): AvisoDto => ({
 });
 
 beforeEach(() => {
+  replace.mockClear();
   state.search = "";
   state.notificaciones = [];
   state.avisos = {
@@ -102,6 +107,7 @@ describe("AvisosSection", () => {
     expect(within(dialog).getByLabelText("Título")).toHaveValue("Institución cerrada");
     expect(within(dialog).getByLabelText("Cuerpo")).toHaveValue("Corte de energía");
     expect(within(dialog).getByLabelText("Prioridad")).toHaveValue("URGENTE");
+    expect(replace).toHaveBeenCalledWith("/avisos");
   });
 
   it("sin avisos muestra el vacío de la vista", () => {

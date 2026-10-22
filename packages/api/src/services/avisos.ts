@@ -18,6 +18,9 @@ import { avisoEmail } from "./emails/templates";
 import { crearTokenBajaAvisos, enviarCorreos, registrarEnvios, urlDeBaja } from "./notificaciones";
 import { assertPerfil } from "./permisos";
 
+// Historial y Publicados crecen sin techo: se muestran los más recientes.
+const maxAvisosListados = 100;
+
 const avisoInclude = {
   publicadoPor: { select: { id: true, name: true } },
 } satisfies Prisma.AvisoInclude;
@@ -110,6 +113,7 @@ export const listarAvisos = async (
     where: { organizationId: auth.organizationId, ...vistaWhere(query.vista, now) },
     include: avisoInclude,
     orderBy: vistaOrderBy(query.vista),
+    take: maxAvisosListados,
   });
   if (query.vista === "PUBLICADOS") return avisos.map(toDto);
   const destinatario = await destinatarioPosibleDe(auth);

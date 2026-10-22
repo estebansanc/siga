@@ -222,6 +222,9 @@ export function PublicarAvisoDialog({
             </Field>
             <FieldSet data-invalid={Boolean(errors.destinatarios)}>
               <FieldLegend variant="label">Destinatarios</FieldLegend>
+              <FieldDescription>
+                Lo reciben quienes cumplan al menos uno de los criterios.
+              </FieldDescription>
               <Field orientation="horizontal">
                 <Checkbox
                   id="aviso-todos"

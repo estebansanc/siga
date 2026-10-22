@@ -14,7 +14,8 @@ const bajaInvalida = () => badRequest("El enlace para dejar de recibir correos n
 
 export type TipoBajaCorreo = "novedades" | "avisos";
 
-const tiposBaja: readonly TipoBajaCorreo[] = ["novedades", "avisos"];
+const esTipoBaja = (valor: string): valor is TipoBajaCorreo =>
+  valor === "novedades" || valor === "avisos";
 
 const firmar = (tipo: TipoBajaCorreo, userId: string) =>
   createHmac("sha256", apiEnv.authSecret).update(`baja-${tipo}:${userId}`).digest("base64url");
@@ -30,15 +31,14 @@ export const crearTokenBajaAvisos = (userId: string) => crearTokenBaja("avisos",
 const leerTokenBaja = (token: string) => {
   const [tipo, encodedUserId, firma, ...resto] = token.split(".");
   if (!tipo || !encodedUserId || !firma || resto.length > 0) throw bajaInvalida();
-  if (!tiposBaja.includes(tipo as TipoBajaCorreo)) throw bajaInvalida();
-  const tipoBaja = tipo as TipoBajaCorreo;
+  if (!esTipoBaja(tipo)) throw bajaInvalida();
   const userId = Buffer.from(encodedUserId, "base64url").toString();
-  const esperada = Buffer.from(firmar(tipoBaja, userId));
+  const esperada = Buffer.from(firmar(tipo, userId));
   const recibida = Buffer.from(firma);
   if (esperada.length !== recibida.length || !timingSafeEqual(esperada, recibida)) {
     throw bajaInvalida();
   }
-  return { tipo: tipoBaja, userId };
+  return { tipo, userId };
 };
 
 const campoDeBaja = {

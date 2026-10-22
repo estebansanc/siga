@@ -1,12 +1,12 @@
-import type { AvisoPrecargado, EstadoInstitucion } from "@repo/domain";
+import type { AvisoPrecargado } from "@repo/domain";
 
 import { isoAInputArgentino } from "@/lib/dates";
 
 export const estadosQueOfrecenAviso = ["CERRADA", "ABIERTA_CON_NOVEDADES"] as const;
 export type EstadoConAviso = (typeof estadosQueOfrecenAviso)[number];
 
-export const ofreceAviso = (estado: EstadoInstitucion): estado is EstadoConAviso =>
-  estadosQueOfrecenAviso.includes(estado as EstadoConAviso);
+export const ofreceAviso = (estado: string): estado is EstadoConAviso =>
+  estadosQueOfrecenAviso.some((ofrecido) => ofrecido === estado);
 
 const tituloPorEstado: Record<EstadoConAviso, string> = {
   CERRADA: "Institución cerrada",
@@ -38,9 +38,9 @@ export const queryDeAvisoDesdeEstado = (cambio: CambioDeEstado) => ({
 // precarga nada.
 export const avisoDesdeQuery = (params: URLSearchParams): AvisoPrecargado | null => {
   const estado = params.get("estado");
-  if (!estado || !ofreceAviso(estado as EstadoInstitucion)) return null;
+  if (!estado || !ofreceAviso(estado)) return null;
   return avisoDesdeEstado({
-    estado: estado as EstadoConAviso,
+    estado,
     motivo: params.get("motivo"),
     vigenciaHasta: params.get("hasta"),
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import type { AvisoDto } from "@repo/api/client";
-import type { VistaAvisos } from "@repo/domain";
+import type { AvisoPrecargado, VistaAvisos } from "@repo/domain";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
@@ -22,8 +22,8 @@ import { ItemGroup } from "@repo/ui/components/item";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@repo/ui/components/tabs";
 import { BellIcon, MailIcon, PlusIcon } from "lucide-react";
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { useAvisos } from "@/hooks/use-avisos";
 import { avisoDesdeQuery } from "@/lib/aviso-precargado";
@@ -48,9 +48,19 @@ const vacios: Record<VistaAvisos, string> = {
 // los envíos por correo (RF-14).
 export function AvisosSection({ puedePublicar }: { puedePublicar: boolean }) {
   const searchParams = useSearchParams();
-  const precargado = puedePublicar ? avisoDesdeQuery(searchParams) : null;
+  const router = useRouter();
   const [vista, setVista] = useState<VistaAvisos>("VIGENTES");
-  const [publicando, setPublicando] = useState(precargado !== null);
+  // La precarga del cierre se toma una vez y se saca de la URL, para que recargar o volver a
+  // abrir "Nuevo aviso" no la repita.
+  const [publicando, setPublicando] = useState<{ precargado: AvisoPrecargado | null } | null>(
+    () => {
+      const precargado = puedePublicar ? avisoDesdeQuery(searchParams) : null;
+      return precargado ? { precargado } : null;
+    },
+  );
+  useEffect(() => {
+    if (publicando?.precargado) router.replace("/avisos");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [viendoEnvios, setViendoEnvios] = useState<AvisoDto | null>(null);
   const avisos = useAvisos(vista);
   const vistas: VistaAvisos[] = puedePublicar
@@ -64,7 +74,7 @@ export function AvisosSection({ puedePublicar }: { puedePublicar: boolean }) {
         <CardDescription>Comunicados oficiales de la institución.</CardDescription>
         {puedePublicar ? (
           <CardAction>
-            <Button size="sm" onClick={() => setPublicando(true)}>
+            <Button size="sm" onClick={() => setPublicando({ precargado: null })}>
               <PlusIcon />
               Nuevo aviso
             </Button>
@@ -118,7 +128,10 @@ export function AvisosSection({ puedePublicar }: { puedePublicar: boolean }) {
         )}
       </CardContent>
       {publicando ? (
-        <PublicarAvisoDialog precargado={precargado} onClose={() => setPublicando(false)} />
+        <PublicarAvisoDialog
+          precargado={publicando.precargado}
+          onClose={() => setPublicando(null)}
+        />
       ) : null}
       {viendoEnvios ? (
         <ResultadoEnviosDialog
