@@ -41,7 +41,7 @@ const clase = {
 beforeEach(() => {
   vi.clearAllMocks();
   darDeBaja.mockResolvedValue(aula);
-  state.detalle = { ...aula, clases: [], clasesAfectadas: [clase] };
+  state.detalle = { ...aula, clases: [], incidencias: [], clasesAfectadas: [clase] };
 });
 
 describe("BajaAulaDialog", () => {

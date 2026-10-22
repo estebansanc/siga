@@ -32,6 +32,7 @@ const useInvalidarAulas = () => {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ["aulas"] }),
       queryClient.invalidateQueries({ queryKey: ["aulas-disponibles"] }),
+      queryClient.invalidateQueries({ queryKey: ["incidencias"] }),
     ]);
 };
 

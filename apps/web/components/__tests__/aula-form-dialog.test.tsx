@@ -36,6 +36,7 @@ beforeEach(() => {
   state.detalle = {
     ...aula,
     clases: [],
+    incidencias: [],
     clasesAfectadas: [
       {
         id: "c1",
