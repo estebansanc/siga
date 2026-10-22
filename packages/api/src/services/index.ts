@@ -2,6 +2,7 @@ export * from "./avisos";
 export * from "./clases";
 export * from "./datos-academicos";
 export * from "./estado-institucional";
+export * from "./historico";
 export * from "./invitations";
 export * from "./me";
 export * from "./novedades";

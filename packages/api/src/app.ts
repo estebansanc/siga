@@ -15,6 +15,7 @@ import { claseRoutes } from "./routes/clases";
 import { cronRoutes } from "./routes/cron";
 import { carreraRoutes, comisionRoutes, materiaRoutes } from "./routes/datos-academicos";
 import { estadoInstitucionalRoutes } from "./routes/estado-institucional";
+import { historicoRoutes } from "./routes/historico";
 import { invitationRoutes } from "./routes/invitations";
 import { meRoutes } from "./routes/me";
 import { memberRoutes } from "./routes/members";
@@ -104,6 +105,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
     .route("/estado-institucional", estadoInstitucionalRoutes)
     .route("/clases", claseRoutes)
     .route("/novedades", novedadRoutes)
+    .route("/historico", historicoRoutes)
     .route("/avisos", avisoRoutes)
     .route("/preferencias", preferenciaRoutes)
     .route("/carreras", carreraRoutes)

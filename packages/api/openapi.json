@@ -964,6 +964,180 @@
           "clases"
         ]
       },
+      "ConsultaNovedadesResultado": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "porTipo": {
+            "type": "object",
+            "properties": {
+              "AUSENCIA": {
+                "type": "integer"
+              },
+              "DEMORA": {
+                "type": "integer"
+              },
+              "VIRTUAL": {
+                "type": "integer"
+              },
+              "SUSPENSION": {
+                "type": "integer"
+              },
+              "CAMBIO_AULA": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "AUSENCIA",
+              "DEMORA",
+              "VIRTUAL",
+              "SUSPENSION",
+              "CAMBIO_AULA"
+            ]
+          },
+          "pagina": {
+            "type": "integer"
+          },
+          "tamanioPagina": {
+            "type": "integer"
+          },
+          "totalPaginas": {
+            "type": "integer"
+          },
+          "novedades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NovedadHistorica"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "porTipo",
+          "pagina",
+          "tamanioPagina",
+          "totalPaginas",
+          "novedades"
+        ]
+      },
+      "NovedadHistorica": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "publicadaEn": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "AUSENCIA",
+              "DEMORA",
+              "VIRTUAL",
+              "SUSPENSION",
+              "CAMBIO_AULA"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVA",
+              "FINALIZADA"
+            ]
+          },
+          "materia": {
+            "type": "string"
+          },
+          "comision": {
+            "type": "string"
+          },
+          "fechaClaseDesde": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fechaClaseHasta": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "docentes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "publicadaPor": {
+            "type": "string"
+          },
+          "publicadaPorBedelia": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "publicadaEn",
+          "tipo",
+          "estado",
+          "materia",
+          "comision",
+          "fechaClaseDesde",
+          "fechaClaseHasta",
+          "docentes",
+          "publicadaPor",
+          "publicadaPorBedelia"
+        ]
+      },
+      "OpcionesHistorico": {
+        "type": "object",
+        "properties": {
+          "docentes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "nombre": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "nombre"
+              ]
+            }
+          },
+          "aulas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "codigo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "codigo"
+              ]
+            }
+          }
+        },
+        "required": [
+          "docentes",
+          "aulas"
+        ]
+      },
       "Aviso": {
         "type": "object",
         "properties": {
@@ -3640,6 +3814,261 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Novedad"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/historico/novedades": {
+      "get": {
+        "tags": [
+          "Consultas históricas"
+        ],
+        "summary": "Novedades publicadas en un rango de fechas, con indicadores por tipo",
+        "description": "Solo Autoridad académica. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por fecha de publicación; los filtros opcionales se combinan. Los indicadores cuentan todo el período filtrado; el detalle pagina de a 20, la más reciente primero.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "desde",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "hasta",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "carreraId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "materiaId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "comisionId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "docenteId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "aulaId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "AUSENCIA",
+                    "DEMORA",
+                    "VIRTUAL",
+                    "SUSPENSION",
+                    "CAMBIO_AULA"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    ""
+                  ]
+                }
+              ]
+            },
+            "required": false,
+            "name": "tipo",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "pagina",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Indicadores y detalle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaNovedadesResultado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/historico/opciones": {
+      "get": {
+        "tags": [
+          "Consultas históricas"
+        ],
+        "summary": "Docentes y aulas para los filtros de las consultas históricas",
+        "description": "Solo Autoridad académica.",
+        "responses": {
+          "200": {
+            "description": "Opciones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpcionesHistorico"
                 }
               }
             }

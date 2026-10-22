@@ -474,3 +474,45 @@ export const notificacionAvisoSchema = z
   })
   .openapi("NotificacionAviso");
 export type NotificacionAvisoDto = z.infer<typeof notificacionAvisoSchema>;
+
+export const novedadHistoricaSchema = z
+  .object({
+    id: z.string(),
+    publicadaEn: z.string(),
+    tipo: tipoNovedadSchema,
+    estado: estadoNovedadSchema,
+    materia: z.string(),
+    comision: z.string(),
+    fechaClaseDesde: z.string().nullable(),
+    fechaClaseHasta: z.string().nullable(),
+    docentes: z.array(z.string()),
+    publicadaPor: z.string(),
+    publicadaPorBedelia: z.boolean(),
+  })
+  .openapi("NovedadHistorica");
+
+export const consultaNovedadesResultadoSchema = z
+  .object({
+    total: z.number().int(),
+    porTipo: z.object({
+      AUSENCIA: z.number().int(),
+      DEMORA: z.number().int(),
+      VIRTUAL: z.number().int(),
+      SUSPENSION: z.number().int(),
+      CAMBIO_AULA: z.number().int(),
+    }),
+    pagina: z.number().int(),
+    tamanioPagina: z.number().int(),
+    totalPaginas: z.number().int(),
+    novedades: z.array(novedadHistoricaSchema),
+  })
+  .openapi("ConsultaNovedadesResultado");
+export type ConsultaNovedadesResultadoDto = z.infer<typeof consultaNovedadesResultadoSchema>;
+
+export const opcionesHistoricoSchema = z
+  .object({
+    docentes: z.array(usuarioResumenSchema),
+    aulas: z.array(z.object({ id: z.string(), codigo: z.string() })),
+  })
+  .openapi("OpcionesHistorico");
+export type OpcionesHistoricoDto = z.infer<typeof opcionesHistoricoSchema>;

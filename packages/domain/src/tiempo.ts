@@ -41,3 +41,14 @@ export const fechasEntre = (inicio: string, fin: string) => {
   for (let fecha = inicio; fecha <= fin; fecha = sumarDias(fecha, 1)) fechas.push(fecha);
   return fechas;
 };
+
+// Mismo día del mes; si el mes destino no lo tiene (29/02 + 12 meses), el último día de ese mes.
+export const sumarMeses = (fecha: string, meses: number) => {
+  const [anio, mes, dia] = fecha.split("-").map(Number) as [number, number, number];
+  const indiceMes = anio * 12 + (mes - 1) + meses;
+  const anioDestino = Math.floor(indiceMes / 12);
+  const mesDestino = indiceMes % 12;
+  const ultimoDia = new Date(Date.UTC(anioDestino, mesDestino + 1, 0)).getUTCDate();
+  const diaDestino = Math.min(dia, ultimoDia);
+  return `${anioDestino}-${String(mesDestino + 1).padStart(2, "0")}-${String(diaDestino).padStart(2, "0")}`;
+};

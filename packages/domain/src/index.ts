@@ -5,6 +5,7 @@ export * from "./clases";
 export * from "./common";
 export * from "./enums";
 export * from "./estado-institucional";
+export * from "./historico";
 export * from "./institucion";
 export * from "./invitations";
 export * from "./novedades";
