@@ -3,7 +3,7 @@ import { fromDateColumn, prisma, toDateColumn, type Prisma } from "@repo/db";
 import { fechaArgentina, horaArgentina, type ListarClasesQuery } from "@repo/domain";
 
 import { notFound } from "../errors";
-import type { ClaseDto, ClaseNovedadDto, ClasesDelDiaDto } from "../schemas";
+import type { AsistenciaDto, ClaseDto, ClaseNovedadDto, ClasesDelDiaDto } from "../schemas";
 import { toIso } from "../serializers";
 
 import { registrarCambioMasivo } from "./auditoria";
@@ -26,6 +26,11 @@ const novedadInclude = {
   novedad: { include: { aulaNueva: { select: aulaSelect } } },
 } satisfies Prisma.NovedadClaseInclude;
 
+export const asistenciaInclude = {
+  docente: { select: { id: true, name: true } },
+  registradaPor: { select: { id: true, name: true } },
+} satisfies Prisma.AsistenciaDocenteInclude;
+
 export const claseInclude = {
   comision: {
     include: {
@@ -34,6 +39,7 @@ export const claseInclude = {
     },
   },
   aula: { select: aulaSelect },
+  asistencia: { include: asistenciaInclude },
   novedades: {
     where: { novedad: { estado: "ACTIVA" } },
     include: novedadInclude,
@@ -56,7 +62,23 @@ export const toClaseNovedadDto = (novedad: NovedadDeClase): ClaseNovedadDto => (
   createdAt: toIso(novedad.createdAt),
 });
 
-export const toClaseDto = (clase: ClaseConDatos): ClaseDto => ({
+export const toAsistenciaDto = (
+  asistencia: NonNullable<ClaseConDatos["asistencia"]>,
+): AsistenciaDto => ({
+  id: asistencia.id,
+  metodo: asistencia.metodo,
+  horaLlegada: horaArgentina(asistencia.horaLlegada),
+  llegadaEn: toIso(asistencia.horaLlegada),
+  motivo: asistencia.motivo,
+  docente: { id: asistencia.docente.id, nombre: asistencia.docente.name },
+  registradaPor: { id: asistencia.registradaPor.id, nombre: asistencia.registradaPor.name },
+});
+
+// RF-09: método, hora, responsable y motivo son para Bedel y Autoridad.
+const puedeVerAsistencia = (auth: AuthContext) =>
+  auth.perfil === "BEDEL" || auth.perfil === "AUTORIDAD";
+
+export const toClaseDto = (clase: ClaseConDatos, verAsistencia = false): ClaseDto => ({
   id: clase.id,
   fecha: fromDateColumn(clase.fecha),
   horaInicio: horaArgentina(clase.inicio),
@@ -84,6 +106,7 @@ export const toClaseDto = (clase: ClaseConDatos): ClaseDto => ({
     nombre: docente.name,
   })),
   novedades: clase.novedades.map(({ novedad }) => toClaseNovedadDto(novedad)),
+  asistencia: verAsistencia && clase.asistencia ? toAsistenciaDto(clase.asistencia) : null,
 });
 
 // Finalización perezosa (sin cron): al consultar, toda clase cuya franja terminó pasa a
@@ -137,7 +160,7 @@ export const listarClases = async (
     include: claseInclude,
     orderBy: [{ inicio: "asc" }, { comision: { materia: { nombre: "asc" } } }],
   });
-  return { fecha, clases: clases.map(toClaseDto) };
+  return { fecha, clases: clases.map((clase) => toClaseDto(clase, puedeVerAsistencia(auth))) };
 };
 
 // Detalle con el historial de novedades del día, finalizadas incluidas.
@@ -151,5 +174,5 @@ export const obtenerClase = async (auth: AuthContext, claseId: string): Promise<
     },
   });
   if (!clase) throw notFound("Clase");
-  return toClaseDto(clase);
+  return toClaseDto(clase, puedeVerAsistencia(auth));
 };

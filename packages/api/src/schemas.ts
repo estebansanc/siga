@@ -9,6 +9,7 @@ import {
   estadoInstitucionSchema,
   estadoNovedadSchema,
   invitationStatusSchema,
+  metodoAsistenciaSchema,
   memberRoleSchema,
   modalidadSchema,
   perfilSchema,
@@ -215,6 +216,19 @@ export const claseNovedadSchema = z
   .openapi("ClaseNovedad");
 export type ClaseNovedadDto = z.infer<typeof claseNovedadSchema>;
 
+export const asistenciaSchema = z
+  .object({
+    id: z.string(),
+    metodo: metodoAsistenciaSchema,
+    horaLlegada: z.string().openapi({ description: "HH:mm en hora argentina" }),
+    llegadaEn: z.string(),
+    motivo: z.string().nullable().openapi({ description: "Solo en el registro manual" }),
+    docente: usuarioResumenSchema,
+    registradaPor: usuarioResumenSchema,
+  })
+  .openapi("Asistencia");
+export type AsistenciaDto = z.infer<typeof asistenciaSchema>;
+
 export const claseSchema = z
   .object({
     id: z.string(),
@@ -234,6 +248,9 @@ export const claseSchema = z
     }),
     novedades: z.array(claseNovedadSchema).openapi({
       description: "Las activas en el listado; en el detalle, también las finalizadas del día",
+    }),
+    asistencia: asistenciaSchema.nullable().openapi({
+      description: "Solo para Bedel y Autoridad; los demás perfiles reciben null",
     }),
   })
   .openapi("Clase");

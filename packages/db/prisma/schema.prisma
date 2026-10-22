@@ -33,6 +33,8 @@ model User {
   estadosInstitucionales EstadoInstitucional[]
   solicitudesAula        SolicitudAula[]
   sesionesQr             SesionQr[]
+  asistencias            AsistenciaDocente[]   @relation("AsistenciaDocente")
+  asistenciasRegistradas AsistenciaDocente[]   @relation("AsistenciaRegistrada")
 
   @@unique([email])
   @@map("user")
@@ -121,6 +123,7 @@ model Organization {
   comisionesSeguidas     ComisionSeguida[]
   solicitudesAula        SolicitudAula[]
   sesionesQr             SesionQr[]
+  asistencias            AsistenciaDocente[]
 
   @@unique([slug])
   @@map("organization")
@@ -460,6 +463,7 @@ model ClaseProgramada {
   updatedAt       DateTime        @updatedAt
   novedades       NovedadClase[]
   solicitudesAula SolicitudAula[]
+  asistencia      AsistenciaDocente?
 
   @@unique([comisionId, inicio])
   @@index([organizationId, fecha])
@@ -657,4 +661,31 @@ model Aviso {
   @@index([organizationId, hasta])
   @@index([organizationId, createdAt])
   @@map("aviso")
+}
+
+enum MetodoAsistencia {
+  QR
+  MANUAL
+}
+
+// La asistencia del docente a una clase: una sola por clase, sea por QR o manual. `horaLlegada`
+// es el instante de llegada; `registradaPorId` es quien la cargó (el Bedel en el registro
+// manual, el propio docente en el QR). `motivo` solo existe en el registro manual.
+model AsistenciaDocente {
+  id              String           @id @default(cuid())
+  organizationId  String
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  claseId         String           @unique
+  clase           ClaseProgramada  @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  docenteId       String
+  docente         User             @relation("AsistenciaDocente", fields: [docenteId], references: [id], onDelete: Cascade)
+  metodo          MetodoAsistencia
+  horaLlegada     DateTime
+  motivo          String?
+  registradaPorId String
+  registradaPor   User             @relation("AsistenciaRegistrada", fields: [registradaPorId], references: [id], onDelete: Cascade)
+  createdAt       DateTime         @default(now())
+
+  @@index([organizationId, createdAt])
+  @@map("asistencia_docente")
 }

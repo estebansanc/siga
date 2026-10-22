@@ -568,6 +568,9 @@
               "$ref": "#/components/schemas/ClaseNovedad"
             },
             "description": "Las activas en el listado; en el detalle, también las finalizadas del día"
+          },
+          "asistencia": {
+            "$ref": "#/components/schemas/Asistencia"
           }
         },
         "required": [
@@ -584,7 +587,8 @@
           "carrera",
           "aula",
           "docentes",
-          "novedades"
+          "novedades",
+          "asistencia"
         ]
       },
       "Materia": {
@@ -718,6 +722,78 @@
           "publicadaPorBedelia",
           "createdAt"
         ]
+      },
+      "Asistencia": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "metodo": {
+            "type": "string",
+            "enum": [
+              "QR",
+              "MANUAL"
+            ]
+          },
+          "horaLlegada": {
+            "type": "string",
+            "description": "HH:mm en hora argentina"
+          },
+          "llegadaEn": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Solo en el registro manual"
+          },
+          "docente": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nombre"
+            ]
+          },
+          "registradaPor": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nombre"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "metodo",
+          "horaLlegada",
+          "llegadaEn",
+          "motivo",
+          "docente",
+          "registradaPor"
+        ],
+        "description": "Solo para Bedel y Autoridad; los demás perfiles reciben null"
       },
       "Novedad": {
         "type": "object",
@@ -6037,6 +6113,122 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClasesDelTurno"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/asistencias/manual": {
+      "post": {
+        "tags": [
+          "Asistencia docente"
+        ],
+        "summary": "Registrar a mano la asistencia de un docente",
+        "description": "Solo Bedel. Guarda la asistencia con método Manual, hora de llegada, motivo y Bedel responsable, y pasa la clase a Docente presente, todo o nada. 409 si la clase ya tiene asistencia (QR o manual); 422 si la clase no es de hoy, no está Programada o Demorada, el docente no es de la comisión o la hora de llegada es futura.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "claseId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "docenteId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "horaLlegada": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  },
+                  "motivo": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "claseId",
+                  "docenteId",
+                  "horaLlegada",
+                  "motivo"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Asistencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asistencia"
                 }
               }
             }

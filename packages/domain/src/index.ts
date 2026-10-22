@@ -1,3 +1,4 @@
+export * from "./asistencias";
 export * from "./aulas";
 export * from "./avisos";
 export * from "./clases";

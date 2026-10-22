@@ -97,7 +97,7 @@ export const listarClasesSolicitables = async (
     include: claseInclude,
     orderBy: [{ inicio: "asc" }, { comision: { materia: { nombre: "asc" } } }],
   });
-  return { fecha, clases: clases.map(toClaseDto) };
+  return { fecha, clases: clases.map((clase) => toClaseDto(clase)) };
 };
 
 const buscarClaseSolicitable = async (auth: AuthContext, claseId: string, ahora: Date) => {

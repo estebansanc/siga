@@ -65,7 +65,7 @@ const clasesDelTurno = async (
     include: claseInclude,
     orderBy: { inicio: "asc" },
   });
-  return clases.map(toClaseDto);
+  return clases.map((clase) => toClaseDto(clase));
 };
 
 // RF-03: las clases presenciales vigentes del aula cuya franja se superpone con el turno.

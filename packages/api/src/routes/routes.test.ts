@@ -355,6 +355,39 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
     expect(await sesion.json()).toMatchObject({ turno: "NOCHE", aula: { id: fixture.aulaId } });
   });
 
+  it("el bedel registra la asistencia manual por HTTP y los demás perfiles reciben 403", async () => {
+    const institution = await createInstitution();
+    const fixture = await seedAcademicFixture(institution);
+    const hoy = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const clase = await createClase(institution, fixture, hoy, "00:00", "23:59");
+    const registro = {
+      claseId: clase.id,
+      docenteId: fixture.docente.userId,
+      horaLlegada: "00:00",
+      motivo: "Sin batería",
+    };
+
+    getAuthContext.mockResolvedValueOnce(authOf(institution, fixture.docente));
+    expect((await call("/asistencias/manual", json(registro))).status).toBe(403);
+    getAuthContext.mockResolvedValueOnce(authOf(institution, institution));
+    const invalido = await call("/asistencias/manual", json({ ...registro, motivo: " " }));
+    expect(invalido.status).toBe(422);
+    getAuthContext.mockResolvedValue(authOf(institution, institution));
+    const creada = await call("/asistencias/manual", json(registro));
+    expect(creada.status).toBe(201);
+    expect(await creada.json()).toMatchObject({ metodo: "MANUAL", motivo: "Sin batería" });
+    const repetida = await call("/asistencias/manual", json(registro));
+    expect(repetida.status).toBe(409);
+    expect(await repetida.json()).toMatchObject({
+      error: { message: "Esta clase ya tiene asistencia registrada: Registro manual a las 00:00." },
+    });
+    const detalle = await call(`/clases/${clase.id}`);
+    expect(await detalle.json()).toMatchObject({
+      estado: "DOCENTE_PRESENTE",
+      asistencia: { metodo: "MANUAL", registradaPor: { id: institution.userId } },
+    });
+  });
+
   it("bedel cierra la institución, docente publica una demora y el estudiante la ve en sus clases", async () => {
     const institution = await createInstitution();
     const fixture = await seedAcademicFixture(institution);

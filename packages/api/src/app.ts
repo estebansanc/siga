@@ -8,6 +8,7 @@ import type { ApiEnv } from "./context";
 import { runWithDefer, type DeferAdapter } from "./deferred";
 import { ApiError } from "./errors";
 import { requireSession } from "./middleware";
+import { asistenciaRoutes } from "./routes/asistencias";
 import { aulaRoutes } from "./routes/aulas";
 import { avisoRoutes } from "./routes/avisos";
 import { claseRoutes } from "./routes/clases";
@@ -111,6 +112,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
     .route("/aulas", aulaRoutes)
     .route("/solicitudes-aula", solicitudAulaRoutes)
     .route("/qr", qrRoutes)
+    .route("/asistencias", asistenciaRoutes)
     .route("/cron", cronRoutes);
 };
 
