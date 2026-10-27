@@ -30,8 +30,10 @@ export {
   type Verification,
 } from "./generated/client";
 export {
+  borrarClasesFuturas,
   fromDateColumn,
   generarClasesProgramadas,
+  reubicarClasesFuturas,
   toDateColumn,
   type ResumenGeneracion,
 } from "./clases-programadas";

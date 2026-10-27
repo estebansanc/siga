@@ -2,6 +2,7 @@ export * from "./asistencias";
 export * from "./aulas";
 export * from "./avisos";
 export * from "./clases";
+export * from "./datos-academicos";
 export * from "./common";
 export * from "./enums";
 export * from "./estado-institucional";

@@ -613,3 +613,71 @@ export const clasesSinAulaSchema = z
   .object({ clases: z.array(claseSchema) })
   .openapi("ClasesSinAula");
 export type ClasesSinAulaDto = z.infer<typeof clasesSinAulaSchema>;
+
+export const gestionQuerySchema = z.object({
+  bajas: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true")
+    .openapi({ description: "true lista los dados de baja en lugar de los activos" }),
+});
+
+export const carreraGestionSchema = carreraSchema
+  .extend({ activa: z.boolean() })
+  .openapi("CarreraGestion");
+export type CarreraGestionDto = z.infer<typeof carreraGestionSchema>;
+
+export const materiaGestionSchema = materiaSchema
+  .extend({ activa: z.boolean(), carrera: carreraSchema })
+  .openapi("MateriaGestion");
+export type MateriaGestionDto = z.infer<typeof materiaGestionSchema>;
+
+export const periodoGestionSchema = z
+  .object({
+    id: z.string(),
+    nombre: z.string(),
+    fechaInicio: z.string(),
+    fechaFin: z.string(),
+    activo: z.boolean(),
+  })
+  .openapi("PeriodoLectivoGestion");
+export type PeriodoGestionDto = z.infer<typeof periodoGestionSchema>;
+
+export const comisionGestionSchema = z
+  .object({
+    id: z.string(),
+    codigo: z.string(),
+    turno: turnoSchema,
+    anioLectivo: z.number().int(),
+    activa: z.boolean(),
+    materia: materiaSchema,
+    periodoLectivo: z.object({ id: z.string(), nombre: z.string() }),
+    docentes: z.array(usuarioResumenSchema),
+  })
+  .openapi("ComisionGestion");
+export type ComisionGestionDto = z.infer<typeof comisionGestionSchema>;
+
+export const horarioGestionSchema = z
+  .object({
+    id: z.string(),
+    diaSemana: z.number().int(),
+    horaInicio: z.string(),
+    horaFin: z.string(),
+    activo: z.boolean(),
+    comision: z.object({ id: z.string(), codigo: z.string(), materia: z.string() }),
+    aulaHabitual: z.object({ id: z.string(), codigo: z.string() }).nullable(),
+  })
+  .openapi("HorarioGestion");
+export type HorarioGestionDto = z.infer<typeof horarioGestionSchema>;
+
+export const horariosQuerySchema = gestionQuerySchema.extend({
+  comisionId: z.string().optional(),
+});
+
+export const diaNoLaborableGestionSchema = z
+  .object({ id: z.string(), fecha: z.string(), motivo: z.string(), activo: z.boolean() })
+  .openapi("DiaNoLaborableGestion");
+export type DiaNoLaborableGestionDto = z.infer<typeof diaNoLaborableGestionSchema>;
+
+export const docenteAsignableSchema = usuarioResumenSchema.openapi("DocenteAsignable");
+export type DocenteAsignableDto = z.infer<typeof docenteAsignableSchema>;

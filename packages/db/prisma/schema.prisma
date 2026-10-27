@@ -320,6 +320,7 @@ model PeriodoLectivo {
   nombre         String
   fechaInicio    DateTime     @db.Date
   fechaFin       DateTime     @db.Date
+  activo         Boolean      @default(true)
   comisiones     Comision[]
 
   @@index([organizationId])
@@ -374,6 +375,7 @@ model Horario {
   horaFin        String
   aulaHabitualId String?
   aulaHabitual   Aula?             @relation(fields: [aulaHabitualId], references: [id], onDelete: SetNull)
+  activo         Boolean           @default(true)
   clases         ClaseProgramada[]
 
   @@index([comisionId])
@@ -386,6 +388,7 @@ model DiaNoLaborable {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   fecha          DateTime     @db.Date
   motivo         String
+  activo         Boolean      @default(true)
 
   @@unique([organizationId, fecha])
   @@map("dia_no_laborable")

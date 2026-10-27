@@ -13,7 +13,15 @@ import { aulaRoutes } from "./routes/aulas";
 import { avisoRoutes } from "./routes/avisos";
 import { claseRoutes } from "./routes/clases";
 import { cronRoutes } from "./routes/cron";
-import { carreraRoutes, comisionRoutes, materiaRoutes } from "./routes/datos-academicos";
+import {
+  carreraRoutes,
+  comisionRoutes,
+  diaNoLaborableRoutes,
+  docenteRoutes,
+  horarioRoutes,
+  materiaRoutes,
+  periodoRoutes,
+} from "./routes/datos-academicos";
 import { estadoInstitucionalRoutes } from "./routes/estado-institucional";
 import { historicoRoutes } from "./routes/historico";
 import { incidenciaRoutes } from "./routes/incidencias";
@@ -112,6 +120,10 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
     .route("/carreras", carreraRoutes)
     .route("/materias", materiaRoutes)
     .route("/comisiones", comisionRoutes)
+    .route("/periodos-lectivos", periodoRoutes)
+    .route("/horarios", horarioRoutes)
+    .route("/dias-no-laborables", diaNoLaborableRoutes)
+    .route("/docentes", docenteRoutes)
     .route("/aulas", aulaRoutes)
     .route("/solicitudes-aula", solicitudAulaRoutes)
     .route("/incidencias", incidenciaRoutes)
