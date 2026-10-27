@@ -62,7 +62,7 @@ test.describe("Datos académicos", () => {
     // Materias
     await page.getByRole("tab", { name: "Materias" }).click();
     dialog = await abrirDialogo(page, "Nueva materia", "Nueva materia");
-    await dialog.getByLabel("Carrera").selectOption({ label: carrera.nombre });
+    await dialog.getByLabel("Carrera", { exact: true }).selectOption({ label: carrera.nombre });
     await dialog.getByLabel("Código").fill(materia.codigo);
     await dialog.getByLabel("Nombre").fill(materia.nombre);
     await dialog.getByLabel("Año de la carrera").fill("5");
