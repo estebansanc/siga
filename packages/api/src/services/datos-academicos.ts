@@ -351,6 +351,19 @@ const assertPeriodoActivo = async (organizationId: string, id: string) => {
   }
 };
 
+const assertHorariosSinChoque = async (
+  organizationId: string,
+  comisionId: string,
+  periodoLectivoId?: string,
+) => {
+  const horarios = await prisma.horario.findMany({
+    where: { comisionId, activo: true, aulaHabitualId: { not: null } },
+  });
+  for (const horario of horarios) {
+    await assertAulaLibre(organizationId, horario, horario.id, periodoLectivoId);
+  }
+};
+
 const toPeriodoData = (input: ActualizarPeriodo) => ({
   nombre: input.nombre,
   fechaInicio: input.fechaInicio ? toDateColumn(input.fechaInicio) : undefined,
@@ -550,6 +563,9 @@ export const actualizarComision = async (
     id,
   );
   if (docenteIds) await assertDocentesAsignables(organizationId, docenteIds);
+  if (datos.periodoLectivoId !== undefined) {
+    await assertHorariosSinChoque(organizationId, id, datos.periodoLectivoId);
+  }
   const periodo = datos.periodoLectivoId
     ? await buscarPeriodo(organizationId, datos.periodoLectivoId)
     : null;
@@ -569,12 +585,15 @@ export const actualizarComision = async (
 export const darDeBajaComision = async (auth: AuthContext, id: string) => {
   const organizationId = await gestor(auth);
   assertCambioDeEstado((await buscarComision(organizationId, id)).activa, false, "La comisión");
-  const comision = await prisma.comision.update({
-    where: { id },
-    data: { activa: false },
-    include: comisionGestionInclude,
+  const comision = await prisma.$transaction(async (tx) => {
+    const baja = await tx.comision.update({
+      where: { id },
+      data: { activa: false },
+      include: comisionGestionInclude,
+    });
+    await borrarClasesFuturas(tx, { comisionId: id });
+    return baja;
   });
-  await borrarClasesFuturas(prisma, { comisionId: id });
   return toComisionGestionDto(comision);
 };
 
@@ -584,6 +603,7 @@ export const reactivarComision = async (auth: AuthContext, id: string) => {
   assertCambioDeEstado(actual.activa, true, "La comisión");
   await assertMateriaActiva(organizationId, actual.materiaId);
   await assertPeriodoActivo(organizationId, actual.periodoLectivoId);
+  await assertHorariosSinChoque(organizationId, id);
   return toComisionGestionDto(
     await prisma.comision.update({
       where: { id },
@@ -648,9 +668,11 @@ const assertAulaLibre = async (
   organizationId: string,
   franja: FranjaSemanal,
   excluirId?: string,
+  periodoLectivoId?: string,
 ) => {
   if (!franja.aulaHabitualId) return;
-  const periodo = (await buscarComision(organizationId, franja.comisionId)).periodoLectivoId;
+  const periodo =
+    periodoLectivoId ?? (await buscarComision(organizationId, franja.comisionId)).periodoLectivoId;
   const { fechaInicio, fechaFin } = await buscarPeriodo(organizationId, periodo);
   const choque = await prisma.horario.findFirst({
     where: {
@@ -735,12 +757,15 @@ export const actualizarHorario = async (
   }
   if (franja.aulaHabitualId) await assertAulaAsignable(organizationId, franja.aulaHabitualId);
   await assertAulaLibre(organizationId, franja, id);
-  const horario = await prisma.horario.update({
-    where: { id },
-    data: { ...input },
-    include: horarioGestionInclude,
+  const horario = await prisma.$transaction(async (tx) => {
+    const editado = await tx.horario.update({
+      where: { id },
+      data: { ...input },
+      include: horarioGestionInclude,
+    });
+    await reubicarClasesFuturas(tx, id, actual.diaSemana);
+    return editado;
   });
-  await reubicarClasesFuturas(prisma, id, actual.diaSemana);
   return toHorarioGestionDto(horario);
 };
 
@@ -748,12 +773,15 @@ export const darDeBajaHorario = async (auth: AuthContext, id: string) => {
   const organizationId = await gestor(auth);
   const actual = await buscarHorario(organizationId, id);
   if (!actual.activo) throw conflict("El horario ya está dado de baja");
-  const horario = await prisma.horario.update({
-    where: { id },
-    data: { activo: false },
-    include: horarioGestionInclude,
+  const horario = await prisma.$transaction(async (tx) => {
+    const baja = await tx.horario.update({
+      where: { id },
+      data: { activo: false },
+      include: horarioGestionInclude,
+    });
+    await borrarClasesFuturas(tx, { horarioId: id });
+    return baja;
   });
-  await borrarClasesFuturas(prisma, { horarioId: id });
   return toHorarioGestionDto(horario);
 };
 
@@ -762,6 +790,7 @@ export const reactivarHorario = async (auth: AuthContext, id: string) => {
   const actual = await buscarHorario(organizationId, id);
   if (actual.activo) throw conflict("El horario ya está activo");
   await assertComisionActiva(organizationId, actual.comisionId);
+  if (actual.aulaHabitualId) await assertAulaAsignable(organizationId, actual.aulaHabitualId);
   await assertAulaLibre(organizationId, actual, id);
   return toHorarioGestionDto(
     await prisma.horario.update({

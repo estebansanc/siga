@@ -6,7 +6,7 @@ import {
   sumarDias,
 } from "@repo/domain";
 
-import type { Db } from "./client";
+import type { Db, DbTransaction } from "./client";
 import type { Prisma } from "./generated/client";
 
 // Columnas `@db.Date`: Prisma las lee y escribe como medianoche UTC.
@@ -14,6 +14,8 @@ export const toDateColumn = (fecha: string) => new Date(`${fecha}T00:00:00.000Z`
 export const fromDateColumn = (value: Date) => value.toISOString().slice(0, 10);
 
 export type ResumenGeneracion = { creadas: number; existentes: number; sinAula: number };
+
+type Ejecutor = Db | DbTransaction;
 
 type Filtro = { periodoLectivoId?: string; comisionId?: string };
 
@@ -90,7 +92,7 @@ export const generarClasesProgramadas = async (
 };
 
 const aulaDisponiblePara = async (
-  db: Db,
+  db: Ejecutor,
   aula: { id: string; activa: boolean; estado: string } | null,
   inicio: Date,
   fin: Date,
@@ -122,7 +124,7 @@ const clasesFuturasEditables = (
 });
 
 export const borrarClasesFuturas = async (
-  db: Db,
+  db: Ejecutor,
   where: { horarioId: string } | { comisionId: string },
   ahora = new Date(),
 ) => {
@@ -135,7 +137,7 @@ export const borrarClasesFuturas = async (
 // Editar el horario mueve sus clases futuras al nuevo día, franja y aula; las que ya no caben
 // (fuera del período, día no laborable o franja ya ocupada por otra clase de la comisión) se borran.
 export const reubicarClasesFuturas = async (
-  db: Db,
+  db: Ejecutor,
   horarioId: string,
   diaSemanaAnterior: number,
   ahora = new Date(),
@@ -144,6 +146,7 @@ export const reubicarClasesFuturas = async (
     where: { id: horarioId },
     include: { aulaHabitual: true, comision: { include: { periodoLectivo: true } } },
   });
+  const inicioPeriodo = fromDateColumn(horario.comision.periodoLectivo.fechaInicio);
   const finPeriodo = fromDateColumn(horario.comision.periodoLectivo.fechaFin);
   const diasNoLaborables = new Set(
     (
@@ -167,7 +170,7 @@ export const reubicarClasesFuturas = async (
       where: { comisionId: clase.comisionId, inicio, id: { not: clase.id } },
       select: { id: true },
     });
-    if (fecha < hoy || fecha > finPeriodo || diasNoLaborables.has(fecha) || otra) {
+    if (fecha < hoy || fecha < inicioPeriodo || fecha > finPeriodo || diasNoLaborables.has(fecha) || otra) {
       await db.claseProgramada.delete({ where: { id: clase.id } });
       continue;
     }

@@ -125,4 +125,24 @@ test.describe("Móvil", () => {
 
     await page.request.post(`/api/v1/aulas/${aulaId}/baja`);
   });
+
+  test("Datos académicos no scrollea a lo ancho en ninguna de sus seis pestañas", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/datos-academicos");
+    await expect(page.getByRole("heading", { name: "Datos académicos" })).toBeVisible();
+    for (const pestania of [
+      "Carreras",
+      "Materias",
+      "Períodos",
+      "Comisiones",
+      "Horarios",
+      "Días no laborables",
+    ]) {
+      await page.getByRole("tab", { name: pestania }).click();
+      await expect(page.getByRole("tab", { name: pestania, selected: true })).toBeVisible();
+      await expectNoHorizontalPageScroll(page);
+    }
+  });
 });

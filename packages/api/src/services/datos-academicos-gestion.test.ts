@@ -5,6 +5,7 @@ import {
   asOrganization,
   authOf,
   createInstitution,
+  createOrganization,
   createUserWithPerfil,
   resetDatabase,
   seedAcademicFixture,
@@ -14,6 +15,8 @@ import {
 
 import {
   actualizarCarrera,
+  actualizarDiaNoLaborable,
+  actualizarMateria,
   actualizarComision,
   actualizarHorario,
   actualizarPeriodo,
@@ -555,5 +558,120 @@ describe("auditoría", () => {
       "Materia",
       "PeriodoLectivo",
     ]);
+  });
+});
+
+describe("integridad de RF-16 al reactivar o mover", () => {
+  const horarioDe = (comisionId: string, aulaHabitualId: string | null = fixture.aulaId) =>
+    comoBedel(() =>
+      crearHorario(bedel(), {
+        comisionId,
+        diaSemana: 1,
+        horaInicio: "19:00",
+        horaFin: "23:00",
+        aulaHabitualId,
+      }),
+    );
+
+  it("reactivar una comisión rechaza si otra tomó el aula de sus horarios y nombra a esa comisión", async () => {
+    await comoBedel(() => darDeBajaComision(bedel(), fixture.comisionId));
+    const otra = await comisionNueva("5K7");
+    await horarioDe(otra.id);
+    await expect(
+      comoBedel(() => reactivarComision(bedel(), fixture.comisionId)),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: expect.stringContaining("la comisión 5K7"),
+    });
+  });
+
+  it("cambiar el período de una comisión revalida las aulas de sus horarios", async () => {
+    const periodoAparte = await comoBedel(() =>
+      crearPeriodo(bedel(), { nombre: "Otro", fechaInicio: "2030-08-01", fechaFin: "2030-11-30" }),
+    );
+    const aparte = await comoBedel(() =>
+      crearComision(bedel(), {
+        materiaId: fixture.materiaId,
+        periodoLectivoId: periodoAparte.id,
+        codigo: "5K6",
+        turno: "NOCHE",
+        docenteIds: [],
+      }),
+    );
+    await horarioDe(aparte.id);
+    await expect(
+      comoBedel(() =>
+        actualizarComision(bedel(), aparte.id, { periodoLectivoId: fixture.periodoLectivoId }),
+      ),
+    ).rejects.toMatchObject({ status: 409, message: expect.stringContaining("la comisión 5K2") });
+  });
+
+  it("reactivar un horario rechaza si su aula habitual está dada de baja", async () => {
+    await comoBedel(() => darDeBajaHorario(bedel(), fixture.horarioId));
+    await prisma.aula.update({ where: { id: fixture.aulaId }, data: { activa: false } });
+    await expect(
+      comoBedel(() => reactivarHorario(bedel(), fixture.horarioId)),
+    ).rejects.toMatchObject({ status: 422 });
+  });
+
+  it("mover un horario a un día anterior al inicio del período borra esa clase", async () => {
+    await resetDatabase();
+    institution = await createInstitution();
+    // Período desde un miércoles (6 de marzo de 2030); el horario es de los miércoles.
+    fixture = await seedAcademicFixture(institution, {
+      periodo: ["2030-03-06", "2030-03-31"],
+      diaSemana: 3,
+    });
+    await comoBedel(() => generarClases(bedel(), {}));
+    await comoBedel(() => actualizarHorario(bedel(), fixture.horarioId, { diaSemana: 1 }));
+    const fechas = (await prisma.claseProgramada.findMany({ orderBy: { inicio: "asc" } })).map(
+      (clase) => clase.fecha.toISOString().slice(0, 10),
+    );
+    expect(fechas).toEqual(["2030-03-11", "2030-03-18", "2030-03-25"]);
+  });
+});
+
+describe("aislamiento entre organizaciones", () => {
+  it("leer, editar o dar de baja con ids de otra organización devuelve 404", async () => {
+    const dia = await comoBedel(() =>
+      crearDiaNoLaborable(bedel(), { fecha: "2030-03-11", motivo: "Feriado" }),
+    );
+    const ajena = await createOrganization("ajena");
+    const auth = authOf(ajena, ajena);
+    const comoAjena = (fn: () => Promise<unknown>) => asOrganization(ajena, fn);
+    const intentos: (() => Promise<unknown>)[] = [
+      () => actualizarCarrera(auth, fixture.carreraId, { nombre: "X" }),
+      () => darDeBajaCarrera(auth, fixture.carreraId),
+      () => actualizarMateria(auth, fixture.materiaId, { nombre: "X" }),
+      () => darDeBajaMateria(auth, fixture.materiaId),
+      () => actualizarPeriodo(auth, fixture.periodoLectivoId, { nombre: "X" }),
+      () => darDeBajaPeriodo(auth, fixture.periodoLectivoId),
+      () => actualizarComision(auth, fixture.comisionId, { codigo: "X" }),
+      () => darDeBajaComision(auth, fixture.comisionId),
+      () => actualizarHorario(auth, fixture.horarioId, { horaFin: "22:00" }),
+      () => darDeBajaHorario(auth, fixture.horarioId),
+      () => actualizarDiaNoLaborable(auth, dia.id, { motivo: "X" }),
+      () => darDeBajaDiaNoLaborable(auth, dia.id),
+      () =>
+        crearMateria(auth, {
+          carreraId: fixture.carreraId,
+          codigo: "Z",
+          nombre: "Z",
+          anioCarrera: 1,
+        }),
+      () =>
+        crearHorario(auth, {
+          comisionId: fixture.comisionId,
+          diaSemana: 2,
+          horaInicio: "08:00",
+          horaFin: "09:00",
+          aulaHabitualId: null,
+        }),
+    ];
+    for (const intento of intentos) {
+      await expect(comoAjena(intento)).rejects.toMatchObject({ status: 404 });
+    }
+    expect(await listarCarrerasGestion(auth, false)).toEqual([]);
+    expect(await listarCarrerasGestion(bedel(), false)).toHaveLength(1);
   });
 });
