@@ -18,6 +18,7 @@ import {
 import type { ApiEnv } from "../context";
 import { perfilOnly } from "../middleware";
 import {
+  aulaSchema,
   carreraGestionSchema,
   carreraSchema,
   comisionGestionSchema,
@@ -537,6 +538,18 @@ export const diaNoLaborableRoutes = new OpenAPIHono<ApiEnv>()
   );
 
 export const horarioRoutes = new OpenAPIHono<ApiEnv>()
+  .openapi(
+    createRoute({
+      method: "get",
+      path: "/aulas",
+      tags,
+      summary: "Aulas activas que se pueden elegir como aula habitual",
+      description: "Solo Bedel y Autoridad.",
+      middleware: [gestores] as const,
+      responses: { 200: jsonResponse(z.array(aulaSchema), "Aulas"), ...commonErrors },
+    }),
+    async (c) => c.json(await datosAcademicos.listarAulasHabituales(c.get("auth")), 200),
+  )
   .openapi(
     createRoute({
       method: "get",

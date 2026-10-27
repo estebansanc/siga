@@ -748,7 +748,13 @@ describe("datos académicos: administración", () => {
     const autoridad = await createUserWithPerfil(institution, "AUTORIDAD");
 
     getAuthContext.mockResolvedValue(authOf(institution, docente));
-    for (const ruta of ["/carreras/gestion", "/periodos-lectivos", "/horarios", "/docentes"]) {
+    for (const ruta of [
+      "/carreras/gestion",
+      "/periodos-lectivos",
+      "/horarios",
+      "/horarios/aulas",
+      "/docentes",
+    ]) {
       expect((await call(ruta)).status).toBe(403);
     }
     expect((await call("/carreras", json({ codigo: "K", nombre: "Sistemas" }))).status).toBe(403);

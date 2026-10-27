@@ -152,6 +152,7 @@ describe("AppSidebar", () => {
       "Avisos",
       "Buscar",
       "Estado institucional",
+      "Datos académicos",
     ]);
   });
 

@@ -50,6 +50,11 @@ const estado: NavigationItem = {
   href: "/estado-institucional",
   icon: CircleDotIcon,
 };
+const datosAcademicos: NavigationItem = {
+  title: "Datos académicos",
+  href: "/datos-academicos",
+  icon: DatabaseIcon,
+};
 const aulas: NavigationItem = { title: "Aulas", href: "/aulas", icon: DoorOpenIcon };
 const configuracion: NavigationItem = {
   title: "Configuración",
@@ -84,7 +89,7 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     { title: "Incidencias", href: "/incidencias", icon: TriangleAlertIcon },
     avisos,
     { title: "Usuarios", href: "/usuarios", icon: UsersIcon },
-    { title: "Datos académicos", href: "/datos-academicos", icon: DatabaseIcon },
+    datosAcademicos,
   ],
   AUTORIDAD: [
     { title: "Clases de hoy", href: "/", icon: CalendarDaysIcon },
@@ -92,6 +97,7 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     avisos,
     buscar,
     estado,
+    datosAcademicos,
   ],
 };
 

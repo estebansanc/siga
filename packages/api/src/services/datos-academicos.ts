@@ -28,6 +28,7 @@ import {
 
 import { conflict, notFound, unprocessable } from "../errors";
 import type {
+  AulaDto,
   CarreraDto,
   CarreraGestionDto,
   ComisionDto,
@@ -851,3 +852,17 @@ export const darDeBajaDiaNoLaborable = (auth: AuthContext, id: string) =>
 
 export const reactivarDiaNoLaborable = (auth: AuthContext, id: string) =>
   cambiarActivoDiaNoLaborable(auth, id, true);
+
+export const listarAulasHabituales = async (auth: AuthContext): Promise<AulaDto[]> =>
+  prisma.aula.findMany({
+    where: { organizationId: await gestor(auth), activa: true },
+    orderBy: { codigo: "asc" },
+    select: {
+      id: true,
+      codigo: true,
+      edificio: true,
+      piso: true,
+      capacidad: true,
+      equipamiento: true,
+    },
+  });
