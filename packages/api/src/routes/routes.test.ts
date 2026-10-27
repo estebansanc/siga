@@ -740,3 +740,44 @@ describe("Incidencias por HTTP", () => {
     expect(JSON.stringify(await pdf.json())).toContain("La foto debe ser JPG o PNG");
   });
 });
+
+describe("datos académicos: administración", () => {
+  it("Bedel y Autoridad administran; el resto recibe 403; 422 y 409 con el texto exacto", async () => {
+    const institution = await createInstitution();
+    const docente = await createUserWithPerfil(institution, "DOCENTE");
+    const autoridad = await createUserWithPerfil(institution, "AUTORIDAD");
+
+    getAuthContext.mockResolvedValue(authOf(institution, docente));
+    for (const ruta of ["/carreras/gestion", "/periodos-lectivos", "/horarios", "/docentes"]) {
+      expect((await call(ruta)).status).toBe(403);
+    }
+    expect((await call("/carreras", json({ codigo: "K", nombre: "Sistemas" }))).status).toBe(403);
+
+    getAuthContext.mockResolvedValue(authOf(institution, autoridad));
+    const creada = await call("/carreras", json({ codigo: "K", nombre: "Sistemas" }));
+    expect(creada.status).toBe(201);
+    const repetida = await call("/carreras", json({ codigo: "K", nombre: "Otra" }));
+    expect(repetida.status).toBe(409);
+    expect(((await repetida.json()) as { error: { message: string } }).error.message).toBe(
+      "Ya existe una carrera con ese código",
+    );
+
+    const invertido = await call(
+      "/periodos-lectivos",
+      json({ nombre: "P", fechaInicio: "2030-03-10", fechaFin: "2030-03-10" }),
+    );
+    expect(invertido.status).toBe(422);
+    expect(await invertido.json()).toMatchObject({
+      error: {
+        issues: [
+          { path: "fechaFin", message: "La fecha de fin debe ser posterior a la de inicio" },
+        ],
+      },
+    });
+
+    const { id } = (await creada.json()) as { id: string };
+    expect((await call(`/carreras/${id}/baja`, { method: "POST" })).status).toBe(200);
+    const bajas = await call("/carreras/gestion?bajas=true");
+    expect(await bajas.json()).toEqual([expect.objectContaining({ id, activa: false })]);
+  });
+});

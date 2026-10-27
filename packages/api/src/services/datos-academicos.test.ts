@@ -13,6 +13,7 @@ import {
 
 import { buscarComisiones, generarClases, listarMaterias } from "./datos-academicos";
 
+const hoy = "2026-10-01";
 let institution: TestOrganization;
 let fixture: AcademicFixture;
 
@@ -25,7 +26,7 @@ beforeEach(async () => {
 
 describe("generación de clases programadas", () => {
   it("crea una clase por horario y fecha del período, Programada y con el aula habitual", async () => {
-    expect(await generarClases(authOf(institution, institution), {})).toEqual({
+    expect(await generarClases(authOf(institution, institution), {}, hoy)).toEqual({
       creadas: 4,
       existentes: 0,
       sinAula: 0,
@@ -51,12 +52,12 @@ describe("generación de clases programadas", () => {
       },
     });
     const auth = authOf(institution, institution);
-    expect(await generarClases(auth, { periodoLectivoId: fixture.periodoLectivoId })).toEqual({
+    expect(await generarClases(auth, { periodoLectivoId: fixture.periodoLectivoId }, hoy)).toEqual({
       creadas: 3,
       existentes: 0,
       sinAula: 0,
     });
-    expect(await generarClases(auth, { comisionId: fixture.comisionId })).toEqual({
+    expect(await generarClases(auth, { comisionId: fixture.comisionId }, hoy)).toEqual({
       creadas: 0,
       existentes: 3,
       sinAula: 0,
@@ -83,7 +84,7 @@ describe("generación de clases programadas", () => {
         },
       },
     });
-    const resumen = await generarClases(authOf(institution, institution), {});
+    const resumen = await generarClases(authOf(institution, institution), {}, hoy);
     expect(resumen).toEqual({ creadas: 8, existentes: 0, sinAula: 4 });
     const sinAula = await prisma.claseProgramada.findMany({
       where: { comisionId: otraComision.id },

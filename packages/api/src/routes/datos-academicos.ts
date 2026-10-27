@@ -67,7 +67,7 @@ export const carreraRoutes = new OpenAPIHono<ApiEnv>()
     }),
     async (c) =>
       c.json(
-        await datosAcademicos.listarCarreraGestion(c.get("auth"), c.req.valid("query").bajas),
+        await datosAcademicos.listarCarrerasGestion(c.get("auth"), c.req.valid("query").bajas),
         200,
       ),
   )
@@ -166,7 +166,7 @@ export const materiaRoutes = new OpenAPIHono<ApiEnv>()
     }),
     async (c) =>
       c.json(
-        await datosAcademicos.listarMateriaGestion(c.get("auth"), c.req.valid("query").bajas),
+        await datosAcademicos.listarMateriasGestion(c.get("auth"), c.req.valid("query").bajas),
         200,
       ),
   )
@@ -283,7 +283,7 @@ export const comisionRoutes = new OpenAPIHono<ApiEnv>()
     }),
     async (c) =>
       c.json(
-        await datosAcademicos.listarComisionGestion(c.get("auth"), c.req.valid("query").bajas),
+        await datosAcademicos.listarComisionesGestion(c.get("auth"), c.req.valid("query").bajas),
         200,
       ),
   )
@@ -367,7 +367,7 @@ export const periodoRoutes = new OpenAPIHono<ApiEnv>()
     }),
     async (c) =>
       c.json(
-        await datosAcademicos.listarPeriodoGestion(c.get("auth"), c.req.valid("query").bajas),
+        await datosAcademicos.listarPeriodosGestion(c.get("auth"), c.req.valid("query").bajas),
         200,
       ),
   )
@@ -454,7 +454,7 @@ export const diaNoLaborableRoutes = new OpenAPIHono<ApiEnv>()
     }),
     async (c) =>
       c.json(
-        await datosAcademicos.listarDiaNoLaborableGestion(
+        await datosAcademicos.listarDiasNoLaborablesGestion(
           c.get("auth"),
           c.req.valid("query").bajas,
         ),
@@ -549,7 +549,7 @@ export const horarioRoutes = new OpenAPIHono<ApiEnv>()
       responses: { 200: jsonResponse(z.array(horarioGestionSchema), "Listado"), ...commonErrors },
     }),
     async (c) =>
-      c.json(await datosAcademicos.listarHorarioGestion(c.get("auth"), c.req.valid("query")), 200),
+      c.json(await datosAcademicos.listarHorariosGestion(c.get("auth"), c.req.valid("query")), 200),
   )
   .openapi(
     createRoute({
