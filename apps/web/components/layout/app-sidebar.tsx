@@ -11,7 +11,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSkeleton,
   SidebarRail,
   useSidebar,
 } from "@repo/ui/components/sidebar";
@@ -25,7 +24,6 @@ import { productName } from "@/lib/product";
 
 import { NavUser } from "./nav-user";
 import { navigationFor } from "./navigation";
-import { useOrganizationSwitch } from "./organization-switch-provider";
 
 // La sesión está fija en la institución: la barra muestra la marca del producto y su nombre,
 // con link al inicio, sin selector de organización.
@@ -57,7 +55,6 @@ export function AppSidebar({
 }: ComponentProps<typeof Sidebar> & { role: MemberRole; me: MeDto }) {
   const pathname = usePathname();
   const { data: activeMe = me } = useMe(me);
-  const { isSwitching } = useOrganizationSwitch();
   // En móvil el menú es un panel lateral: elegir una sección navega y lo cierra.
   const { setOpenMobile } = useSidebar();
   // El menú depende del perfil de SiGA; Configuración, del Administrador de la organización.
@@ -74,42 +71,25 @@ export function AppSidebar({
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            {/* Mientras cambia de organización, el rol y el nombre en pantalla siguen siendo
-                los de la anterior hasta que el layout autenticado vuelve a renderizar: un
-                esqueleto ocupa el lugar del menú en vez de arriesgar a mostrarlos. */}
-            {isSwitching
-              ? visibleNavigation.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuSkeleton showIcon />
-                  </SidebarMenuItem>
-                ))
-              : visibleNavigation.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      tooltip={item.title}
-                      isActive={isActivePath(pathname, item.href)}
-                      render={<Link href={item.href} onClick={() => setOpenMobile(false)} />}
-                    >
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+            {visibleNavigation.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  isActive={isActivePath(pathname, item.href)}
+                  render={<Link href={item.href} onClick={() => setOpenMobile(false)} />}
+                >
+                  <item.icon />
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        {isSwitching ? (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuSkeleton showIcon />
-            </SidebarMenuItem>
-          </SidebarMenu>
-        ) : (
-          // `activeMe` viene de la base, no de la cookie de sesión: un cambio hecho en Mi
-          // perfil se ve acá sin recargar.
-          <NavUser user={{ name: activeMe.userName, email: activeMe.userEmail }} />
-        )}
+        {/* `activeMe` viene de la base, no de la cookie de sesión: un cambio hecho en Mi perfil
+            se ve acá sin recargar. */}
+        <NavUser user={{ name: activeMe.userName, email: activeMe.userEmail }} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

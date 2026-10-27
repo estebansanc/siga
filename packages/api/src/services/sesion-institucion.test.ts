@@ -6,6 +6,7 @@ import {
   createInstitution,
   createMember,
   createOrganization,
+  createUserWithPerfil,
   resetDatabase,
   signInAs,
   type TestOrganization,
@@ -21,16 +22,23 @@ beforeEach(async () => {
 describe("sesión fija en la institución", () => {
   it("una cuenta miembro de la institución y de otra más antigua trabaja en la institución", async () => {
     const account = await createMember(institution);
-    const headers = await signInAs(account.userId, account.organizationId);
-    const context = await getAuthContext(headers);
+    const context = await getAuthContext(await signInAs(account.userId));
     expect(context?.organizationId).toBe(institution.organizationId);
     expect(context?.role).toBe("member");
+  });
+
+  it("una cuenta solo con la membresía de la institución trabaja en la institución", async () => {
+    const student = await createUserWithPerfil(institution, "ESTUDIANTE");
+    const context = await getAuthContext(await signInAs(student.userId, institution.organizationId));
+    expect(context?.organizationId).toBe(institution.organizationId);
+    expect(context?.lostOrganization).toBeNull();
   });
 
   it("una cuenta Administrador de otra organización y miembro de la institución trabaja en la institución", async () => {
     const account = await createMember(institution);
     const context = await getAuthContext(await signInAs(account.userId));
     expect(context?.organizationId).toBe(institution.organizationId);
+    expect(context?.role).toBe("member");
   });
 
   it("una sesión con otra organización activa pasa a la institución sin aviso de baja", async () => {

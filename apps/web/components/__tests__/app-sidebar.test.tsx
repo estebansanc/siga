@@ -4,7 +4,6 @@ import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
-import { OrganizationSwitchProvider } from "@/components/layout/organization-switch-provider";
 import { productName } from "@/lib/product";
 import { renderWithProviders } from "@/test/render";
 
@@ -56,11 +55,9 @@ const meOf = (
 
 const renderSidebar = (role: "owner" | "member" = "owner", me: MeDto = meOf()) =>
   renderWithProviders(
-    <OrganizationSwitchProvider>
-      <SidebarProvider>
-        <AppSidebar role={role} me={me} />
-      </SidebarProvider>
-    </OrganizationSwitchProvider>,
+    <SidebarProvider>
+      <AppSidebar role={role} me={me} />
+    </SidebarProvider>,
   );
 
 beforeEach(() => {

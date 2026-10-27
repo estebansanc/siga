@@ -13,7 +13,6 @@ import {
   readRedirectedLostOrganizationId,
   writeRedirectedLostOrganizationId,
 } from "@/lib/lost-organization";
-import { homePath } from "@/lib/organization-switch";
 
 // El Administrador quitó al miembro mientras esa organización estaba activa: la sesión ya cayó
 // sola a la propia (`GET /me` trae `lostOrganization`, ver `packages/auth/src/session.ts`);
@@ -38,7 +37,7 @@ export function LostOrganizationNotice({ me: initialMe }: { me: MeDto }) {
     if (!lostOrganization) return;
     if (readRedirectedLostOrganizationId(window.localStorage) === lostOrganization.id) return;
     writeRedirectedLostOrganizationId(window.localStorage, lostOrganization.id);
-    if (pathname !== homePath) router.replace(homePath);
+    if (pathname !== "/") router.replace("/");
   }, [lostOrganization, pathname, router]);
 
   // El aviso, con el aterrizaje ya resuelto arriba, se muestra igual en cualquier pantalla.

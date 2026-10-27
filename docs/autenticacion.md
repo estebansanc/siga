@@ -31,7 +31,7 @@ El Administrador invita por email desde Configuración; la API crea la invitaci�
 - Los Server Components validan la sesión real con `requireSession()` (`apps/web/lib/session.ts`).
 - La API valida con `readAuthContext(headers)` y reenvía las cookies con las que Better Auth renueva la caché.
 - La barra lateral no tiene selector de organización: la sesión está fija en la institución (`AppIdentity`, "SiGA" con el nombre de la institución).
-- Cerrar sesión (`NavUser`, `InvitationCard`) vacía la caché de React Query. Si el producto guarda filtros por dispositivo en `localStorage`, `resetForNewOrganization` (`apps/web/lib/organization-switch.ts`) y el cierre de sesión son los lugares para limpiarlos.
+- Cerrar sesión (`NavUser`, `InvitationCard`) vacía la caché de React Query. Si el producto guarda filtros por dispositivo en `localStorage`, el cierre de sesión es el lugar para limpiarlos.
 
 ## Plugins
 

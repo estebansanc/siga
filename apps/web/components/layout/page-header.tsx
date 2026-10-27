@@ -5,15 +5,12 @@ import type { ReactNode } from "react";
 import { AvisosUrgentesIndicator } from "@/components/avisos/avisos-urgentes-indicator";
 import { EstadoIndicator } from "@/components/estado-institucional/estado-indicator";
 
-// El indicador de estado institucional va en todas las pantallas (RF-08); solo el esqueleto
-// del cambio de organización lo apaga.
+// El indicador de estado institucional va en todas las pantallas (RF-08).
 export function PageHeader({
   title,
-  estado = true,
   children,
 }: {
   title: ReactNode;
-  estado?: boolean;
   children?: ReactNode;
 }) {
   return (
@@ -26,12 +23,8 @@ export function PageHeader({
       <h1 className="truncate text-base font-semibold">{title}</h1>
       <div className="ml-auto flex min-w-0 items-center gap-2">
         {children}
-        {estado ? (
-          <>
-            <AvisosUrgentesIndicator />
-            <EstadoIndicator />
-          </>
-        ) : null}
+        <AvisosUrgentesIndicator />
+        <EstadoIndicator />
       </div>
     </header>
   );

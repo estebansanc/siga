@@ -15,6 +15,11 @@ export type InvitationStatus = z.infer<typeof invitationStatusSchema>;
 export const memberRoleSchema = z.enum(["owner", "member"]);
 export type MemberRole = z.infer<typeof memberRoleSchema>;
 
+// Better Auth guarda el rol como texto ("owner" o una lista separada por comas con otros
+// roles); única fuente de verdad para leerlo.
+export const roleOf = (role: string): MemberRole =>
+  role.split(",").includes("owner") ? "owner" : "member";
+
 export const memberRoleLabels: Record<MemberRole, string> = {
   owner: "Administrador",
   member: "Miembro",
