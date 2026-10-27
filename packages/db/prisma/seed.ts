@@ -228,6 +228,11 @@ const comisionesSeguidasPorEstudiante = [
   "comision-5k2-ag",
 ];
 
+// El seed del template dejaba una "Organización demo": en una base reutilizada puede robarle la
+// sesión a las cuentas del seed.
+const deleteTemplateOrganization = () =>
+  prisma.organization.deleteMany({ where: { id: "demo-org" } });
+
 const upsertInstitution = () =>
   prisma.organization.upsert({
     where: { id: institution.id },
@@ -454,6 +459,7 @@ const sembrarSolicitudesDeAula = async () => {
 };
 
 const seed = async () => {
+  await deleteTemplateOrganization();
   await upsertInstitution();
   for (const user of users) await upsertUser(user);
   await upsertAcademicData();

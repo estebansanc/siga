@@ -2,3 +2,17 @@
 // ubican por este slug.
 export const institutionSlug = "utn-frt";
 export const institutionName = "UTN Facultad Regional Tucumán";
+
+export type MembershipCandidate = { organizationId: string };
+
+// La sesión trabaja siempre en la institución si la cuenta es miembro; sin esa membresía
+// (una baja de un Administrador) cae a la activa, a la propia (owner) o a la primera.
+export const pickMembership = <T extends MembershipCandidate & { role: string }>(
+  memberships: T[],
+  institutionId: string | null,
+  activeOrganizationId: string | null,
+): T | undefined =>
+  memberships.find((membership) => membership.organizationId === institutionId) ??
+  memberships.find((membership) => membership.organizationId === activeOrganizationId) ??
+  memberships.find((membership) => membership.role === "owner") ??
+  memberships[0];

@@ -26,10 +26,9 @@ import { productName } from "@/lib/product";
 import { NavUser } from "./nav-user";
 import { navigationFor } from "./navigation";
 import { useOrganizationSwitch } from "./organization-switch-provider";
-import { OrganizationSwitcher } from "./organization-switcher";
 
-// Sin más de una organización no hay nada que elegir: la barra queda con la marca del
-// producto y el nombre de la institución, con link al inicio.
+// La sesión está fija en la institución: la barra muestra la marca del producto y su nombre,
+// con link al inicio, sin selector de organización.
 function AppIdentity({ institutionName }: { institutionName: string }) {
   return (
     <SidebarMenu>
@@ -63,7 +62,6 @@ export function AppSidebar({
   const { setOpenMobile } = useSidebar();
   // El menú depende del perfil de SiGA; Configuración, del Administrador de la organización.
   const visibleNavigation = navigationFor(activeMe.perfil, role);
-  const hasMultipleOrganizations = activeMe.organizations.length > 1;
   const institutionName =
     activeMe.organizations.find((organization) => organization.id === activeMe.organizationId)
       ?.name ?? "";
@@ -71,11 +69,7 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        {hasMultipleOrganizations ? (
-          <OrganizationSwitcher initialMe={me} />
-        ) : (
-          <AppIdentity institutionName={institutionName} />
-        )}
+        <AppIdentity institutionName={institutionName} />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

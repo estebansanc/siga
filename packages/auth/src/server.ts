@@ -1,12 +1,11 @@
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { prisma, runWithAuditActor } from "@repo/db";
-import { institutionSlug } from "@repo/domain";
+import { institutionSlug, pickMembership } from "@repo/domain";
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { bearer, organization } from "better-auth/plugins";
 
 import { authEnv } from "./env";
-import { roleOf } from "./roles";
 
 const invitationExpiresInSeconds = 7 * 24 * 60 * 60;
 
@@ -38,16 +37,19 @@ const joinInstitutionAsStudent = async (userId: string) => {
   return institution.id;
 };
 
-// La organización activa de cada sesión nueva: la propia si es Administrador de alguna, si no
-// la primera membresía, y si no tiene ninguna, la institución (primera sesión de la cuenta).
+// La organización activa de cada sesión nueva: la institución si la cuenta es miembro; si solo
+// tiene otras membresías, la propia o la primera (no se la da de alta, para no revertir una
+// baja); y si no tiene ninguna, la institución (primera sesión de la cuenta).
 const resolveActiveOrganizationId = async (userId: string) => {
-  const memberships = await prisma.member.findMany({
-    where: { userId },
-    orderBy: { createdAt: "asc" },
-    select: { organizationId: true, role: true },
-  });
-  const preferred =
-    memberships.find((membership) => roleOf(membership.role) === "owner") ?? memberships[0];
+  const [memberships, institution] = await Promise.all([
+    prisma.member.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: { organizationId: true, role: true },
+    }),
+    prisma.organization.findUnique({ where: { slug: institutionSlug }, select: { id: true } }),
+  ]);
+  const preferred = pickMembership(memberships, institution?.id ?? null, null);
   return preferred ? preferred.organizationId : joinInstitutionAsStudent(userId);
 };
 

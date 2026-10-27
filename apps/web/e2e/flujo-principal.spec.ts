@@ -17,6 +17,16 @@ const proximaClaseDeProyectoFinal = () => {
 const formatoCorto = (fecha: string) => fecha.split("-").reverse().join("/");
 
 test.describe("Flujo principal de SiGA", () => {
+  test("la barra lateral muestra la marca y la institución, sin selector de organización", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    const sidebar = page.locator('[data-slot="sidebar"]').first();
+    await expect(sidebar.getByText("SiGA")).toBeVisible();
+    await expect(sidebar.getByText("UTN Facultad Regional Tucumán")).toBeVisible();
+    await expect(page.getByTestId("organization-switcher-trigger")).toHaveCount(0);
+  });
+
   test("el bedel registra el estado institucional y se ve en el indicador y en el historial", async ({
     page,
   }) => {

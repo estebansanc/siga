@@ -1,5 +1,5 @@
 import { prisma } from "@repo/db";
-import type { MemberRole, Perfil } from "@repo/domain";
+import { institutionSlug, pickMembership, type MemberRole, type Perfil } from "@repo/domain";
 
 import { roleOf } from "./roles";
 import { auth } from "./server";
@@ -44,28 +44,30 @@ const resolveLostOrganization = async (
 };
 
 // La cookie cachea la sesión y no se invalida al quitar al miembro: la membresía se lee en
-// cada request y, si la organización activa ya no tiene una, se vuelve a la propia (o a la
-// primera membresía) informando de qué organización se dejó (`removeMembership` deja la
-// referencia vieja en la sesión a propósito, para poder nombrarla).
+// cada request. Con membresía en la institución se trabaja siempre en ella; si no, y la
+// organización activa ya no tiene una, se vuelve a la propia (o a la primera) informando de
+// qué organización se dejó (`removeMembership` deja la referencia vieja en la sesión a
+// propósito, para poder nombrarla).
 const resolveActiveMembership = async (
   userId: string,
   activeOrganizationId: string | null,
 ): Promise<{ membership: Membership; lostOrganization: LostOrganization | null } | null> => {
-  const memberships = await prisma.member.findMany({
-    where: { userId },
-    orderBy: { createdAt: "asc" },
-    select: { organizationId: true, role: true },
-  });
-  const active = memberships.find(
-    (membership) => membership.organizationId === activeOrganizationId,
-  );
-  if (active) return { membership: active, lostOrganization: null };
-  const fallback =
-    memberships.find((membership) => roleOf(membership.role) === "owner") ?? memberships[0];
-  if (!fallback) return null;
+  const [memberships, institution] = await Promise.all([
+    prisma.member.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: { organizationId: true, role: true },
+    }),
+    prisma.organization.findUnique({ where: { slug: institutionSlug }, select: { id: true } }),
+  ]);
+  const membership = pickMembership(memberships, institution?.id ?? null, activeOrganizationId);
+  if (!membership) return null;
+  const isLost =
+    membership.organizationId !== institution?.id &&
+    membership.organizationId !== activeOrganizationId;
   return {
-    membership: fallback,
-    lostOrganization: await resolveLostOrganization(activeOrganizationId),
+    membership,
+    lostOrganization: isLost ? await resolveLostOrganization(activeOrganizationId) : null,
   };
 };
 
