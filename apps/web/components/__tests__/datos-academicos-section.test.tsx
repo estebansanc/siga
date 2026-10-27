@@ -2,12 +2,12 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AccesoDenegado } from "@/components/errors/acceso-denegado";
 import { CarrerasTab } from "@/components/datos-academicos/carreras-tab";
 import { ComisionesTab } from "@/components/datos-academicos/comisiones-tab";
 import { DatosAcademicosSection } from "@/components/datos-academicos/datos-academicos-section";
 import { HorariosTab } from "@/components/datos-academicos/horarios-tab";
 import { PeriodosTab } from "@/components/datos-academicos/periodos-tab";
+import { AccesoDenegado } from "@/components/errors/acceso-denegado";
 import { RequestError } from "@/lib/api-client";
 import { renderWithProviders } from "@/test/render";
 
