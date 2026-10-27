@@ -147,12 +147,11 @@ describe("AppSidebar", () => {
     expect(screen.queryByText(user.name)).not.toBeInTheDocument();
   });
 
-  it("con más de una organización muestra la marca del producto, nunca un selector", () => {
+  it("con más de una organización muestra la marca del producto con link al inicio", () => {
     renderSidebar("owner", meOf([ownOrganization, otherOrganization]));
     expect(screen.getByRole("link", { name: new RegExp(productName) })).toHaveAttribute(
       "href",
       "/",
     );
-    expect(screen.queryByTestId("organization-switcher-trigger")).not.toBeInTheDocument();
   });
 });

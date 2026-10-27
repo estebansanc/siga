@@ -16,7 +16,9 @@ describe("pickMembership", () => {
   });
 
   it("sin institución ni activa, prefiere la propia y si no la primera", () => {
-    expect(pickMembership([member("a"), member("b", "owner")], null, null)?.organizationId).toBe("b");
+    expect(pickMembership([member("a"), member("b", "owner")], null, null)?.organizationId).toBe(
+      "b",
+    );
     expect(pickMembership([member("a"), member("b")], null, null)?.organizationId).toBe("a");
   });
 

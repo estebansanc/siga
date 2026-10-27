@@ -12,11 +12,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider className="h-svh overflow-hidden">
-        <AppSidebar role={session.role} me={me} />
-        <SidebarInset className="h-svh min-w-0 overflow-hidden">
-          <LostOrganizationNotice me={me} />
-          {children}
-        </SidebarInset>
-      </SidebarProvider>
+      <AppSidebar role={session.role} me={me} />
+      <SidebarInset className="h-svh min-w-0 overflow-hidden">
+        <LostOrganizationNotice me={me} />
+        {children}
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

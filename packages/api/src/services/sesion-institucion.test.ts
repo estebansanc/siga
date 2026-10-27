@@ -21,15 +21,27 @@ beforeEach(async () => {
 
 describe("sesión fija en la institución", () => {
   it("una cuenta miembro de la institución y de otra más antigua trabaja en la institución", async () => {
-    const account = await createMember(institution);
-    const context = await getAuthContext(await signInAs(account.userId));
+    const student = await createUserWithPerfil(institution, "ESTUDIANTE");
+    const older = await createOrganization();
+    await prisma.member.create({
+      data: {
+        id: "member-antigua",
+        organizationId: older.organizationId,
+        userId: student.userId,
+        role: "member",
+        createdAt: new Date(0),
+      },
+    });
+    const context = await getAuthContext(await signInAs(student.userId, older.organizationId));
     expect(context?.organizationId).toBe(institution.organizationId);
     expect(context?.role).toBe("member");
   });
 
   it("una cuenta solo con la membresía de la institución trabaja en la institución", async () => {
     const student = await createUserWithPerfil(institution, "ESTUDIANTE");
-    const context = await getAuthContext(await signInAs(student.userId, institution.organizationId));
+    const context = await getAuthContext(
+      await signInAs(student.userId, institution.organizationId),
+    );
     expect(context?.organizationId).toBe(institution.organizationId);
     expect(context?.lostOrganization).toBeNull();
   });
