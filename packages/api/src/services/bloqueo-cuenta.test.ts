@@ -82,7 +82,9 @@ describe("bloqueo por intentos fallidos", () => {
 
   it("pasado el bloqueo la contraseña correcta entra y el contador vuelve a cero", async () => {
     await fallar(5);
-    await prisma.bloqueoCuenta.updateMany({ data: { bloqueadoHasta: new Date(Date.now() - 1000) } });
+    await prisma.bloqueoCuenta.updateMany({
+      data: { bloqueadoHasta: new Date(Date.now() - 1000) },
+    });
 
     const response = await ingresar(clave);
 
@@ -92,7 +94,9 @@ describe("bloqueo por intentos fallidos", () => {
 
   it("tras el bloqueo el primer fallo vuelve a contar desde uno", async () => {
     await fallar(5);
-    await prisma.bloqueoCuenta.updateMany({ data: { bloqueadoHasta: new Date(Date.now() - 1000) } });
+    await prisma.bloqueoCuenta.updateMany({
+      data: { bloqueadoHasta: new Date(Date.now() - 1000) },
+    });
 
     await ingresar(fallida);
 

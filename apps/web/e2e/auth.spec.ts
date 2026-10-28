@@ -1,4 +1,12 @@
-import { expect, loginViaUi, logoutViaUi, newUser, registerViaUi, test, verifyEmailViaLink } from "./support/fixtures";
+import {
+  expect,
+  loginViaUi,
+  logoutViaUi,
+  newUser,
+  registerViaUi,
+  test,
+  verifyEmailViaLink,
+} from "./support/fixtures";
 
 test.describe("Autenticación", () => {
   test("el registro pide verificar el correo y con el enlace entra como estudiante", async ({
@@ -42,7 +50,9 @@ test.describe("Autenticación", () => {
     }
     await page.getByLabel("Contraseña").fill("incorrecta1");
     await page.getByRole("button", { name: "Ingresar" }).click();
-    const blocked = page.getByText(/Cuenta bloqueada temporalmente\. Podés volver a intentar a las \d{2}:\d{2}\./);
+    const blocked = page.getByText(
+      /Cuenta bloqueada temporalmente\. Podés volver a intentar a las \d{2}:\d{2}\./,
+    );
     await expect(blocked).toBeVisible();
     const message = await blocked.textContent();
 

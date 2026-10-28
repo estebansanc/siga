@@ -25,22 +25,22 @@ const findUserByEmail = (email: string) =>
 export const registrarIngreso = async (
   accion: AuditoriaIngreso,
   motivo: string,
-  quien: { userId: string } | { email: string },
+  quien: { userId: string; email?: undefined } | { email: string; userId?: undefined },
 ) => {
   const institution = await prisma.organization.findUnique({
     where: { slug: institutionSlug },
     select: { id: true },
   });
   if (!institution) return;
-  const userId = "userId" in quien ? quien.userId : null;
+  const userId = quien.userId ?? null;
   await prisma.auditLog.create({
     data: {
       organizationId: institution.id,
       userId,
       entity: "Ingreso",
-      entityId: userId ?? normalize(quien.email),
+      entityId: userId ?? normalize(quien.email ?? ""),
       action: accion,
-      after: { motivo, ...("email" in quien ? { email: normalize(quien.email) } : {}) },
+      after: { motivo, ...(quien.email ? { email: normalize(quien.email) } : {}) },
     },
   });
 };
