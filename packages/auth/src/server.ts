@@ -124,6 +124,8 @@ export const auth = betterAuth({
       authEmails().sendVerification({ to: user.email, name: user.name, url }),
   },
   hooks: {
+    // Better Auth exige un handler async aunque la validación no espere nada.
+    // eslint-disable-next-line @typescript-eslint/require-await
     before: createAuthMiddleware(async (ctx) => {
       const field = passwordPaths[ctx.path];
       if (!field) return;
