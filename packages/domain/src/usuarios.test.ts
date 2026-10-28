@@ -76,7 +76,9 @@ describe("dominios permitidos", () => {
   it("con dominios exige uno de ellos", () => {
     expect(correoEnDominiosPermitidos("a@frt.utn.edu.ar", ["frt.utn.edu.ar"])).toBe(true);
     expect(correoEnDominiosPermitidos("a@gmail.com", ["frt.utn.edu.ar"])).toBe(false);
-    expect(mensajeDominiosRechazados(["a.com", "b.com"])).toBe("Solo se aceptan correos de a.com, b.com");
+    expect(mensajeDominiosRechazados(["a.com", "b.com"])).toBe(
+      "Solo se aceptan correos de a.com, b.com",
+    );
   });
 });
 

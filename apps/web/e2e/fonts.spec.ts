@@ -43,7 +43,8 @@ test.describe("Tipografía", () => {
     expect(await fontFamilyOf(page, 'h1:has-text("Configuración")')).toBe(referenceFont);
     expect(await fontFamilyOf(page, '[data-slot="card"]')).toBe(referenceFont);
 
-    await page.getByRole("button", { name: "Invitar" }).click();
+    await page.goto("/usuarios");
+    await page.getByRole("button", { name: "Nuevo usuario" }).click();
     const dialog = page.locator('[data-slot="dialog-content"]');
     await expect(dialog).toBeVisible();
     expect(await fontFamilyOf(page, '[data-slot="dialog-content"]')).toBe(referenceFont);

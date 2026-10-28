@@ -1,4 +1,13 @@
-import { expect, loginViaUi, logoutViaUi, newUser, seededUsers, test } from "./support/fixtures";
+import {
+  expect,
+  loginViaUi,
+  logoutViaUi,
+  newUser,
+  registerViaUi,
+  seededUsers,
+  test,
+  verifyEmailViaLink,
+} from "./support/fixtures";
 
 // Fecha `yyyy-mm-dd` en hora argentina.
 const fechaArgentina = (instante: Date) =>
@@ -103,11 +112,8 @@ test.describe("Flujo principal de SiGA", () => {
 
   test("un estudiante nuevo elige sus comisiones y ve sus clases", async ({ page }) => {
     const user = newUser();
-    await page.goto("/registro");
-    await page.getByLabel("Nombre y apellido").fill(user.name);
-    await page.getByLabel("Email").fill(user.email);
-    await page.getByLabel("Contraseña").fill(user.password);
-    await page.getByRole("button", { name: "Crear cuenta" }).click();
+    await registerViaUi(page, user);
+    await verifyEmailViaLink(page, user);
     await expect(page.getByText("Todavía no seguís ninguna comisión")).toBeVisible();
 
     await page.getByRole("link", { name: "Elegir comisiones" }).click();

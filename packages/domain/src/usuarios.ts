@@ -8,7 +8,11 @@ export const dniSchema = z
   .trim()
   .regex(/^\d{7,8}$/, "El DNI debe tener 7 u 8 dígitos");
 
-export const correoSchema = z.string().trim().toLowerCase().pipe(z.email("Ingresá un correo válido"));
+export const correoSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.email("Ingresá un correo válido"));
 
 export const mensajeContrasena = "Usá 8 caracteres o más, con letras y números";
 
@@ -67,7 +71,9 @@ export const dominioSchema = z
   .toLowerCase()
   .transform((valor) => valor.replace(/^@/, ""))
   .pipe(
-    z.string().regex(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/, "Ingresá un dominio válido, como frt.utn.edu.ar"),
+    z
+      .string()
+      .regex(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/, "Ingresá un dominio válido, como frt.utn.edu.ar"),
   );
 
 export const dominiosPermitidosSchema = z.object({

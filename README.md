@@ -1,12 +1,12 @@
 # product-template
 
-Template para arrancar un producto nuevo con la misma base que ya funciona en producción: PWA en español (es-AR) con autenticación, organizaciones multi-tenant con miembros e invitaciones, API REST con OpenAPI consumible desde la web y desde un cliente móvil, y el flujo de tickets del plugin `ticket-flow` listo para usar. No trae ningún dominio: el producto se construye encima.
+Template para arrancar un producto nuevo con la misma base que ya funciona en producción: PWA en español (es-AR) con autenticación, organizaciones multi-tenant con miembros, API REST con OpenAPI consumible desde la web y desde un cliente móvil, y el flujo de tickets del plugin `ticket-flow` listo para usar. No trae ningún dominio: el producto se construye encima.
 
 ## Qué incluye
 
-- **Autenticación** con Better Auth: email y contraseña, Google, bearer token para móviles. Pantallas de login, registro e invitación.
+- **Autenticación** con Better Auth: email y contraseña, Google, bearer token para móviles. Pantallas de login, registro (con verificación de correo) y activación de cuenta.
 - **Organizaciones**: cada cuenta nace con una organización propia donde es Administrador; invita miembros por email, los quita, cambia de organización desde la barra lateral.
-- **Configuración** (nombre de la organización, turnos, miembros e invitaciones, versión y Novedades) y **Mi perfil** (nombre del usuario).
+- **Configuración** (nombre de la organización, turnos, miembros, versión y Novedades) y **Mi perfil** (nombre del usuario).
 - **Infraestructura**: cola de emails con Resend, rate limit en Postgres, auditoría y medición por request, cliente de storage S3/R2 opcional, PWA instalable con página offline.
 - **Calidad**: unit tests, integración contra Postgres real, e2e con Playwright, lint, typecheck, contratos (`openapi.json` y migraciones) y CI en GitHub Actions.
 

@@ -1,5 +1,7 @@
 import { expect, test as base, type APIRequestContext, type Page } from "@playwright/test";
 
+import { enlaceDelUltimoCorreo, verificarCorreo } from "./db";
+
 export type User = { name: string; email: string; password: string };
 
 const uniqueSuffix = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -30,6 +32,23 @@ export const signUpViaApi = async (request: APIRequestContext, user: User) => {
     maxRetries: apiRetries,
   });
   expect(response.ok()).toBeTruthy();
+  verificarCorreo(user.email);
+};
+
+// El registro por la pantalla termina en "Revisá tu correo"; el enlace del correo verifica la
+// cuenta y la deja adentro.
+export const registerViaUi = async (page: Page, user: User) => {
+  await page.goto("/registro");
+  await page.getByLabel("Nombre y apellido").fill(user.name);
+  await page.getByLabel("Email").fill(user.email);
+  await page.getByLabel("Contraseña").fill(user.password);
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  await expect(page.getByText("Revisá tu correo")).toBeVisible();
+};
+
+export const verifyEmailViaLink = async (page: Page, user: User) => {
+  await page.goto(enlaceDelUltimoCorreo(user.email));
+  await expect(page).toHaveURL(/\/$/);
 };
 
 export type Me = {

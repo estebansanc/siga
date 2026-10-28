@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { resolve } from "node:path";
 
 const e2eDatabaseUrl =
@@ -12,6 +12,28 @@ const runSql = (sql: string) =>
     input: sql,
     stdio: ["pipe", "ignore", "inherit"],
   });
+
+// psql no entiende parámetros como `?schema=`: solo se le pasa la conexión.
+const psqlUrl = e2eDatabaseUrl.split("?")[0];
+
+const readSql = (sql: string) =>
+  execFileSync("psql", [psqlUrl, "-At", "-c", sql], { encoding: "utf8" });
+
+// Las cuentas nuevas verifican su correo con el enlace; los tests que no ejercitan ese paso
+// lo dan por verificado.
+export const verificarCorreo = (email: string) =>
+  runSql(`UPDATE "user" SET "emailVerified" = true WHERE email = '${email}';`);
+
+// El primer enlace del último correo que la cola mandó a esa dirección (sin Resend en e2e los
+// correos quedan en `email_outbox`).
+export const enlaceDelUltimoCorreo = (email: string) => {
+  const html = readSql(
+    `SELECT html FROM email_outbox WHERE "to" = '${email}' ORDER BY "createdAt" DESC LIMIT 1;`,
+  );
+  const enlace = /href="([^"]+)"/.exec(html)?.[1];
+  if (!enlace) throw new Error(`No hay correo con enlace para ${email}`);
+  return enlace.replaceAll("&amp;", "&");
+};
 
 export const claseDeAsistenciaId = "e2e-clase-asistencia-qr";
 

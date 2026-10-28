@@ -1,3 +1,4 @@
+import { verificarCorreo } from "./support/db";
 import { expect, newUser, test } from "./support/fixtures";
 
 test.describe("API para clientes móviles", () => {
@@ -7,7 +8,13 @@ test.describe("API para clientes móviles", () => {
     const user = newUser();
     const signUp = await signUpContext.post("/api/auth/sign-up/email", { data: user });
     expect(signUp.ok()).toBeTruthy();
-    const token = signUp.headers()["set-auth-token"];
+    expect(signUp.headers()["set-auth-token"]).toBeUndefined();
+    verificarCorreo(user.email);
+    const signIn = await signUpContext.post("/api/auth/sign-in/email", {
+      data: { email: user.email, password: user.password },
+    });
+    expect(signIn.ok()).toBeTruthy();
+    const token = signIn.headers()["set-auth-token"];
     expect(token).toBeTruthy();
 
     const api = await playwright.request.newContext({

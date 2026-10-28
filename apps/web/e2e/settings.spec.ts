@@ -16,7 +16,9 @@ test.describe("Configuración", () => {
     ).toBeVisible();
   });
 
-  test("lista al bedel como Administrador de la institución y ofrece invitar", async ({ page }) => {
+  test("lista al bedel como Administrador de la institución sin botón de invitar", async ({
+    page,
+  }) => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/configuracion");
     const membersCard = page
@@ -27,7 +29,7 @@ test.describe("Configuración", () => {
       .filter({ hasText: seededUsers.bedel.name });
     await expect(admin).toContainText("Administrador");
     await expect(admin.getByRole("button", { name: /Acciones de/ })).toHaveCount(0);
-    await expect(membersCard.getByRole("button", { name: "Invitar" })).toBeVisible();
+    await expect(membersCard.getByRole("button", { name: "Invitar" })).toHaveCount(0);
   });
 
   test("un estudiante no ve Configuración y por URL vuelve a Mis clases", async ({

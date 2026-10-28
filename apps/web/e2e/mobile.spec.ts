@@ -145,4 +145,12 @@ test.describe("Móvil", () => {
       await expectNoHorizontalPageScroll(page);
     }
   });
+
+  test("Usuarios del bedel no scrollea a lo ancho", async ({ page }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/usuarios");
+    await expect(page.getByRole("heading", { name: "Usuarios" })).toBeVisible();
+    await expect(page.getByText("Rosa Benítez").first()).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
+  });
 });
