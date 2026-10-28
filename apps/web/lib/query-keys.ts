@@ -12,6 +12,7 @@ export const queryKeys = {
   historicoNovedades: (query: Record<string, string>) => ["historico", "novedades", query] as const,
   historicoAsistencias: (query: Record<string, string>) =>
     ["historico", "asistencias", query] as const,
+  historicoUsoAulas: (query: Record<string, string>) => ["historico", "uso-aulas", query] as const,
   historicoOpciones: ["historico", "opciones"] as const,
   avisos: ["avisos"] as const,
   avisosVista: (vista: string) => ["avisos", vista] as const,

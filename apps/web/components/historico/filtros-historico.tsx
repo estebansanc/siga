@@ -36,6 +36,7 @@ export type Filtros = {
   docenteId: string;
   aulaId: string;
   tipo: string;
+  origen: string;
 };
 
 export type ErroresFiltros = Partial<Record<"desde" | "hasta", string>>;
@@ -51,6 +52,7 @@ export const filtrosIniciales = (): Filtros => {
     docenteId: "",
     aulaId: "",
     tipo: "",
+    origen: "",
   };
 };
 

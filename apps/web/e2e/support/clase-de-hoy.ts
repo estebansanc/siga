@@ -1,4 +1,4 @@
-import { fechaArgentina, instanteArgentino } from "@repo/domain";
+import { fechaArgentina, instanteArgentino, sumarDias } from "@repo/domain";
 
 const e2eDatabaseUrl =
   process.env.E2E_DATABASE_URL ?? "postgresql://app:app@localhost:5432/app_e2e";
@@ -93,4 +93,39 @@ export const registrarDocentePresente = async (claseId: string) => {
 export const ponerAulaEnMantenimiento = async (aulaId: string) => {
   const { prisma } = await abrirBase();
   await prisma.aula.update({ where: { id: aulaId }, data: { estado: "EN_MANTENIMIENTO" } });
+};
+
+// Una aula nueva y una clase de 5K2 Proyecto Final sin aula en dos días, para asignarla desde
+// Solicitudes sin depender de los datos del seed.
+export const crearClaseSinAulaProxima = async () => {
+  const { prisma, toDateColumn } = await abrirBase();
+  const comision = await prisma.comision.findUniqueOrThrow({ where: { id: "comision-5k2-pf" } });
+  const fecha = sumarDias(fechaArgentina(new Date()), 2);
+  const minuto = 10 + Math.floor(Math.random() * 40);
+  const aula = await prisma.aula.create({
+    data: {
+      organizationId: comision.organizationId,
+      codigo: `Aula Uso ${Date.now().toString(36)}`,
+      edificio: "Edificio D",
+      piso: "PB",
+      capacidad: 30,
+    },
+  });
+  const clase = await prisma.claseProgramada.create({
+    data: {
+      organizationId: comision.organizationId,
+      comisionId: comision.id,
+      fecha: toDateColumn(fecha),
+      inicio: instanteArgentino(fecha, `05:${minuto}`),
+      fin: instanteArgentino(fecha, `06:${minuto}`),
+      aulaId: null,
+    },
+  });
+  return { aulaId: aula.id, aulaCodigo: aula.codigo, claseId: clase.id, fecha };
+};
+
+export const eliminarClaseSinAula = async (claseId: string, aulaId: string) => {
+  const { prisma } = await abrirBase();
+  await prisma.claseProgramada.delete({ where: { id: claseId } });
+  await prisma.aula.delete({ where: { id: aulaId } });
 };
