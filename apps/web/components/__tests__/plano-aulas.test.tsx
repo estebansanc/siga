@@ -143,4 +143,32 @@ describe("PlanoAulas", () => {
       "true",
     );
   });
+
+  it("fija el piso inicial: si se vacía sin haberlo tocado no salta a otro", () => {
+    const { rerender } = renderWithProviders(<PlanoAulas />);
+    expect(screen.getByRole("button", { name: /Aula 1/ })).toBeVisible();
+    state.aulas = state.aulas?.filter(
+      (item) => item.piso !== "PB" || item.edificio !== "Edificio A",
+    );
+    rerender(<PlanoAulas />);
+    expect(screen.getByText("No hay aulas activas en este piso")).toBeVisible();
+    expect(screen.getByRole("button", { name: "PB" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("el pop-up lista las novedades activas de la clase en curso", async () => {
+    state.aulas = [
+      aula({
+        claseEnCurso: clase({
+          estado: "DEMORADA",
+          novedades: [
+            { id: "n1", tipo: "DEMORA", estado: "ACTIVA", minutosDemora: 15 },
+          ] as ClaseDto["novedades"],
+        }),
+        estado: "PENDIENTE",
+      }),
+    ];
+    renderWithProviders(<PlanoAulas />);
+    await userEvent.click(screen.getByRole("button", { name: /Aula 1/ }));
+    expect(within(screen.getByRole("dialog")).getByText("Demora de 15 min")).toBeVisible();
+  });
 });

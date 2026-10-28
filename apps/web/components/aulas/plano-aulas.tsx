@@ -29,6 +29,15 @@ import { usePlanoAulas } from "@/hooks/use-aulas";
 import { PlanoAulaDialog } from "./plano-aula-dialog";
 import { PlanoEstadoBadge, planoEstadoPresentacion } from "./plano-estado-badge";
 
+const primeraSeleccion = (aulas: PlanoAulaDto[]) => {
+  const edificio = aulas.map((aula) => aula.edificio).sort((a, b) => a.localeCompare(b, "es"))[0];
+  const piso = aulas
+    .filter((aula) => aula.edificio === edificio)
+    .map((aula) => aula.piso)
+    .sort(compararPisos)[0];
+  return edificio && piso ? { edificio, piso } : undefined;
+};
+
 const unicos = (valores: string[]) => [...new Set(valores)];
 
 function Selector({
@@ -79,35 +88,41 @@ function AulaCelda({ aula, onClick }: { aula: PlanoAulaDto; onClick: () => void 
 }
 
 // Plano de aulas (RF-02, RF-07): grilla provisoria por código hasta tener los planos de cada
-// piso. Se actualiza por consulta periódica de 30 s. La elección de piso se mantiene aunque
-// quede sin aulas activas.
+// piso. Se actualiza por consulta periódica de 30 s. La elección inicial queda fijada con los
+// primeros datos: si el piso se vacía no salta a otro.
 export function PlanoAulas() {
   const plano = usePlanoAulas();
-  const [edificioElegido, setEdificioElegido] = useState<string>();
-  const [pisoElegido, setPisoElegido] = useState<string>();
+  const [seleccion, setSeleccion] = useState<{ edificio: string; piso: string }>();
   const [aulaId, setAulaId] = useState<string | null>(null);
 
   const aulas = plano.data;
+  const primera = aulas ? primeraSeleccion(aulas) : undefined;
+  if (!seleccion && primera) setSeleccion(primera);
+
   const edificios = aulas
     ? unicos([
         ...aulas.map((aula) => aula.edificio),
-        ...(edificioElegido ? [edificioElegido] : []),
+        ...(seleccion ? [seleccion.edificio] : []),
       ]).sort((a, b) => a.localeCompare(b, "es"))
     : [];
-  const edificio = edificioElegido ?? edificios[0];
+  const edificio = seleccion?.edificio;
   const deEdificio = aulas?.filter((aula) => aula.edificio === edificio) ?? [];
   const pisos = unicos([
     ...deEdificio.map((aula) => aula.piso),
-    ...(pisoElegido ? [pisoElegido] : []),
+    ...(seleccion ? [seleccion.piso] : []),
   ]).sort(compararPisos);
-  const piso = pisoElegido ?? pisos[0];
+  const piso = seleccion?.piso;
   const delPiso = deEdificio.filter((aula) => aula.piso === piso);
   const aulaAbierta = aulas?.find((aula) => aula.id === aulaId);
 
   const elegirEdificio = (valor: string) => {
-    setEdificioElegido(valor);
-    setPisoElegido(undefined);
+    const pisoMasBajo = aulas
+      ?.filter((aula) => aula.edificio === valor)
+      .map((aula) => aula.piso)
+      .sort(compararPisos)[0];
+    if (pisoMasBajo) setSeleccion({ edificio: valor, piso: pisoMasBajo });
   };
+  const elegirPiso = (valor: string) => seleccion && setSeleccion({ ...seleccion, piso: valor });
 
   return (
     <Card>
@@ -138,7 +153,7 @@ export function PlanoAulas() {
               valor={edificio}
               onChange={elegirEdificio}
             />
-            <Selector etiqueta="Piso" opciones={pisos} valor={piso} onChange={setPisoElegido} />
+            <Selector etiqueta="Piso" opciones={pisos} valor={piso} onChange={elegirPiso} />
             {delPiso.length === 0 ? (
               <Empty className="border">
                 <EmptyHeader>

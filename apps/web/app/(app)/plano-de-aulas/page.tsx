@@ -7,7 +7,6 @@ import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Plano de aulas" };
 
-// Bedel y Autoridad lo tienen en el menú; Docente y Estudiante lo abren por la ruta, en consulta.
 export default async function PlanoDeAulasPage() {
   await requireSession();
 

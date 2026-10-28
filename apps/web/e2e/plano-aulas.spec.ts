@@ -50,9 +50,35 @@ test.describe("Plano de aulas", () => {
   });
 
   test("el docente abre el plano por la ruta, en consulta", async ({ page }) => {
-    await loginViaUi(page, seededUsers.docente);
-    await page.goto("/plano-de-aulas");
-    await expect(page.getByRole("heading", { name: "Plano de aulas" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Edificio" })).toHaveCount(0);
+    const { aulaId, aulaCodigo, edificio, claseId } = await crearAulaConClaseEnCurso();
+    try {
+      await loginViaUi(page, seededUsers.docente);
+      await page.goto("/plano-de-aulas");
+      await expect(page.getByRole("heading", { name: "Plano de aulas" })).toBeVisible();
+      await page.getByRole("button", { name: edificio }).click();
+      await page.getByRole("button", { name: new RegExp(aulaCodigo) }).click();
+      const dialog = page.getByRole("dialog", { name: aulaCodigo });
+      await expect(dialog).toContainText("5K2");
+      await expect(dialog.getByRole("button", { name: /Registrar|Publicar|Cambiar/ })).toHaveCount(
+        0,
+      );
+    } finally {
+      await eliminarClaseConAula(claseId, aulaId);
+    }
+  });
+
+  test("en 375 px no hay scroll horizontal con selectores y celdas visibles", async ({ page }) => {
+    const { aulaId, aulaCodigo, edificio, claseId } = await crearAulaConClaseEnCurso();
+    try {
+      await page.setViewportSize({ width: 375, height: 800 });
+      await loginViaUi(page, seededUsers.bedel);
+      await page.goto("/plano-de-aulas");
+      await page.getByRole("button", { name: edificio }).click();
+      await expect(page.getByRole("button", { name: new RegExp(aulaCodigo) })).toBeVisible();
+      await expect(page.getByRole("group", { name: "Piso" })).toBeVisible();
+      await expectNoHorizontalPageScroll(page);
+    } finally {
+      await eliminarClaseConAula(claseId, aulaId);
+    }
   });
 });
