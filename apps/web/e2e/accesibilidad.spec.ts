@@ -1,3 +1,5 @@
+import type { Page } from "@playwright/test";
+
 import {
   esperarSinHallazgos,
   type Hallazgo,
@@ -40,7 +42,7 @@ const rutasPorPerfil: Record<keyof typeof perfiles, string[]> = {
   Autoridad: ["/historico", "/plano-de-aulas", "/usuarios", "/datos-academicos"],
 };
 
-const esperarPantalla = async (page: import("@playwright/test").Page) => {
+const esperarPantalla = async (page: Page) => {
   await page.waitForLoadState("networkidle");
 };
 
@@ -113,9 +115,7 @@ test.describe("Teclado", () => {
       await page.keyboard.press("Tab");
       if (!(await focoVisible(page))) break;
       visitados.push(await foco(page));
-      const y = await page.evaluate(
-        () => document.activeElement?.getBoundingClientRect().top ?? 0,
-      );
+      const y = await page.evaluate(() => document.activeElement?.getBoundingClientRect().top ?? 0);
       expect(y).toBeGreaterThanOrEqual(ultimoY - 1);
       ultimoY = y;
       if (await page.evaluate(() => document.activeElement?.matches("button[type=submit]"))) break;
