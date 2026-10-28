@@ -3,24 +3,37 @@ import { prisma, runWithAuditActor } from "@repo/db";
 import {
   contrasenaSchema,
   correoEnDominiosPermitidos,
+  horasDeInactividad,
   institutionSlug,
   mensajeContrasena,
   mensajeDominiosRechazados,
   pickMembership,
 } from "@repo/domain";
 import { betterAuth } from "better-auth";
-import { APIError, createAuthMiddleware } from "better-auth/api";
+import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { bearer, organization } from "better-auth/plugins";
 
 import { authEmails } from "./emails";
 import { authEnv } from "./env";
+import {
+  registerFailedPassword,
+  registrarIngreso,
+  rejectIfLocked,
+  resetFailedPasswords,
+} from "./login-security";
 
 const linkLifetimeSeconds = 24 * 60 * 60;
 const passwordPaths: Record<string, "password" | "newPassword"> = {
   "/sign-up/email": "password",
   "/reset-password": "newPassword",
 };
+
+const signInEmailPath = "/sign-in/email";
+const signOutPath = "/sign-out";
+const invalidCredentialsCode = "INVALID_EMAIL_OR_PASSWORD";
+const inactivitySeconds = horasDeInactividad * 60 * 60;
+const sessionRenewalSeconds = 60;
 
 const requestResetPaths = new Set(["/request-password-reset", "/forget-password"]);
 
@@ -140,6 +153,18 @@ export const auth = betterAuth({
     // Better Auth exige un handler async aunque la validación no espere nada.
     // eslint-disable-next-line @typescript-eslint/require-await
     before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === signInEmailPath) {
+        const email = (ctx.body as Record<string, unknown> | undefined)?.email;
+        if (typeof email === "string") await rejectIfLocked(email);
+        return;
+      }
+      // Cerrar sesión invalida todas las sesiones de la cuenta, web y bearer. Se leen antes
+      // de que el cierre borre la sesión actual.
+      if (ctx.path === signOutPath) {
+        const session = await getSessionFromCtx(ctx);
+        if (session) await prisma.session.deleteMany({ where: { userId: session.user.id } });
+        return;
+      }
       // El pedido de recuperación pasa por la API de SiGA (límites, cuentas desactivadas, 60
       // minutos): por HTTP directo se omitiría todo eso. `auth.api.*` desde el servidor no
       // trae `request`.
@@ -153,10 +178,28 @@ export const auth = betterAuth({
         throw new APIError("BAD_REQUEST", { message: mensajeContrasena });
       }
     }),
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== signInEmailPath) return;
+      const returned = ctx.context.returned;
+      const newSession = ctx.context.newSession;
+      if (newSession) {
+        await resetFailedPasswords(newSession.user.id);
+        return;
+      }
+      const email = (ctx.body as Record<string, unknown> | undefined)?.email;
+      if (
+        returned instanceof APIError &&
+        (returned.body as { code?: string } | undefined)?.code === invalidCredentialsCode &&
+        typeof email === "string"
+      ) {
+        await registerFailedPassword(email);
+      }
+    }),
   },
-  // La sesión viaja firmada en una cookie 5 minutos: la mayoría de las requests no tocan la
-  // base para autenticar; una sesión revocada deja de servir al vencer la caché.
-  session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
+  // La sesión vence tras 8 horas sin requests; cada uso la renueva (con un minuto de
+  // granularidad). No hay caché de cookie: una sesión revocada o vencida deja de servir en la
+  // próxima request, que es lo que exigen el cierre global y la inactividad.
+  session: { expiresIn: inactivitySeconds, updateAge: sessionRenewalSeconds },
   rateLimit: { enabled: authEnv.rateLimitEnabled },
   socialProviders: {
     google: {
@@ -188,6 +231,9 @@ export const auth = betterAuth({
               activeOrganizationId: await resolveActiveOrganizationId(session.userId),
             },
           };
+        },
+        after: async (session) => {
+          await registrarIngreso("ingreso_exitoso", "Ingreso exitoso", { userId: session.userId });
         },
       },
     },

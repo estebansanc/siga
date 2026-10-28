@@ -21,3 +21,4 @@ export * from "./solicitudes-aula";
 export * from "./tiempo";
 export * from "./turnos";
 export * from "./usuarios";
+export * from "./bloqueo-cuenta";

@@ -53,7 +53,8 @@ export function LoginForm() {
     if (error) {
       setPending(false);
       if (error.code === "EMAIL_NOT_VERIFIED") setUnverifiedEmail(email);
-      else if (error.code === "ACCOUNT_DEACTIVATED") toast.error(error.message);
+      else if (error.code === "ACCOUNT_DEACTIVATED" || error.code === "ACCOUNT_LOCKED")
+        toast.error(error.message);
       else toast.error("Email o contraseña incorrectos");
       return;
     }

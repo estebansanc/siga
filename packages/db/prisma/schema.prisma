@@ -10,18 +10,19 @@ datasource db {
 // ---------- Better Auth (generado con `better-auth generate`) ----------
 
 model User {
-  id            String       @id
+  id            String         @id
   name          String
   email         String
-  emailVerified Boolean      @default(false)
+  emailVerified Boolean        @default(false)
   image         String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   sessions      Session[]
   accounts      Account[]
   members       Member[]
   invitations   Invitation[]
   auditLogs     AuditLog[]
+  bloqueo       BloqueoCuenta?
 
   profile                  UserProfile?
   comisionesDictadas       ComisionDocente[]
@@ -223,6 +224,17 @@ model RateLimitBucket {
   @@id([key, windowStart])
   @@index([windowStart])
   @@map("rate_limit_bucket")
+}
+
+// Intentos consecutivos de ingreso con contraseña y fin del bloqueo vigente (SEG-9). Vive aparte
+// de User para que cada fallo no genere una entrada de auditoría por el cambio del contador.
+model BloqueoCuenta {
+  userId           String    @id
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  intentosFallidos Int       @default(0)
+  bloqueadoHasta   DateTime?
+
+  @@map("bloqueo_cuenta")
 }
 
 model AuditLog {

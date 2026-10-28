@@ -111,6 +111,15 @@ describe("LoginForm", () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Tu cuenta está desactivada"));
   });
 
+  it("una cuenta bloqueada ve el mensaje con la hora de liberación", async () => {
+    const message = "Cuenta bloqueada temporalmente. Podés volver a intentar a las 18:05.";
+    signInEmail.mockResolvedValue({ error: { code: "ACCOUNT_LOCKED", message } });
+    renderWithProviders(<LoginForm />);
+    await fillAndSubmit();
+    const { toast } = await import("sonner");
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(message));
+  });
+
   it("ofrece recuperar la contraseña", () => {
     renderWithProviders(<LoginForm />);
     expect(screen.getByRole("link", { name: "¿Olvidaste tu contraseña?" })).toHaveAttribute(
