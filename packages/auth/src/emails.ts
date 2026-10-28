@@ -6,6 +6,7 @@ export type AuthEmailInput = { to: string; name: string; url: string };
 export type AuthEmails = {
   sendVerification: (input: AuthEmailInput) => Promise<void>;
   sendActivation: (input: AuthEmailInput) => Promise<void>;
+  sendPasswordReset: (input: AuthEmailInput) => Promise<void>;
 };
 
 let registered: AuthEmails | undefined;

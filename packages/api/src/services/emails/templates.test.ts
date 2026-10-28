@@ -6,6 +6,7 @@ import {
   escapeHtml,
   formatEmailDate,
   novedadEmail,
+  passwordResetEmail,
   solicitudAulaEmail,
   verificationEmail,
 } from "./templates";
@@ -30,6 +31,12 @@ describe("plantillas de email", () => {
     expect(email.html).toContain("Hola Ana &lt;Demo&gt;");
     expect(email.html).toContain('href="https://app.test/activar-cuenta?token=t"');
     expect(email.html).toContain("El enlace vale 24 horas");
+  });
+
+  it("el correo de recuperación es genérico y lleva el enlace", () => {
+    const email = passwordResetEmail({ nombre: "Ana", url: "https://app.test/reset" });
+    expect(email.subject).toBe("Definí tu contraseña de SiGA");
+    expect(email.html).toContain('href="https://app.test/reset"');
   });
 
   it("el correo de verificación lleva el enlace", () => {

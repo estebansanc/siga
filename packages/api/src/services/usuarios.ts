@@ -10,7 +10,7 @@ import {
 } from "@repo/domain";
 
 import "../auth-emails";
-import { fieldConflict, notFound, unprocessable } from "../errors";
+import { fieldConflict, notFound, unavailable, unprocessable } from "../errors";
 import type { DominiosPermitidosDto, UsuarioDto } from "../schemas";
 
 import { registrarCambioMasivo } from "./auditoria";
@@ -104,9 +104,16 @@ const assertDatosLibres = async (
   if (datos.correo) {
     const existente = await prisma.user.findFirst({
       where: { email: { equals: datos.correo, mode: "insensitive" }, id: { not: excluirId } },
-      select: { id: true },
+      select: { id: true, profile: { select: { userId: true } } },
     });
-    if (existente) throw fieldConflict("correo", "Ya existe una cuenta con ese correo");
+    if (existente) {
+      throw fieldConflict(
+        "correo",
+        existente.profile
+          ? "Ya existe una cuenta con ese correo"
+          : "Esa persona ya se registró y todavía no verificó su correo",
+      );
+    }
   }
   if (datos.dni) {
     const existente = await prisma.userProfile.findFirst({
@@ -175,7 +182,11 @@ export const crearUsuario = async (auth: AuthContext, input: CrearUsuario): Prom
       after: { perfil: input.perfil, dni: input.dni, legajo: input.legajo ?? null, comisionIds },
     },
   });
-  await enviarEnlaceDeActivacion(userId, input.correo);
+  await enviarEnlaceDeActivacion(userId, input.correo).catch(() => {
+    throw unavailable(
+      "La cuenta se creó pero no pudimos enviar el enlace: usá «Reenviar enlace de activación» en su fila",
+    );
+  });
   return toUsuarioDto(await buscarUsuario(organizationId, userId), auth.userId);
 };
 

@@ -3,10 +3,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { UsuarioDto } from "@repo/api/client";
 import {
-  actualizarUsuarioSchema,
   crearUsuarioSchema,
+  dniSchema,
   perfilLabels,
   perfilSchema,
+  type CrearUsuario,
   type CrearUsuarioInput,
 } from "@repo/domain";
 import { Checkbox } from "@repo/ui/components/checkbox";
@@ -16,11 +17,18 @@ import { Label } from "@repo/ui/components/label";
 import { NativeSelect, NativeSelectOption } from "@repo/ui/components/native-select";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { CampoEntidad, EntidadFormDialog } from "@/components/datos-academicos/entidad-section";
 import { useComisiones } from "@/hooks/use-datos-academicos";
 import { useActualizarUsuario, useCrearUsuario } from "@/hooks/use-usuarios";
 import { showRequestError } from "@/lib/form-errors";
+
+// Un autorregistrado puede no tener DNI: al editar, vacío es válido y no se envía.
+const edicionUsuarioSchema = crearUsuarioSchema.extend({
+  correo: z.string(),
+  dni: z.union([dniSchema, z.literal("")]),
+});
 
 function SelectorComisiones({
   seleccionadas,
@@ -71,8 +79,8 @@ export function UsuarioFormDialog({
 }) {
   const crear = useCrearUsuario();
   const actualizar = useActualizarUsuario();
-  const form = useForm<CrearUsuarioInput>({
-    resolver: zodResolver(usuario ? actualizarUsuarioSchema : crearUsuarioSchema) as never,
+  const form = useForm<CrearUsuarioInput, unknown, CrearUsuario>({
+    resolver: usuario ? zodResolver(edicionUsuarioSchema) : zodResolver(crearUsuarioSchema),
     defaultValues: {
       nombre: usuario?.nombre ?? "",
       dni: usuario?.dni ?? "",
@@ -85,14 +93,14 @@ export function UsuarioFormDialog({
   const errors = form.formState.errors;
   const perfil = form.watch("perfil");
 
-  const guardar = async (values: CrearUsuarioInput) => {
+  const guardar = async (values: CrearUsuario) => {
     try {
       if (usuario) {
         await actualizar.mutateAsync({
           id: usuario.id,
           input: {
             nombre: values.nombre,
-            dni: values.dni,
+            dni: values.dni || undefined,
             legajo: values.legajo ?? null,
             perfil: values.perfil,
             comisionIds: values.perfil === "DOCENTE" ? values.comisionIds : [],

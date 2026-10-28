@@ -1,5 +1,6 @@
 import { auth, AuthApiError, getAuthContext } from "@repo/auth";
 import { prisma } from "@repo/db";
+import { fechaArgentina } from "@repo/domain";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { ApiError } from "../errors";
@@ -8,12 +9,15 @@ import {
   createInstitution,
   createUserWithPerfil,
   resetDatabase,
+  createClase,
   seedAcademicFixture,
   signInAs,
   signUpVerified,
   type TestOrganization,
 } from "../test/db";
 
+import { listarClases, obtenerClase } from "./clases";
+import { buscarComisiones } from "./datos-academicos";
 import {
   actualizarDominiosPermitidos,
   actualizarUsuario,
@@ -377,5 +381,40 @@ describe("dominios permitidos y autorregistro", () => {
     await signUpVerified({ name: "Lucía", email: "lucia@example.com", password: "lucia1234" });
     const [usuario] = await listarUsuarios(bedel(), { q: "lucia@" });
     expect(usuario).toMatchObject({ perfil: "ESTUDIANTE", estado: "ACTIVO" });
+  });
+});
+
+describe("PRI-3: el estudiante ve solo el nombre del docente", () => {
+  it("las comisiones y las clases traen del docente únicamente id y nombre", async () => {
+    const fixture = await seedAcademicFixture(institution);
+    const estudiante = await createUserWithPerfil(institution, "ESTUDIANTE");
+    const clase = await createClase(
+      institution,
+      fixture,
+      fechaArgentina(new Date()),
+      "00:00",
+      "23:59",
+    );
+    const contexto = authOf(institution, estudiante);
+
+    const comisiones = await buscarComisiones(institution.organizationId, {});
+    const delDia = (await listarClases(contexto, { ambito: "todas" })).clases;
+    const detalle = await obtenerClase(contexto, clase.id);
+
+    const docentes = [...comisiones, ...delDia, detalle].flatMap((item) => item.docentes);
+    expect(docentes.length).toBeGreaterThan(0);
+    for (const docente of docentes) expect(Object.keys(docente).sort()).toEqual(["id", "nombre"]);
+    expect(JSON.stringify([comisiones, delDia, detalle])).not.toContain(fixture.docente.userEmail);
+  });
+
+  it("un alta cuyo correo ya se registró sin verificar lo explica", async () => {
+    await auth.api.signUpEmail({
+      body: { name: "Lucía", email: "ana@example.com", password: "lucia1234" },
+    });
+    const error = await rejection(crearUsuario(bedel(), alta));
+    expect(error).toMatchObject({
+      status: 409,
+      issues: [{ path: "correo", message: expect.stringContaining("todavía no verificó") }],
+    });
   });
 });

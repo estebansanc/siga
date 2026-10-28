@@ -3,7 +3,11 @@ import { prisma } from "@repo/db";
 import { institutionSlug } from "@repo/domain";
 
 import { enqueueEmail } from "./services/emails/outbox";
-import { activationEmail, verificationEmail } from "./services/emails/templates";
+import {
+  activationEmail,
+  passwordResetEmail,
+  verificationEmail,
+} from "./services/emails/templates";
 
 const institutionId = async () => {
   const institution = await prisma.organization.findUnique({
@@ -19,6 +23,9 @@ const institutionId = async () => {
 configureAuthEmails({
   sendVerification: async ({ to, name, url }) => {
     await enqueueEmail(await institutionId(), { to, ...verificationEmail({ nombre: name, url }) });
+  },
+  sendPasswordReset: async ({ to, name, url }) => {
+    await enqueueEmail(await institutionId(), { to, ...passwordResetEmail({ nombre: name, url }) });
   },
   sendActivation: async ({ to, name, url }) => {
     await enqueueEmail(await institutionId(), { to, ...activationEmail({ nombre: name, url }) });

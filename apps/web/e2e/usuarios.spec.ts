@@ -1,6 +1,10 @@
 import type { Page } from "@playwright/test";
 
-import { enlaceDelUltimoCorreo } from "./support/db";
+import {
+  borrarClaseDeAsistencia,
+  crearClaseDeAsistenciaHoy,
+  enlaceDelUltimoCorreo,
+} from "./support/db";
 import {
   expect,
   expectNoHorizontalPageScroll,
@@ -68,6 +72,7 @@ test.describe("Usuarios", () => {
     await expect(repetido.getByText("Ya existe un usuario con ese DNI")).toBeVisible();
     await repetido.getByRole("button", { name: "Cancelar" }).click();
 
+    crearClaseDeAsistenciaHoy();
     const enlace = enlaceDelUltimoCorreo(docente.correo);
     const sesionDocente = await browser.newContext({ baseURL });
     const paginaDocente = await sesionDocente.newPage();
@@ -75,6 +80,7 @@ test.describe("Usuarios", () => {
     await paginaDocente.getByLabel("Contraseña").fill(docente.password);
     await paginaDocente.getByRole("button", { name: /Definir contraseña/ }).click();
     await expect(paginaDocente.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
+    await expect(paginaDocente.getByText(/5K2/).first()).toBeVisible();
 
     const reuso = await sesionDocente.newPage();
     await reuso.goto(enlace);
@@ -96,6 +102,7 @@ test.describe("Usuarios", () => {
     await paginaDocente.goto("/");
     await expect(paginaDocente.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
     await sesionDocente.close();
+    borrarClaseDeAsistencia();
   });
 
   test("en su propia cuenta el bedel no puede desactivarse ni cambiar su perfil", async ({

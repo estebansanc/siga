@@ -76,6 +76,20 @@ export const activationEmail = (context: CuentaEmailContext): EmailContent => ({
   ),
 });
 
+export const passwordResetEmail = (context: CuentaEmailContext): EmailContent => ({
+  subject: "Definí tu contraseña de SiGA",
+  html: emailLayout(
+    "Definí tu contraseña",
+    [
+      `Hola ${escapeHtml(context.nombre)},`,
+      "Usá el enlace para elegir una contraseña nueva.",
+      linkLifetimeNote,
+    ],
+    [],
+    { label: "Definir mi contraseña", url: context.url },
+  ),
+});
+
 export const verificationEmail = (context: CuentaEmailContext): EmailContent => ({
   subject: "Verificá tu correo en SiGA",
   html: emailLayout(

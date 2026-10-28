@@ -11,14 +11,14 @@ Reglas comunes a todos los casos de uso, que no se repiten en cada uno:
 
 ## Resumen
 
-| Módulo                        | Casos de uso         | Hito (`../producto/vision.md`) |
-| ----------------------------- | -------------------- | ------------------------------ |
-| Usuarios y roles              | CU-01 a CU-10        | Base de todos los módulos      |
-| Novedades                     | CU-11 a CU-15, CU-38 | 12/10/2026                     |
-| Aulas y espacios              | CU-16 a CU-23        | 29/10/2026                     |
-| Actividad docente             | CU-24 a CU-28        | 29/10/2026                     |
-| Avisos y estado institucional | CU-29 a CU-34        | 29/10/2026                     |
-| Histórico y consultas         | CU-35 a CU-37        | MVP 10/11/2026                 |
+| Módulo                         | Casos de uso    | Hito (`../producto/vision.md`)                 |
+| ------------------------------ | --------------- | ---------------------------------------------- |
+| Usuarios y roles               | CU-01 a CU-10   | Base de todos los módulos                      |
+| Novedades                      | CU-11 a CU-15, CU-38 | 12/10/2026                                |
+| Aulas y espacios               | CU-16 a CU-23   | 29/10/2026                                     |
+| Actividad docente              | CU-24 a CU-28   | 29/10/2026                                     |
+| Avisos y estado institucional  | CU-29 a CU-34   | 29/10/2026                                     |
+| Histórico y consultas          | CU-35 a CU-37   | MVP 10/11/2026                                 |
 
 ## Módulo Usuarios y roles
 
