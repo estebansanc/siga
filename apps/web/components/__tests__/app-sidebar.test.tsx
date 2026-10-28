@@ -85,6 +85,7 @@ describe("AppSidebar", () => {
       "QR de asistencia",
       "Solicitudes",
       "Incidencias",
+      "Consultas históricas",
       "Avisos",
       "Usuarios",
       "Datos académicos",

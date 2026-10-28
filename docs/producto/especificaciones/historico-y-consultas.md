@@ -45,9 +45,11 @@ Requisitos cubiertos: RF-09, RNF-03. Criterio de aceptación: CA-06. Fuente: ERS
 
 ## Estado de implementación
 
-Hoy `/historico` entrega la consulta de **Novedades** para la Autoridad académica; asistencia docente, uso de aulas e incidencias dependen de funciones todavía sin implementar y van en tickets posteriores.
+Hoy `/historico` entrega las consultas de **Asistencia docente** (Autoridad y Bedel) y **Novedades** (solo Autoridad); uso de aulas e incidencias van en tickets posteriores.
 
-- Solo la Autoridad ve la opción y consulta (la API responde 403 "Acceso denegado" y lo audita). Al Bedel `/historico` lo devuelve a su panel.
+**Asistencia docente** (`GET /historico/asistencias`): el rango filtra por la fecha de la clase (hora de Argentina, inclusivo). Indicadores del período filtrado: _Asistencia docente_ (% de clases con asistencia sobre las presenciales ya terminadas, y esa cantidad), _Registros por QR_ (cantidad y % sobre el total de registros), _Registros manuales_ y _Clases sin registro_ (Finalizadas sin asistencia). Las Suspendidas y Virtuales quedan fuera de la base; una Ausente cuenta en la base sin asistencia, no como "sin registro". El docente filtrado es el de la asistencia o, sin registro, los de la comisión. El detalle (de a 20, el más reciente primero) muestra fecha y hora de llegada, docente, materia y comisión, aula, método (QR o Manual) y registrante (el Bedel con "(Bedelía)" en manual). Sin exportación ni tablero.
+
+- La Autoridad consulta Asistencia docente y Novedades; el Bedel ve "Consultas históricas" pero solo Asistencia docente (la API de novedades le responde 403). Docente y Estudiante no ven la opción, `/historico` los devuelve al inicio y la API responde 403 "Acceso denegado" y lo audita.
 - El rango filtra por fecha de publicación de la novedad (hora argentina, ambos días incluidos). Se precarga con los últimos 30 días y 12 meses justos (21/10/2025 a 21/10/2026) es válido.
 - Filtros: carrera, materia, comisión, docente (de la comisión), aula (la de las clases afectadas o el aula nueva de un Cambio de aula) y tipo.
 - Indicadores: total y cantidad por tipo del período filtrado completo. Detalle: de a 20, la más reciente primero, con fecha y hora de publicación, tipo, materia y comisión, fecha de la clase (o rango), docentes, quién publicó (docente o Bedelía) y estado.
