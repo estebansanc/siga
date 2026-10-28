@@ -77,3 +77,68 @@ Importar como `@repo/ui/components/<nombre>`.
 ## Tipografía
 
 Google Sans vía `next/font/google` (`apps/web/lib/fonts.ts`), servida desde el dominio propio; `fonts.spec.ts` verifica que ninguna pantalla pida a Google Fonts. Tema claro y oscuro con `next-themes` (`attribute="class"`).
+
+## Accesibilidad
+
+Criterio de cierre (US-5, RNF-01, CA-07): WCAG 2.1 AA en todas las pantallas de todos los perfiles, en tema claro y oscuro, sin sumar ni quitar funcionalidad. La corrección vive en los tokens del tema (`packages/ui/src/styles/globals.css`) y en las variantes de los componentes de shadcn/ui, nunca en cada pantalla (ADR 007).
+
+Reglas que cumple la UI:
+
+- **Contraste**: texto 4,5:1 (3:1 si es grande: 24 px, o 18,66 px en negrita); bordes de campos, foco e íconos accionables 3:1.
+- **Zonas táctiles**: en dispositivos táctiles (`pointer: coarse`: celular y tablet) todo botón, link, ítem de menú, checkbox, switch y pestaña mide al menos 44x44 px. Se resuelve con la variante `pointer-coarse:` de Tailwind dentro de cada componente de `packages/ui`; en escritorio con mouse las medidas no cambian. Checkbox y switch amplían el área de toque con su `::after`, no su dibujo.
+- **Teclado**: Tab sigue el orden visual, el foco siempre se ve (anillo `ring` sobre `--ring`), Escape cierra diálogos, menús y la barra lateral móvil y el foco vuelve al botón que los abrió (comportamiento de base-ui; los tests lo cubren).
+- **Nombres accesibles**: todo botón de solo ícono lleva `aria-label` con su acción, en español.
+- **360 px**: ninguna pantalla scrollea en horizontal.
+
+Cómo se verifica: `apps/web/e2e/accesibilidad.spec.ts` mide con el navegador, sin dependencias, el contraste de cada texto y borde de campo (tema claro y oscuro, una pasada por perfil sobre todas sus pantallas), el tamaño táctil de cada elemento interactivo (proyecto `mobile`, Pixel 7), el foco visible y el orden de Tab, Escape con devolución del foco y el desborde horizontal a 360 px. `components/__tests__/accesibilidad-teclado.test.tsx` cubre el nombre accesible de los botones de ícono y Escape con devolución del foco.
+
+### Hallazgos
+
+| Pantalla | Perfil | Criterio | Corrección |
+| --- | --- | --- | --- |
+| Todas las pantallas con texto secundario | Todos | Contraste de texto 4,5:1 (tema claro) | `--muted-foreground` pasa de `oklch(0.556)` a `oklch(0.49)`: placeholders y textos secundarios sobre fondos `muted` superan 4,5:1. |
+| Badge Ocupada de Aulas; textos y badges destructivos | Bedel, Docente, Autoridad | Contraste de texto 4,5:1 (3,97:1 medido, tema claro) | `--destructive` claro pasa a `oklch(0.5 0.22 27.325)`. |
+| Formularios de todas las pantallas (login, Mi perfil, Estado institucional, Publicar novedad, Configuración) | Todos | Contraste no textual 3:1 (bordes de campos, 1,2:1 medido) | `--input` pasa a `oklch(0.6 0 0)` en claro y `oklch(1 0 0 / 40%)` en oscuro. |
+| Foco de botones, campos y menús | Todos | Contraste no textual 3:1 (foco) | `--ring` y `--sidebar-ring` claros pasan a `oklch(0.55 0 0)`. |
+| Menú lateral y botones de ícono | Todos | Nombre accesible en el idioma del producto | El botón del menú era "Toggle Sidebar" y el panel móvil "Sidebar": pasan a "Alternar menú lateral" y "Menú lateral". |
+| Botones, links de menú, botón del menú lateral, indicador de Estado institucional | Todos | Zona táctil 44x44 px (en táctil) | `Button` suma `pointer-coarse:min-h-11 min-w-11`; ítems del menú lateral `pointer-coarse:h-11`; el indicador del encabezado `pointer-coarse:min-h-11`. |
+| Campos de texto, selects, Estado institucional (estado y vigencia), Publicar novedad | Bedel, Docente | Zona táctil 44x44 px (en táctil) | `Input`, `Select` y `NativeSelect` miden 44 px de alto en táctil. |
+| Preferencias, Configuración y diálogos con interruptores y casillas | Estudiante, Bedel | Zona táctil 44x44 px (en táctil) | `Switch` (42x54 px medido) y `Checkbox` amplían su área de toque a 44 px con `pointer-coarse:after:-inset-*`. |
+| Pestañas, ítems de menús desplegables, de select y de combobox, paginación y toggles | Todos | Zona táctil 44x44 px (en táctil) | `Tabs`, `DropdownMenu`, `Select`, `Combobox`, `Pagination` y `Toggle` miden 44 px en táctil. |
+
+### Matriz de navegadores
+
+Chrome de escritorio y Chrome Android quedan cubiertos por el e2e (en Android, con el emulador de Pixel 7 de Playwright, no con un dispositivo real). Firefox, Safari y Edge no suman minutos de CI: se recorren a mano en staging con el usuario de QA (Bedel y Administrador) y se completa la columna Resultado. Flujos a verificar por perfil: Estudiante guarda comisiones en Preferencias y las ve en Mis clases de hoy; Docente publica una novedad y la ve en Novedades; Bedel registra un estado (visible en el historial) y publica una novedad; Autoridad ve Clases de hoy; Administrador abre el "?" de Configuración.
+
+| Navegador | Dispositivo | Perfil | Resultado |
+| --- | --- | --- | --- |
+| Chrome | Escritorio (dos últimas versiones) | Estudiante | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `desktop` (Chrome)) |
+| Chrome | Escritorio (dos últimas versiones) | Docente | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `desktop` (Chrome)) |
+| Chrome | Escritorio (dos últimas versiones) | Bedel | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `desktop` (Chrome)) |
+| Chrome | Escritorio (dos últimas versiones) | Autoridad | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `desktop` (Chrome)) |
+| Chrome | Escritorio (dos últimas versiones) | Administrador | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `desktop` (Chrome)) |
+| Firefox | Escritorio (dos últimas versiones) | Estudiante | Pendiente: recorrido manual en staging |
+| Firefox | Escritorio (dos últimas versiones) | Docente | Pendiente: recorrido manual en staging |
+| Firefox | Escritorio (dos últimas versiones) | Bedel | Pendiente: recorrido manual en staging |
+| Firefox | Escritorio (dos últimas versiones) | Autoridad | Pendiente: recorrido manual en staging |
+| Firefox | Escritorio (dos últimas versiones) | Administrador | Pendiente: recorrido manual en staging |
+| Safari | Escritorio (dos últimas versiones) | Estudiante | Pendiente: recorrido manual en staging |
+| Safari | Escritorio (dos últimas versiones) | Docente | Pendiente: recorrido manual en staging |
+| Safari | Escritorio (dos últimas versiones) | Bedel | Pendiente: recorrido manual en staging |
+| Safari | Escritorio (dos últimas versiones) | Autoridad | Pendiente: recorrido manual en staging |
+| Safari | Escritorio (dos últimas versiones) | Administrador | Pendiente: recorrido manual en staging |
+| Edge | Escritorio (dos últimas versiones) | Estudiante | Pendiente: recorrido manual en staging |
+| Edge | Escritorio (dos últimas versiones) | Docente | Pendiente: recorrido manual en staging |
+| Edge | Escritorio (dos últimas versiones) | Bedel | Pendiente: recorrido manual en staging |
+| Edge | Escritorio (dos últimas versiones) | Autoridad | Pendiente: recorrido manual en staging |
+| Edge | Escritorio (dos últimas versiones) | Administrador | Pendiente: recorrido manual en staging |
+| Chrome | Android 10+ | Estudiante | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `mobile` (Pixel 7, emulado)) |
+| Chrome | Android 10+ | Docente | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `mobile` (Pixel 7, emulado)) |
+| Chrome | Android 10+ | Bedel | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `mobile` (Pixel 7, emulado)) |
+| Chrome | Android 10+ | Autoridad | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `mobile` (Pixel 7, emulado)) |
+| Chrome | Android 10+ | Administrador | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `mobile` (Pixel 7, emulado)) |
+| Safari | iOS 15+ | Estudiante | Pendiente: recorrido manual en staging |
+| Safari | iOS 15+ | Docente | Pendiente: recorrido manual en staging |
+| Safari | iOS 15+ | Bedel | Pendiente: recorrido manual en staging |
+| Safari | iOS 15+ | Autoridad | Pendiente: recorrido manual en staging |
+| Safari | iOS 15+ | Administrador | Pendiente: recorrido manual en staging |
