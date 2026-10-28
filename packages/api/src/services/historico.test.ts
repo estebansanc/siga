@@ -458,6 +458,74 @@ describe("consultas históricas de asistencia docente", () => {
     expect(ids.size).toBe(25);
   });
 
+  it("no mezcla instituciones", async () => {
+    const otra = await createOrganization();
+    const otroFixture = await seedAcademicFixture(otra);
+    const clase = await createClase(otra, otroFixture, "2026-03-05", "19:00", "23:59");
+    await prisma.claseProgramada.update({
+      where: { id: clase.id },
+      data: { estado: "FINALIZADA" },
+    });
+    await prisma.asistenciaDocente.create({
+      data: {
+        organizationId: otra.organizationId,
+        claseId: clase.id,
+        docenteId: otroFixture.docente.userId,
+        metodo: "QR",
+        horaLlegada: instanteArgentino("2026-03-05", "19:05"),
+        registradaPorId: otroFixture.docente.userId,
+      },
+    });
+    const { indicadores, total, registros } = await consultaAsistencias();
+    expect(total).toBe(0);
+    expect(registros).toEqual([]);
+    expect(indicadores).toMatchObject({ clasesBase: 0, registrosQr: 0, clasesSinRegistro: 0 });
+  });
+
+  it("una consulta de 12 meses con cientos de clases responde en menos de 10 s", async () => {
+    const dias = Array.from({ length: 600 }, (_, indice) => {
+      const fecha = new Date(Date.UTC(2025, 10, 1 + (indice % 300)));
+      return {
+        fecha,
+        inicio: new Date(fecha.getTime() + (8 + Math.floor(indice / 300)) * 3_600_000),
+      };
+    });
+    await prisma.claseProgramada.createMany({
+      data: dias.map(({ fecha, inicio }) => ({
+        organizationId: institution.organizationId,
+        comisionId: fixture.comisionId,
+        aulaId: fixture.aulaId,
+        fecha,
+        inicio,
+        fin: new Date(inicio.getTime() + 3_600_000),
+        estado: "FINALIZADA" as const,
+      })),
+    });
+    const clases = await prisma.claseProgramada.findMany({
+      where: { organizationId: institution.organizationId },
+      select: { id: true },
+    });
+    await prisma.asistenciaDocente.createMany({
+      data: clases.slice(0, 450).map(({ id }, indice) => ({
+        organizationId: institution.organizationId,
+        claseId: id,
+        docenteId: fixture.docente.userId,
+        metodo: indice % 4 === 0 ? ("MANUAL" as const) : ("QR" as const),
+        horaLlegada: new Date("2026-01-01T12:00:00Z"),
+        registradaPorId: fixture.docente.userId,
+      })),
+    });
+    const inicio = Date.now();
+    const resultado = await consultarAsistencias(
+      authOf(institution, autoridad),
+      { desde: "2025-10-21", hasta: "2026-10-21", pagina: 1 },
+      new Date("2026-12-31T12:00:00Z"),
+    );
+    expect(Date.now() - inicio).toBeLessThan(10_000);
+    expect(resultado.total).toBe(450);
+    expect(resultado.indicadores).toMatchObject({ clasesBase: 600, clasesSinRegistro: 150 });
+  });
+
   it("el Bedel también consulta y las opciones", async () => {
     await crearClaseConAsistencia({ fecha: "2026-03-02", asistencia: { metodo: "MANUAL" } });
     expect((await consultaAsistencias({}, institution)).total).toBe(1);
