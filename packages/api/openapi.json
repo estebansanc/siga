@@ -1750,6 +1750,82 @@
           "nombre"
         ]
       },
+      "PlanoAula": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "edificio": {
+            "type": "string"
+          },
+          "piso": {
+            "type": "string"
+          },
+          "capacidad": {
+            "type": "integer"
+          },
+          "estadoAula": {
+            "type": "string",
+            "enum": [
+              "DISPONIBLE",
+              "FUERA_DE_SERVICIO",
+              "EN_MANTENIMIENTO"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "LIBRE",
+              "PENDIENTE",
+              "OCUPADA",
+              "FUERA_DE_SERVICIO",
+              "EN_MANTENIMIENTO"
+            ]
+          },
+          "claseEnCurso": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Clase"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "proximaClase": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Clase"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "La próxima clase del día; solo si no hay una clase en curso"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "codigo",
+          "edificio",
+          "piso",
+          "capacidad",
+          "estadoAula",
+          "estado",
+          "claseEnCurso",
+          "proximaClase"
+        ]
+      },
       "AulaGestion": {
         "allOf": [
           {
@@ -9852,6 +9928,90 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Aula"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/aulas/plano": {
+      "get": {
+        "tags": [
+          "Aulas"
+        ],
+        "summary": "Plano de aulas: estado en tiempo real de cada aula activa",
+        "description": "Los cuatro perfiles. `estado` es Libre, Pendiente, Ocupada o el estado del aula si no está Disponible; incluye la clase en curso o la próxima del día. Ordenado por edificio, piso y código.",
+        "responses": {
+          "200": {
+            "description": "Aulas del plano",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanoAula"
                   }
                 }
               }

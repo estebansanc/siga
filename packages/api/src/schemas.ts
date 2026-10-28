@@ -5,6 +5,7 @@ import {
   equipamientoSchema,
   emailStatusSchema,
   estadoAulaSchema,
+  estadoPlanoSchema,
   estadoSolicitudAulaSchema,
   estadoClaseSchema,
   estadoIncidenciaSchema,
@@ -681,3 +682,16 @@ export const dominiosPermitidosDtoSchema = z
   })
   .openapi("DominiosPermitidos");
 export type DominiosPermitidosDto = z.infer<typeof dominiosPermitidosDtoSchema>;
+
+export const planoAulaSchema = aulaSchema
+  .pick({ id: true, codigo: true, edificio: true, piso: true, capacidad: true })
+  .extend({
+    estadoAula: estadoAulaSchema,
+    estado: estadoPlanoSchema,
+    claseEnCurso: claseSchema.nullable(),
+    proximaClase: claseSchema.nullable().openapi({
+      description: "La próxima clase del día; solo si no hay una clase en curso",
+    }),
+  })
+  .openapi("PlanoAula");
+export type PlanoAulaDto = z.infer<typeof planoAulaSchema>;

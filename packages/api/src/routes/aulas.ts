@@ -10,6 +10,7 @@ import {
   aulasDisponiblesQuerySchema,
   aulasGestionQuerySchema,
   idParamSchema,
+  planoAulaSchema,
 } from "../schemas";
 import * as aulas from "../services/aulas";
 
@@ -35,6 +36,21 @@ export const aulaRoutes = new OpenAPIHono<ApiEnv>()
         ),
         200,
       ),
+  )
+  .openapi(
+    createRoute({
+      method: "get",
+      path: "/plano",
+      tags,
+      summary: "Plano de aulas: estado en tiempo real de cada aula activa",
+      description:
+        "Los cuatro perfiles. `estado` es Libre, Pendiente, Ocupada o el estado del aula si no está Disponible; incluye la clase en curso o la próxima del día. Ordenado por edificio, piso y código.",
+      responses: {
+        200: jsonResponse(z.array(planoAulaSchema), "Aulas del plano"),
+        ...commonErrors,
+      },
+    }),
+    async (c) => c.json(await aulas.listarPlanoAulas(c.get("auth").organizationId), 200),
   )
   .openapi(
     createRoute({

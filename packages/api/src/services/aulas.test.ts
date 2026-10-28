@@ -20,6 +20,7 @@ import {
   darDeBajaAula,
   listarAulasDisponibles,
   listarAulasGestion,
+  listarPlanoAulas,
   obtenerAula,
   reactivarAula,
 } from "./aulas";
@@ -215,5 +216,94 @@ describe("gestión de aulas", () => {
       "update",
     ]);
     expect(registros.every((registro) => registro.userId === institution.userId)).toBe(true);
+  });
+});
+
+describe("plano de aulas", () => {
+  const fecha = "2026-10-14";
+  const ahora = new Date(`${fecha}T20:00:00-03:00`);
+  const estados = async () =>
+    Object.fromEntries(
+      (await listarPlanoAulas(institution.organizationId, ahora)).map((aula) => [
+        aula.codigo,
+        aula.estado,
+      ]),
+    );
+
+  it("es Libre sin clase en curso y muestra la próxima del día, o ninguna", async () => {
+    await createClase(institution, fixture, fecha, "21:00", "22:00");
+    const plano = await listarPlanoAulas(institution.organizationId, ahora);
+    const aula12 = plano.find((aula) => aula.codigo === "Aula 12");
+    expect(aula12).toMatchObject({ estado: "LIBRE", claseEnCurso: null });
+    expect(aula12?.proximaClase).toMatchObject({ horaInicio: "21:00", horaFin: "22:00" });
+    expect(plano.find((aula) => aula.codigo === "Aula 7")?.proximaClase).toBeNull();
+  });
+
+  it("es Pendiente con la clase Programada o Demorada y Ocupada con el docente presente", async () => {
+    const clase = await createClase(institution, fixture, fecha);
+    expect((await estados())["Aula 12"]).toBe("PENDIENTE");
+    await prisma.claseProgramada.update({ where: { id: clase.id }, data: { estado: "DEMORADA" } });
+    expect((await estados())["Aula 12"]).toBe("PENDIENTE");
+    await prisma.claseProgramada.update({
+      where: { id: clase.id },
+      data: { estado: "DOCENTE_PRESENTE" },
+    });
+    const plano = await listarPlanoAulas(institution.organizationId, ahora);
+    const aula = plano.find((item) => item.codigo === "Aula 12");
+    expect(aula).toMatchObject({ estado: "OCUPADA", claseEnCurso: { id: clase.id } });
+    expect(aula?.claseEnCurso?.docentes.length).toBeGreaterThan(0);
+  });
+
+  it("las clases Virtual, Suspendida, Ausente o Finalizada no ocupan el aula", async () => {
+    const clase = await createClase(institution, fixture, fecha);
+    for (const estado of ["SUSPENDIDA", "AUSENTE", "FINALIZADA"] as const) {
+      await prisma.claseProgramada.update({ where: { id: clase.id }, data: { estado } });
+      expect((await estados())["Aula 12"]).toBe("LIBRE");
+    }
+    await prisma.claseProgramada.update({
+      where: { id: clase.id },
+      data: { estado: "PROGRAMADA", modalidad: "VIRTUAL" },
+    });
+    expect((await estados())["Aula 12"]).toBe("LIBRE");
+  });
+
+  it("Fuera de servicio y En mantenimiento prevalecen y conservan su clase", async () => {
+    const clase = await createClase(institution, fixture, fecha);
+    await prisma.aula.update({
+      where: { id: fixture.aulaId },
+      data: { estado: "EN_MANTENIMIENTO" },
+    });
+    await prisma.aula.update({
+      where: { id: fixture.otraAulaId },
+      data: { estado: "FUERA_DE_SERVICIO" },
+    });
+    const plano = await listarPlanoAulas(institution.organizationId, ahora);
+    expect(plano.map((aula) => aula.estado).sort()).toEqual([
+      "EN_MANTENIMIENTO",
+      "FUERA_DE_SERVICIO",
+    ]);
+    expect(plano.find((aula) => aula.codigo === "Aula 12")?.claseEnCurso?.id).toBe(clase.id);
+  });
+
+  it("omite las aulas dadas de baja y ordena por edificio, piso y código", async () => {
+    await crearAula(institution.organizationId, {
+      codigo: "Aula 3",
+      edificio: "Edificio A",
+      piso: "PB",
+      capacidad: 20,
+      equipamiento: [],
+      estado: "DISPONIBLE",
+    });
+    const baja = await crearAula(institution.organizationId, {
+      codigo: "Aula 1",
+      edificio: "Edificio A",
+      piso: "PB",
+      capacidad: 20,
+      equipamiento: [],
+      estado: "DISPONIBLE",
+    });
+    await darDeBajaAula(institution.organizationId, baja.id);
+    const plano = await listarPlanoAulas(institution.organizationId, ahora);
+    expect(plano.map((aula) => aula.codigo)).toEqual(["Aula 3", "Aula 12", "Aula 7"]);
   });
 });

@@ -1,5 +1,8 @@
 import { fromDateColumn, prisma, type Prisma } from "@repo/db";
 import {
+  compararCodigosAula,
+  compararPisos,
+  estadoPlanoDeAula,
   horaArgentina,
   fechaArgentina,
   rangoDelDia,
@@ -9,7 +12,15 @@ import {
 } from "@repo/domain";
 
 import { conflict, notFound, unprocessable } from "../errors";
-import type { AulaClaseDto, AulaDetalleDto, AulaDto, AulaGestionDto } from "../schemas";
+import type {
+  AulaClaseDto,
+  AulaDetalleDto,
+  AulaDto,
+  AulaGestionDto,
+  PlanoAulaDto,
+} from "../schemas";
+
+import { claseInclude, toClaseDto as toClaseCompletaDto } from "./clases";
 
 import { listarIncidenciasDeAula } from "./incidencias";
 
@@ -204,4 +215,48 @@ export const listarAulasDisponibles = async (
     },
   });
   return aulas;
+};
+
+// RF-02 / RF-07: estado de cada aula activa en este momento, con la clase en curso o la próxima
+// del día. Se ordena por edificio, piso y código: la grilla provisoria hasta tener los planos.
+export const listarPlanoAulas = async (
+  organizationId: string,
+  ahora = new Date(),
+): Promise<PlanoAulaDto[]> => {
+  const aulas = await prisma.aula.findMany({ where: { organizationId, activa: true } });
+  const clases = await prisma.claseProgramada.findMany({
+    where: {
+      aulaId: { in: aulas.map((aula) => aula.id) },
+      modalidad: "PRESENCIAL",
+      estado: { notIn: [...estadosSinOcupacion] },
+      fin: { gt: ahora },
+      inicio: { lt: rangoDelDia(sumarDias(fechaArgentina(ahora), 1)).desde },
+    },
+    include: claseInclude,
+    orderBy: { inicio: "asc" },
+  });
+
+  return aulas
+    .map((aula): PlanoAulaDto => {
+      const delAula = clases.filter((clase) => clase.aulaId === aula.id);
+      const enCurso = delAula.find((clase) => clase.inicio <= ahora) ?? null;
+      const proxima = enCurso ? null : (delAula[0] ?? null);
+      return {
+        id: aula.id,
+        codigo: aula.codigo,
+        edificio: aula.edificio,
+        piso: aula.piso,
+        capacidad: aula.capacidad,
+        estadoAula: aula.estado,
+        estado: estadoPlanoDeAula(aula.estado, enCurso?.estado ?? null),
+        claseEnCurso: enCurso && toClaseCompletaDto(enCurso),
+        proximaClase: proxima && toClaseCompletaDto(proxima),
+      };
+    })
+    .sort(
+      (a, b) =>
+        a.edificio.localeCompare(b.edificio, "es") ||
+        compararPisos(a.piso, b.piso) ||
+        compararCodigosAula(a.codigo, b.codigo),
+    );
 };

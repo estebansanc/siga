@@ -220,6 +220,7 @@ describe("contrato HTTP", () => {
       "/api/v1/comisiones",
       "/api/v1/comisiones/generar-clases",
       "/api/v1/aulas/disponibles",
+      "/api/v1/aulas/plano",
     ]) {
       expect(spec.paths).toHaveProperty(path);
     }
@@ -303,6 +304,8 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
       expect((await call("/aulas", json({}))).status).toBe(403);
       como(perfil);
       expect((await call("/aulas/x/baja", json({}))).status).toBe(403);
+      como(perfil);
+      expect((await call("/aulas/plano")).status).toBe(200);
     }
 
     como(institution);
