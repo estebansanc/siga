@@ -21,6 +21,7 @@ export const queryKeys = {
   datosAcademicos: (entidad: string, query: object = {}) =>
     ["datos-academicos", entidad, query] as const,
   aulas: (bajas: boolean) => ["aulas", { bajas }] as const,
+  aulasPlano: ["aulas", "plano"] as const,
   aula: (id: string) => ["aulas", id] as const,
   clasesDelTurno: (query: Record<string, string>) => ["clases-del-turno", query] as const,
   aulasDisponibles: (claseIds: string[]) => ["aulas-disponibles", claseIds] as const,

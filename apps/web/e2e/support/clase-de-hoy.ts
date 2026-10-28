@@ -52,3 +52,45 @@ export const eliminarClaseConAula = async (claseId: string, aulaId: string) => {
   await prisma.claseProgramada.delete({ where: { id: claseId } });
   await prisma.aula.delete({ where: { id: aulaId } });
 };
+
+// Un aula nueva en un edificio propio con una clase de 5K2 Proyecto Final que ya empezó y
+// sigue en curso, para que el plano no dependa de la hora en que corre el seed.
+export const crearAulaConClaseEnCurso = async () => {
+  const { prisma, toDateColumn } = await abrirBase();
+  const comision = await prisma.comision.findUniqueOrThrow({ where: { id: "comision-5k2-pf" } });
+  const marca = Date.now().toString(36);
+  const inicio = new Date(Date.now() - (5 + Math.floor(Math.random() * 40)) * 60_000);
+  const aula = await prisma.aula.create({
+    data: {
+      organizationId: comision.organizationId,
+      codigo: `Aula Plano ${marca}`,
+      edificio: `Plano ${marca}`,
+      piso: "PB",
+      capacidad: 30,
+    },
+  });
+  const clase = await prisma.claseProgramada.create({
+    data: {
+      organizationId: comision.organizationId,
+      comisionId: comision.id,
+      fecha: toDateColumn(fechaArgentina(inicio)),
+      inicio,
+      fin: new Date(inicio.getTime() + 120 * 60_000),
+      aulaId: aula.id,
+    },
+  });
+  return { aulaId: aula.id, aulaCodigo: aula.codigo, edificio: aula.edificio, claseId: clase.id };
+};
+
+export const registrarDocentePresente = async (claseId: string) => {
+  const { prisma } = await abrirBase();
+  await prisma.claseProgramada.update({
+    where: { id: claseId },
+    data: { estado: "DOCENTE_PRESENTE" },
+  });
+};
+
+export const ponerAulaEnMantenimiento = async (aulaId: string) => {
+  const { prisma } = await abrirBase();
+  await prisma.aula.update({ where: { id: aulaId }, data: { estado: "EN_MANTENIMIENTO" } });
+};

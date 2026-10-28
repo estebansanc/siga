@@ -1,0 +1,24 @@
+import type { Metadata } from "next";
+
+import { PlanoAulas } from "@/components/aulas/plano-aulas";
+import { PageBody } from "@/components/layout/page-body";
+import { PageHeader } from "@/components/layout/page-header";
+import { requireSession } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Plano de aulas" };
+
+// Bedel y Autoridad lo tienen en el menú; Docente y Estudiante lo abren por la ruta, en consulta.
+export default async function PlanoDeAulasPage() {
+  await requireSession();
+
+  return (
+    <>
+      <PageHeader title="Plano de aulas" />
+      <PageBody>
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-4">
+          <PlanoAulas />
+        </div>
+      </PageBody>
+    </>
+  );
+}

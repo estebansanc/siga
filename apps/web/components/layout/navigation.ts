@@ -9,6 +9,7 @@ import {
   HistoryIcon,
   InboxIcon,
   LayoutGridIcon,
+  MapIcon,
   MegaphoneIcon,
   QrCodeIcon,
   SearchIcon,
@@ -33,6 +34,7 @@ export type NavigationHref =
   | "/aulas"
   | "/aulas/solicitar"
   | "/aulas/mis-solicitudes"
+  | "/plano-de-aulas"
   | "/qr"
   | "/solicitudes"
   | "/incidencias"
@@ -57,6 +59,7 @@ const datosAcademicos: NavigationItem = {
 };
 const usuarios: NavigationItem = { title: "Usuarios", href: "/usuarios", icon: UsersIcon };
 const aulas: NavigationItem = { title: "Aulas", href: "/aulas", icon: DoorOpenIcon };
+const plano: NavigationItem = { title: "Plano de aulas", href: "/plano-de-aulas", icon: MapIcon };
 const configuracion: NavigationItem = {
   title: "Configuración",
   href: "/configuracion",
@@ -85,6 +88,7 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     { title: "Clases", href: "/clases", icon: CalendarDaysIcon },
     novedades,
     aulas,
+    plano,
     { title: "QR de asistencia", href: "/qr", icon: QrCodeIcon },
     { title: "Solicitudes", href: "/solicitudes", icon: InboxIcon },
     { title: "Incidencias", href: "/incidencias", icon: TriangleAlertIcon },
@@ -97,6 +101,7 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     { title: "Consultas históricas", href: "/historico", icon: HistoryIcon },
     avisos,
     buscar,
+    plano,
     estado,
     usuarios,
     datosAcademicos,

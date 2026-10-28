@@ -1,6 +1,6 @@
 "use client";
 
-import type { AulaDetalleDto, AulaGestionDto } from "@repo/api/client";
+import type { AulaDetalleDto, AulaGestionDto, PlanoAulaDto } from "@repo/api/client";
 import type { ActualizarAula, CrearAula } from "@repo/domain";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -15,6 +15,13 @@ export const useAulas = (bajas: boolean, enabled = true) =>
     queryKey: queryKeys.aulas(bajas),
     queryFn: () =>
       unwrap<AulaGestionDto[]>(api.aulas.$get({ query: { bajas: bajas ? "true" : "false" } })),
+    ...realtimeQueryOptions,
+  });
+
+export const usePlanoAulas = () =>
+  useQuery({
+    queryKey: queryKeys.aulasPlano,
+    queryFn: () => unwrap<PlanoAulaDto[]>(api.aulas.plano.$get()),
     ...realtimeQueryOptions,
   });
 
