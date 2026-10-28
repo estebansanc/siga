@@ -5,6 +5,7 @@ import type { UpdateProfileInput } from "@repo/domain";
 import type { MeDto } from "../schemas";
 
 import { listOrganizationsOf } from "./memberships";
+import { tieneAceptacionPendiente } from "./politica-privacidad";
 
 // "Quién soy": la sesión ya resuelve rol y organización activa (`AuthContext`); esto agrega la
 // lista de organizaciones de la cuenta y el nombre leído de la base, así un cambio hecho
@@ -23,6 +24,7 @@ export const getMe = async (auth: AuthContext): Promise<MeDto> => {
     role: auth.role,
     perfil: auth.perfil,
     organizations: await listOrganizationsOf(auth.userId),
+    politicaPendiente: await tieneAceptacionPendiente(auth.userId),
     lostOrganization: auth.lostOrganization,
   };
 };

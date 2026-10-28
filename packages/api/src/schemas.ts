@@ -66,6 +66,10 @@ export const meSchema = z
     organizations: z.array(myOrganizationSchema).openapi({
       description: "Todas las organizaciones de la cuenta: la propia y las que la invitaron",
     }),
+    politicaPendiente: z.boolean().openapi({
+      description:
+        "La persona todavía no aceptó la versión vigente de la política de privacidad: debe hacerlo antes de usar el resto de la app (`/politica-de-privacidad`).",
+    }),
     lostOrganization: lostOrganizationSchema.nullable().openapi({
       description:
         "La organización activa dejó de tener membresía y la sesión volvió a la propia; `null` en el resto de los casos.",
@@ -73,6 +77,17 @@ export const meSchema = z
   })
   .openapi("Me");
 export type MeDto = z.infer<typeof meSchema>;
+
+export const politicaPrivacidadSchema = z
+  .object({
+    version: z.number().int(),
+    titulo: z.string(),
+    texto: z.string(),
+    publicadaEn: z.string(),
+    aceptadaEn: z.string().nullable(),
+  })
+  .openapi("PoliticaPrivacidad");
+export type PoliticaPrivacidadDto = z.infer<typeof politicaPrivacidadSchema>;
 
 const franjaTurnoDtoSchema = z.object({ inicio: z.string(), fin: z.string() });
 

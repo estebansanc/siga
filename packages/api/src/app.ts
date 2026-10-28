@@ -27,6 +27,7 @@ import { estadoInstitucionalRoutes } from "./routes/estado-institucional";
 import { historicoRoutes } from "./routes/historico";
 import { incidenciaRoutes } from "./routes/incidencias";
 import { meRoutes } from "./routes/me";
+import { politicaPrivacidadRoutes } from "./routes/politica-privacidad";
 import { memberRoutes } from "./routes/members";
 import { novedadRoutes } from "./routes/novedades";
 import { preferenciaRoutes } from "./routes/preferencias";
@@ -110,6 +111,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
   return app
     .route("/cuenta", cuentaRoutes)
     .route("/me", meRoutes)
+    .route("/politica-de-privacidad", politicaPrivacidadRoutes)
     .route("/settings", settingsRoutes)
     .route("/members", memberRoutes)
     .route("/usuarios", usuarioRoutes)

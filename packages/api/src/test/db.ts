@@ -6,6 +6,7 @@ import "../auth-emails";
 import { findOwnedOrganizationId } from "../services/memberships";
 
 const tables = [
+  "aceptacion_politica",
   "intento_asistencia_fallido",
   "incidencia_estado",
   "incidencia",

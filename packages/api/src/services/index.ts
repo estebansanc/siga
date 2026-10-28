@@ -12,3 +12,4 @@ export { findOwnedOrganizationId, listMembers, listOrganizationsOf } from "./mem
 export * from "./organizations";
 export * from "./settings";
 export * from "./usuarios";
+export * from "./politica-privacidad";

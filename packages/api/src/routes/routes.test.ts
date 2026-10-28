@@ -781,3 +781,21 @@ describe("datos académicos: administración", () => {
     expect(await bajas.json()).toEqual([expect.objectContaining({ id, activa: false })]);
   });
 });
+
+describe("política de privacidad por HTTP", () => {
+  it("informa la aceptación pendiente en /me, acepta la vigente y rechaza una versión vieja", async () => {
+    expect((await (await call("/me")).json()).politicaPendiente).toBe(true);
+
+    const vigente = await call("/politica-de-privacidad");
+    expect(await vigente.json()).toMatchObject({ version: 1, aceptadaEn: null });
+
+    const vieja = await call("/politica-de-privacidad/aceptaciones", json({ version: 2 }));
+    expect(vieja.status).toBe(409);
+    expect((await (await call("/me")).json()).politicaPendiente).toBe(true);
+
+    const aceptada = await call("/politica-de-privacidad/aceptaciones", json({ version: 1 }));
+    expect(aceptada.status).toBe(200);
+    expect(await aceptada.json()).toMatchObject({ version: 1, aceptadaEn: expect.any(String) });
+    expect((await (await call("/me")).json()).politicaPendiente).toBe(false);
+  });
+});

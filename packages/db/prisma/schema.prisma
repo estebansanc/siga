@@ -10,19 +10,20 @@ datasource db {
 // ---------- Better Auth (generado con `better-auth generate`) ----------
 
 model User {
-  id            String         @id
-  name          String
-  email         String
-  emailVerified Boolean        @default(false)
-  image         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  members       Member[]
-  invitations   Invitation[]
-  auditLogs     AuditLog[]
-  bloqueo       BloqueoCuenta?
+  id                   String               @id
+  name                 String
+  email                String
+  emailVerified        Boolean              @default(false)
+  image                String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  sessions             Session[]
+  accounts             Account[]
+  members              Member[]
+  invitations          Invitation[]
+  auditLogs            AuditLog[]
+  bloqueo              BloqueoCuenta?
+  aceptacionesPolitica AceptacionPolitica[]
 
   profile                  UserProfile?
   comisionesDictadas       ComisionDocente[]
@@ -235,6 +236,29 @@ model BloqueoCuenta {
   bloqueadoHasta   DateTime?
 
   @@map("bloqueo_cuenta")
+}
+
+model PoliticaPrivacidad {
+  version     Int      @id
+  titulo      String
+  texto       String
+  publicadaEn DateTime @default(now())
+
+  aceptaciones AceptacionPolitica[]
+
+  @@map("politica_privacidad")
+}
+
+model AceptacionPolitica {
+  id         String             @id @default(cuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version    Int
+  politica   PoliticaPrivacidad @relation(fields: [version], references: [version], onDelete: Restrict)
+  aceptadaEn DateTime           @default(now())
+
+  @@unique([userId, version])
+  @@map("aceptacion_politica")
 }
 
 model AuditLog {
