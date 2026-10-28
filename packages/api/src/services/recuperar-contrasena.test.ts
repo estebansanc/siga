@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { createInstitution, resetDatabase, signUpVerified } from "../test/db";
 
-import { definirContrasena, solicitarRecuperacion } from "./recuperar-contrasena";
+import { definirContrasena, solicitarRecuperacion, verificarEnlace } from "./recuperar-contrasena";
 
 const correo = "ana@example.com";
 const cuenta = { name: "Ana", email: correo, password: "clave1234" };
@@ -142,5 +142,18 @@ describe("definirContrasena", () => {
     await definir(token!, "nueva1234");
 
     expect(await prisma.session.count({ where: { userId: user.id } })).toBe(0);
+  });
+});
+
+describe("verificarEnlace", () => {
+  it("acepta un enlace vigente y rechaza el usado", async () => {
+    await signUpVerified(cuenta);
+    await solicitarRecuperacion(correo);
+    const [token] = await enlaces();
+
+    await expect(verificarEnlace(token!)).resolves.toBeUndefined();
+    await definir(token!, "nueva1234");
+
+    expect(await rejection(verificarEnlace(token!))).toMatchObject({ status: 400 });
   });
 });

@@ -22,7 +22,7 @@ import { Spinner } from "@repo/ui/components/spinner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { useDefinirContrasena } from "@/hooks/use-recuperar-contrasena";
+import { useDefinirContrasena, useEnlaceVigente } from "@/hooks/use-recuperar-contrasena";
 import { RequestError } from "@/lib/api-client";
 import { formValue } from "@/lib/form-data";
 
@@ -48,6 +48,7 @@ export function DefinirContrasenaForm() {
   const router = useRouter();
   const token = useSearchParams().get("token") ?? "";
   const definir = useDefinirContrasena();
+  const enlace = useEnlaceVigente(token);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [invalidLink, setInvalidLink] = useState(false);
 
@@ -70,11 +71,13 @@ export function DefinirContrasenaForm() {
     }
     setErrors({});
     definir.mutate(parsed.data, {
-      onSuccess: async () => {
+      onSuccess: () => {
         // Las sesiones de la cuenta ya se cerraron en la API; sin limpiar la cookie de este
         // dispositivo el proxy mandaría /login al inicio.
-        await authClient.signOut().catch(() => undefined);
-        router.push("/login?contrasena=actualizada");
+        void authClient
+          .signOut()
+          .catch(() => undefined)
+          .then(() => router.push("/login?contrasena=actualizada"));
       },
       onError: (error) => {
         if (error instanceof RequestError && error.status === 400) setInvalidLink(true);
@@ -83,7 +86,8 @@ export function DefinirContrasenaForm() {
     });
   };
 
-  if (!token || invalidLink) return <EnlaceVencido />;
+  if (!token || invalidLink || enlace.isError) return <EnlaceVencido />;
+  if (enlace.isPending) return null;
 
   return (
     <Card>

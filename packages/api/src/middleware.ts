@@ -8,14 +8,22 @@ import { apiEnv } from "./env";
 import { ApiError, forbidden } from "./errors";
 import { consumeRateLimit } from "./services/rate-limit";
 
-const publicPaths = ["/openapi.json", "/docs", "/preferencias/baja-correo",
+const publicPaths = [
+  "/openapi.json",
+  "/docs",
+  "/preferencias/baja-correo",
   "/cuenta/recuperar-contrasena",
   "/cuenta/definir-contrasena",
 ];
 
 export const requireSession = createMiddleware<ApiEnv>(async (c, next) => {
   const path = c.req.path.replace(/^\/api\/v1/, "");
-  if (publicPaths.includes(path) || path.startsWith("/cron/")) return next();
+  if (
+    publicPaths.includes(path) ||
+    path.startsWith("/cron/") ||
+    path.startsWith("/cuenta/definir-contrasena/")
+  )
+    return next();
 
   const { auth, setCookies } = await measure("session", () => readAuthContext(c.req.raw.headers));
   if (!auth) throw new ApiError(401, "UNAUTHORIZED", "Iniciá sesión para continuar");

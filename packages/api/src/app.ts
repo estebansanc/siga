@@ -12,8 +12,8 @@ import { asistenciaRoutes } from "./routes/asistencias";
 import { aulaRoutes } from "./routes/aulas";
 import { avisoRoutes } from "./routes/avisos";
 import { claseRoutes } from "./routes/clases";
-import { cuentaRoutes } from "./routes/cuenta";
 import { cronRoutes } from "./routes/cron";
+import { cuentaRoutes } from "./routes/cuenta";
 import {
   carreraRoutes,
   comisionRoutes,

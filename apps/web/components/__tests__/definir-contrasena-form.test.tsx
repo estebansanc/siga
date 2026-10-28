@@ -6,8 +6,9 @@ import { DefinirContrasenaForm } from "@/components/auth/definir-contrasena-form
 import { RequestError } from "@/lib/api-client";
 import { renderWithProviders } from "@/test/render";
 
-const { definir, signOut, pushMock, state } = vi.hoisted(() => ({
+const { definir, enlace, signOut, pushMock, state } = vi.hoisted(() => ({
   definir: vi.fn(),
+  enlace: { state: { isError: false, isPending: false } },
   signOut: vi.fn(),
   pushMock: vi.fn(),
   state: { search: "token=tok-1" },
@@ -20,6 +21,7 @@ vi.mock("@/hooks/use-recuperar-contrasena", () => ({
       definir(input).then(options.onSuccess, options.onError),
     isPending: false,
   }),
+  useEnlaceVigente: () => enlace.state,
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock, refresh: vi.fn() }),
@@ -35,6 +37,7 @@ const submit = async (contrasena: string, confirmacion: string) => {
 beforeEach(() => {
   vi.clearAllMocks();
   state.search = "token=tok-1";
+  enlace.state = { isError: false, isPending: false };
   definir.mockResolvedValue({ ok: true });
   signOut.mockResolvedValue(undefined);
 });
@@ -83,6 +86,12 @@ describe("DefinirContrasenaForm", () => {
     expect(await screen.findByText("El enlace venció o ya fue usado.")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Pedir otro enlace" }));
     expect(pushMock).toHaveBeenCalledWith("/recuperar-contrasena");
+  });
+
+  it("al abrir un enlace usado o vencido avisa sin pedir la contraseña", () => {
+    enlace.state = { isError: true, isPending: false };
+    renderWithProviders(<DefinirContrasenaForm />);
+    expect(screen.getByText("El enlace venció o ya fue usado.")).toBeInTheDocument();
   });
 
   it("sin token muestra el enlace vencido", () => {

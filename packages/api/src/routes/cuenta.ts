@@ -1,4 +1,4 @@
-import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { definirContrasenaSchema, recuperarContrasenaSchema } from "@repo/domain";
 
 import type { ApiEnv } from "../context";
@@ -57,6 +57,21 @@ export const cuentaRoutes = new OpenAPIHono<ApiEnv>()
     }),
     async (c) => {
       await recuperarContrasena.definirContrasena(c.req.valid("json"));
+      return c.json({ ok: true as const }, 200);
+    },
+  )
+  .openapi(
+    createRoute({
+      method: "get",
+      path: "/definir-contrasena/{token}",
+      tags,
+      summary: "Comprobar que el enlace para definir la contraseña sigue vigente",
+      description: "Público. 400 si el enlace venció, ya se usó o no es válido.",
+      request: { params: z.object({ token: z.string().min(1) }) },
+      responses: { 200: jsonResponse(okSchema, "Enlace vigente"), ...commonErrors },
+    }),
+    async (c) => {
+      await recuperarContrasena.verificarEnlace(c.req.valid("param").token);
       return c.json({ ok: true as const }, 200);
     },
   );

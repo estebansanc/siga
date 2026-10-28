@@ -62,3 +62,12 @@ export const definirContrasena = async ({ token, contrasena }: DefinirContrasena
     throw error;
   }
 };
+
+// Deja mostrar el error al abrir el enlace, sin esperar a que se envíe la contraseña.
+export const verificarEnlace = async (token: string, now = new Date()) => {
+  const verification = await prisma.verification.findFirst({
+    where: { identifier: `reset-password:${token}`, expiresAt: { gt: now } },
+    select: { id: true },
+  });
+  if (!verification) throw badRequest(mensajeEnlaceVencido);
+};
