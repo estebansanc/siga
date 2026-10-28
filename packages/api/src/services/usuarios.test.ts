@@ -124,16 +124,28 @@ describe("alta de usuarios", () => {
   });
 
   it("si no se puede encolar el enlace el alta no persiste y responde 503", async () => {
-    const pedido = vi
-      .spyOn(auth.api, "requestPasswordReset")
-      .mockRejectedValueOnce(new Error("sin correo"));
+    const encolado = vi
+      .spyOn(prisma.emailOutbox, "create")
+      .mockRejectedValueOnce(new Error("sin base"));
     const error = await rejection(crearUsuario(bedel(), alta));
-    pedido.mockRestore();
+    encolado.mockRestore();
 
     expect(error).toMatchObject({ status: 503 });
     expect(await prisma.user.count({ where: { email: alta.correo } })).toBe(0);
     expect(await prisma.userProfile.count({ where: { dni: alta.dni } })).toBe(0);
     expect((await crearUsuario(bedel(), alta)).estado).toBe("PENDIENTE");
+  });
+
+  it("si no se puede encolar el reenvío responde 503 y la cuenta sigue pendiente", async () => {
+    const usuario = await crearUsuario(bedel(), alta);
+    const encolado = vi
+      .spyOn(prisma.emailOutbox, "create")
+      .mockRejectedValueOnce(new Error("sin base"));
+    const error = await rejection(reenviarActivacion(bedel(), usuario.id));
+    encolado.mockRestore();
+
+    expect(error).toMatchObject({ status: 503 });
+    expect(await prisma.user.count({ where: { id: usuario.id } })).toBe(1);
   });
 });
 

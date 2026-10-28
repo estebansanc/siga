@@ -142,7 +142,13 @@ const enviarEnlaceDeActivacion = async (userId: string, correo: string) => {
   await prisma.verification.deleteMany({
     where: { identifier: { startsWith: "reset-password:" }, value: userId },
   });
+  const encoladosAntes = await prisma.emailOutbox.count({ where: { to: correo } });
   await auth.api.requestPasswordReset({ body: { email: correo, redirectTo: "/activar-cuenta" } });
+  // Better Auth atrapa el error del envío y solo lo registra: la única señal es la fila encolada.
+  const encoladosDespues = await prisma.emailOutbox.count({ where: { to: correo } });
+  if (encoladosDespues === encoladosAntes) {
+    throw unavailable("No pudimos enviar el enlace de activación: reintentá en un rato");
+  }
 };
 
 export const crearUsuario = async (auth: AuthContext, input: CrearUsuario): Promise<UsuarioDto> => {
@@ -173,10 +179,10 @@ export const crearUsuario = async (auth: AuthContext, input: CrearUsuario): Prom
     },
   });
   // Sin enlace la cuenta no sirve y reintentar daría 409: si no se encola, el alta no persiste.
-  await enviarEnlaceDeActivacion(userId, input.correo).catch(async () => {
+  await enviarEnlaceDeActivacion(userId, input.correo).catch(async (error: unknown) => {
     await prisma.verification.deleteMany({ where: { value: userId } });
     await prisma.user.delete({ where: { id: userId } });
-    throw unavailable("No pudimos enviar el enlace de activación: reintentá el alta en un rato");
+    throw error;
   });
   await prisma.auditLog.create({
     data: {
