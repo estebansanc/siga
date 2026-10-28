@@ -23,7 +23,7 @@ const institution = { id: "utn-frt", name: institutionName, slug: institutionSlu
 
 type SeedUser = { id: string; name: string; email: string; perfil: Perfil; dni: string };
 
-// demo@example.com es el usuario de QA de staging (`.claude/flow.json`).
+// demo, docente, estudiante y autoridad son los usuarios de QA de staging (`.claude/flow.json`).
 const users: SeedUser[] = [
   {
     id: "demo-user",

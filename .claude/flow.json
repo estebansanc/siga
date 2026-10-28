@@ -46,6 +46,28 @@
     "audience": "el usuario",
     "qaUser": "demo@example.com",
     "qaPassword": "demo1234",
+    "qaUsers": [
+      {
+        "perfil": "Bedel",
+        "email": "demo@example.com",
+        "password": "demo1234"
+      },
+      {
+        "perfil": "Docente",
+        "email": "docente@example.com",
+        "password": "demo1234"
+      },
+      {
+        "perfil": "Estudiante",
+        "email": "estudiante@example.com",
+        "password": "demo1234"
+      },
+      {
+        "perfil": "Autoridad",
+        "email": "autoridad@example.com",
+        "password": "demo1234"
+      }
+    ],
     "routes": ["/", "/clases", "/novedades", "/estado-institucional", "/preferencias"],
     "releaseNotesPlace": "Configuración → \"?\""
   },
