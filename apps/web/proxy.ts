@@ -28,6 +28,7 @@ const protectedRoutes = [
   "/usuarios",
   "/datos-academicos",
   "/historico",
+  "/politica-de-privacidad",
 ];
 
 const startsWithAny = (pathname: string, routes: string[]) =>

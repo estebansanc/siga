@@ -1,5 +1,7 @@
+import { verificarCorreo } from "./support/db";
 import {
   expect,
+  newUser,
   expectNoHorizontalPageScroll,
   loginViaUi,
   seededUsers,
@@ -167,6 +169,20 @@ test.describe("Móvil", () => {
     await page.goto("/usuarios");
     await expect(page.getByRole("heading", { name: "Usuarios" })).toBeVisible();
     await expect(page.getByText("Rosa Benítez").first()).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
+  });
+
+  test("la política de privacidad deja las acciones a la vista y no scrollea a lo ancho", async ({
+    page,
+    request,
+  }) => {
+    const user = newUser();
+    await request.post("/api/auth/sign-up/email", { data: user });
+    verificarCorreo(user.email);
+    await loginViaUi(page, user);
+    await expect(page).toHaveURL(/\/politica-de-privacidad/);
+    await expect(page.getByRole("button", { name: "Aceptar y continuar" })).toBeInViewport();
+    await expect(page.getByRole("button", { name: "Cerrar sesión" })).toBeInViewport();
     await expectNoHorizontalPageScroll(page);
   });
 });

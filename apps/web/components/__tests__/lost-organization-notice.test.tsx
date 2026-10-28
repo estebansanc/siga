@@ -33,6 +33,7 @@ const meOf = (lostOrganization: MeDto["lostOrganization"]): MeDto => ({
   role: "owner",
   perfil: "BEDEL",
   organizations: [ownOrganization],
+  politicaPendiente: false,
   lostOrganization,
 });
 
