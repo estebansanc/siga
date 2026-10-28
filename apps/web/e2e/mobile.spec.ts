@@ -7,6 +7,22 @@ import {
 } from "./support/fixtures";
 
 test.describe("Móvil", () => {
+  test("la recuperación de contraseña se ofrece en /login y sus pantallas no scrollean a lo ancho", async ({
+    page,
+  }) => {
+    await page.goto("/login");
+    await expect(page.getByRole("link", { name: "¿Olvidaste tu contraseña?" })).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
+
+    await page.goto("/recuperar-contrasena");
+    await expect(page.getByRole("button", { name: "Enviar enlace" })).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
+
+    await page.goto("/definir-contrasena?token=cualquiera");
+    await expect(page.getByText("El enlace venció o ya fue usado.")).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
+  });
+
   test("el inicio abre con el menú hamburguesa y la tipografía es Google Sans, igual que en desktop", async ({
     authenticatedPage: page,
     isMobile,

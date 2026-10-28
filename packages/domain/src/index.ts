@@ -4,6 +4,7 @@ export * from "./avisos";
 export * from "./clases";
 export * from "./datos-academicos";
 export * from "./common";
+export * from "./contrasena";
 export * from "./enums";
 export * from "./estado-institucional";
 export * from "./historico";

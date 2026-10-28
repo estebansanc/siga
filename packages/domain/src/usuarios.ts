@@ -14,14 +14,6 @@ export const correoSchema = z
   .toLowerCase()
   .pipe(z.email("Ingresá un correo válido"));
 
-export const mensajeContrasena = "Usá 8 caracteres o más, con letras y números";
-
-export const contrasenaSchema = z
-  .string()
-  .min(8, mensajeContrasena)
-  .regex(/[A-Za-z]/, mensajeContrasena)
-  .regex(/\d/, mensajeContrasena);
-
 const nombreSchema = z.string().trim().min(1, "Ingresá apellido y nombre").max(120);
 const legajoSchema = optionalText(20);
 const comisionIdsSchema = z.array(idSchema).max(30, "Hasta 30 comisiones");

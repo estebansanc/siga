@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { definirContrasenaSchema, primerErrorContrasena } from "./recuperar-contrasena";
+import { primerErrorContrasena } from "./contrasena";
+import { definirContrasenaSchema } from "./recuperar-contrasena";
 
 describe("primerErrorContrasena", () => {
   it("informa la primera regla incumplida: largo, letra, número", () => {

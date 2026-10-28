@@ -54,4 +54,23 @@ describe("RecuperarContrasenaForm", () => {
       await screen.findByText("Demasiados intentos. Esperá un momento y volvé a probar."),
     ).toBeInTheDocument();
   });
+
+  it("un límite posterior reemplaza el mensaje de pedido enviado", async () => {
+    solicitar.mockResolvedValueOnce({ ok: true });
+    solicitar.mockRejectedValueOnce(
+      new RequestError(
+        429,
+        "RATE_LIMITED",
+        "Demasiados intentos. Esperá un momento y volvé a probar.",
+      ),
+    );
+    renderWithProviders(<RecuperarContrasenaForm />);
+    await submit();
+    await screen.findByText("Si el correo está registrado, recibirás un enlace.");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar enlace" }));
+    await screen.findByText("Demasiados intentos. Esperá un momento y volvé a probar.");
+    expect(
+      screen.queryByText("Si el correo está registrado, recibirás un enlace."),
+    ).not.toBeInTheDocument();
+  });
 });

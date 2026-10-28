@@ -22,6 +22,8 @@ const passwordPaths: Record<string, "password" | "newPassword"> = {
   "/reset-password": "newPassword",
 };
 
+const requestResetPaths = new Set(["/request-password-reset", "/forget-password"]);
+
 export const deactivatedAccountMessage = "Tu cuenta está desactivada";
 
 const invitationExpiresInSeconds = 7 * 24 * 60 * 60;
@@ -138,6 +140,12 @@ export const auth = betterAuth({
     // Better Auth exige un handler async aunque la validación no espere nada.
     // eslint-disable-next-line @typescript-eslint/require-await
     before: createAuthMiddleware(async (ctx) => {
+      // El pedido de recuperación pasa por la API de SiGA (límites, cuentas desactivadas, 60
+      // minutos): por HTTP directo se omitiría todo eso. `auth.api.*` desde el servidor no
+      // trae `request`.
+      if (ctx.request && requestResetPaths.has(ctx.path)) {
+        throw new APIError("NOT_FOUND", { message: "Not found" });
+      }
       const field = passwordPaths[ctx.path];
       if (!field) return;
       const password = (ctx.body as Record<string, unknown> | undefined)?.[field];

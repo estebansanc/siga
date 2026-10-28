@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { contrasenaSchema } from "./contrasena";
 import {
   actualizarUsuarioSchema,
-  contrasenaSchema,
   correoEnDominiosPermitidos,
   crearUsuarioSchema,
   edicionUsuarioFormSchema,

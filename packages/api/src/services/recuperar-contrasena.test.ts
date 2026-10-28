@@ -157,3 +157,20 @@ describe("verificarEnlace", () => {
     expect(await rejection(verificarEnlace(token!))).toMatchObject({ status: 400 });
   });
 });
+
+describe("endpoint HTTP de Better Auth", () => {
+  it("el pedido directo de recuperación no existe: solo lo hace el servicio", async () => {
+    await signUpVerified(cuenta);
+
+    const response = await auth.handler(
+      new Request("http://localhost:3000/api/auth/request-password-reset", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: "http://localhost:3000" },
+        body: JSON.stringify({ email: correo }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(await correosDeRecuperacion()).toHaveLength(0);
+  });
+});

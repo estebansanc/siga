@@ -27,6 +27,7 @@ export function RecuperarContrasenaForm() {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const correo = formValue(new FormData(event.currentTarget), "email");
+    setSent(false);
     solicitar.mutate({ correo }, { onSuccess: () => setSent(true) });
   };
 
