@@ -25,7 +25,6 @@ import {
 import { estadoInstitucionalRoutes } from "./routes/estado-institucional";
 import { historicoRoutes } from "./routes/historico";
 import { incidenciaRoutes } from "./routes/incidencias";
-import { invitationRoutes } from "./routes/invitations";
 import { meRoutes } from "./routes/me";
 import { memberRoutes } from "./routes/members";
 import { novedadRoutes } from "./routes/novedades";
@@ -33,6 +32,7 @@ import { preferenciaRoutes } from "./routes/preferencias";
 import { qrRoutes } from "./routes/qr";
 import { settingsRoutes } from "./routes/settings";
 import { solicitudAulaRoutes } from "./routes/solicitudes-aula";
+import { usuarioRoutes } from "./routes/usuarios";
 import { measureRequest } from "./timing";
 
 export const apiBasePath = "/api/v1";
@@ -49,7 +49,7 @@ const toErrorResponse = (
   error: unknown,
 ): { status: ContentfulStatusCode; body: ReturnType<typeof errorBody> } => {
   if (error instanceof ApiError)
-    return { status: error.status, body: errorBody(error.code, error.message) };
+    return { status: error.status, body: errorBody(error.code, error.message, error.issues) };
   if (error instanceof UnauthorizedError) {
     return { status: 401, body: errorBody("UNAUTHORIZED", error.message) };
   }
@@ -96,7 +96,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
       title: "SiGA API",
       version: "1.0.0",
       description:
-        "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante, datos académicos base, aulas, solicitudes de aula, asistencia docente e incidencias de infraestructura. Autenticación por cookie (web) o bearer token (móvil).",
+        "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante, datos académicos base, aulas, solicitudes de aula, asistencia docente, incidencias de infraestructura y gestión de usuarios y perfiles. Autenticación por cookie (web) o bearer token (móvil).",
     },
     security: [{ bearerAuth: [] }, { cookieAuth: [] }],
   });
@@ -110,7 +110,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
     .route("/me", meRoutes)
     .route("/settings", settingsRoutes)
     .route("/members", memberRoutes)
-    .route("/invitations", invitationRoutes)
+    .route("/usuarios", usuarioRoutes)
     .route("/estado-institucional", estadoInstitucionalRoutes)
     .route("/clases", claseRoutes)
     .route("/novedades", novedadRoutes)

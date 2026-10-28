@@ -56,10 +56,10 @@ describe("openapi.json", () => {
     ]);
   });
 
-  it("exige el email al invitar", () => {
+  it("exige nombre, DNI, correo y perfil al dar de alta un usuario", () => {
     const schema =
-      openapi.paths["/api/v1/invitations"]?.post?.requestBody.content["application/json"].schema;
-    expect(schema?.required).toEqual(["email"]);
+      openapi.paths["/api/v1/usuarios"]?.post?.requestBody.content["application/json"].schema;
+    expect(schema?.required).toEqual(["nombre", "dni", "correo", "perfil"]);
   });
 
   it("deja el nombre opcional en los ajustes", () => {

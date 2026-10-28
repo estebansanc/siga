@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  activationEmail,
   avisoEmail,
   escapeHtml,
   formatEmailDate,
-  invitationEmail,
   novedadEmail,
   solicitudAulaEmail,
+  verificationEmail,
 } from "./templates";
 
 describe("plantillas de email", () => {
@@ -20,19 +21,21 @@ describe("plantillas de email", () => {
     );
   });
 
-  it("la invitación a la organización lleva quién invita, el link y el vencimiento", () => {
-    const email = invitationEmail({
-      organizationName: "Organización & Cía",
-      inviterName: "Ana <Demo>",
-      url: "https://app.test/invitacion/inv-1",
-      expiresAt: new Date("2026-09-22T13:00:00.000Z"),
+  it("el correo de activación saluda por el nombre, escapado, y lleva el enlace de 24 horas", () => {
+    const email = activationEmail({
+      nombre: "Ana <Demo>",
+      url: "https://app.test/activar-cuenta?token=t",
     });
-    expect(email.subject).toBe("Ana <Demo> te invitó a Organización & Cía");
-    expect(email.html).toContain("Ana &lt;Demo&gt; te invitó");
-    expect(email.html).toContain("Organización &amp; Cía");
-    expect(email.html).toContain("El link vence el 22 de septiembre.");
-    expect(email.html).toContain('href="https://app.test/invitacion/inv-1"');
-    expect(email.html).toContain("Ver la invitación");
+    expect(email.subject).toBe("Activá tu cuenta de SiGA");
+    expect(email.html).toContain("Hola Ana &lt;Demo&gt;");
+    expect(email.html).toContain('href="https://app.test/activar-cuenta?token=t"');
+    expect(email.html).toContain("El enlace vale 24 horas");
+  });
+
+  it("el correo de verificación lleva el enlace", () => {
+    const email = verificationEmail({ nombre: "Ana", url: "https://app.test/verify" });
+    expect(email.subject).toBe("Verificá tu correo en SiGA");
+    expect(email.html).toContain('href="https://app.test/verify"');
   });
 });
 

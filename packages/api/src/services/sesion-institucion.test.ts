@@ -9,6 +9,7 @@ import {
   createUserWithPerfil,
   resetDatabase,
   signInAs,
+  signUpVerified,
   type TestOrganization,
 } from "../test/db";
 
@@ -73,7 +74,7 @@ describe("sesión fija en la institución", () => {
 
   it("al iniciar sesión, la sesión nueva queda en la institución aunque haya otra más antigua", async () => {
     const credentials = { email: "dos@alu.frt.utn.edu.ar", password: "dos-12345" };
-    await auth.api.signUpEmail({ body: { name: "Dos Orgs", ...credentials } });
+    await signUpVerified({ name: "Dos Orgs", ...credentials });
     const user = await prisma.user.findUniqueOrThrow({ where: { email: credentials.email } });
     await prisma.organization.create({
       data: {

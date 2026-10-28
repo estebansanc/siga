@@ -5,6 +5,7 @@ export class ApiError extends Error {
     readonly status: ContentfulStatusCode,
     readonly code: string,
     message: string,
+    readonly issues?: { path: string; message: string }[],
   ) {
     super(message);
     this.name = "ApiError";
@@ -19,3 +20,7 @@ export const badRequest = (message: string) => new ApiError(400, "BAD_REQUEST", 
 export const forbidden = (message: string) => new ApiError(403, "FORBIDDEN", message);
 export const unavailable = (message: string) => new ApiError(503, "UNAVAILABLE", message);
 export const tooManyRequests = (message: string) => new ApiError(429, "RATE_LIMITED", message);
+
+// Un dato repetido se marca en el campo que lo causa.
+export const fieldConflict = (path: string, message: string) =>
+  new ApiError(409, "CONFLICT", message, [{ path, message }]);

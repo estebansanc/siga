@@ -12,7 +12,6 @@ import {
   createUserWithPerfil,
   resetDatabase,
   seedAcademicFixture,
-  signInAs,
   type TestOrganization,
 } from "../test/db";
 
@@ -78,18 +77,21 @@ describe("contrato HTTP", () => {
   });
 
   it("valida el body con 422 y detalle por campo", async () => {
-    const response = await call("/invitations", json({ email: "no-es-un-email" }));
+    const response = await call(
+      "/usuarios",
+      json({ nombre: "Ana", dni: "30123456", correo: "no-es-un-email", perfil: "DOCENTE" }),
+    );
     expect(response.status).toBe(422);
     const body = (await response.json()) as { error: { code: string; issues: { path: string }[] } };
     expect(body.error.code).toBe("VALIDATION");
-    expect(body.error.issues.map((issue) => issue.path)).toEqual(["email"]);
+    expect(body.error.issues.map((issue) => issue.path)).toEqual(["correo"]);
   });
 
   it("responde 404 con el formato de error en una ruta inexistente de un recurso", async () => {
-    const response = await call("/invitations/no-existe");
+    const response = await call("/usuarios/no-existe", json({ nombre: "Ana" }, "PATCH"));
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({
-      error: { code: "NOT_FOUND", message: "Invitación no encontrado" },
+      error: { code: "NOT_FOUND", message: "Usuario no encontrado" },
     });
   });
 
@@ -138,55 +140,6 @@ describe("contrato HTTP", () => {
     });
   });
 
-  it("invita, lista, reenvía y cancela; la invitación se lee y solo la acepta el invitado", async () => {
-    const headers = Object.fromEntries(await signInAs(organization.userId));
-    const invited = await call("/invitations", { ...json({ email: "Ana@x.com" }), headers });
-    expect(invited.status).toBe(201);
-    const invitation = (await invited.json()) as { id: string; email: string };
-    expect(invitation.email).toBe("ana@x.com");
-    expect((await call("/invitations", { ...json({ email: "ana@x.com" }), headers })).status).toBe(
-      409,
-    );
-
-    const listed = await call("/invitations");
-    expect(listed.status).toBe(200);
-    expect(await listed.json()).toEqual([expect.objectContaining({ id: invitation.id })]);
-
-    const resent = await call(`/invitations/${invitation.id}/resend`, { method: "POST", headers });
-    expect(resent.status).toBe(200);
-    expect(await resent.json()).toMatchObject({ id: invitation.id });
-    expect(await prisma.emailOutbox.count()).toBe(2);
-
-    const read = await call(`/invitations/${invitation.id}`, { headers });
-    expect(read.status).toBe(200);
-    expect(await read.json()).toMatchObject({ status: "PENDING", forCurrentUser: false });
-    const accepted = await call(`/invitations/${invitation.id}/accept`, {
-      method: "POST",
-      headers,
-    });
-    expect(accepted.status).toBe(403);
-    expect(await accepted.json()).toEqual({
-      error: {
-        code: "YOU_ARE_NOT_THE_RECIPIENT_OF_THE_INVITATION",
-        message: "Esta invitación es para otro email",
-      },
-    });
-
-    const cancelled = await call(`/invitations/${invitation.id}/cancel`, {
-      method: "POST",
-      headers,
-    });
-    expect(cancelled.status).toBe(200);
-    expect(await cancelled.json()).toEqual({ ok: true });
-    expect(await (await call("/invitations")).json()).toEqual([]);
-    expect(
-      (await call(`/invitations/${invitation.id}/resend`, { method: "POST", headers })).status,
-    ).toBe(404);
-    expect(await (await call(`/invitations/${invitation.id}`, { headers })).json()).toMatchObject({
-      status: "CANCELED",
-    });
-  });
-
   it("miembros: lista con el Administrador primero y quita a un miembro, nunca al Administrador", async () => {
     const member = await createMember(organization);
     const listed = (await (await call("/members")).json()) as { userId: string; role: string }[];
@@ -208,8 +161,9 @@ describe("contrato HTTP", () => {
       "/api/v1/me",
       "/api/v1/settings",
       "/api/v1/members",
-      "/api/v1/invitations",
-      "/api/v1/invitations/{id}/accept",
+      "/api/v1/usuarios",
+      "/api/v1/usuarios/dominios",
+      "/api/v1/usuarios/{id}/desactivar",
       "/api/v1/cron/daily",
       "/api/v1/estado-institucional",
       "/api/v1/estado-institucional/historial",
@@ -267,10 +221,6 @@ describe("rol de miembro", () => {
 
     asLinked();
     expect((await call("/settings", json({ name: "Otra" }, "PATCH"))).status).toBe(403);
-    asLinked();
-    expect((await call("/invitations", json({ email: "x@x.com" }))).status).toBe(403);
-    asLinked();
-    expect((await call("/invitations")).status).toBe(403);
     asLinked();
     expect((await call(`/members/${organization.userId}`, { method: "DELETE" })).status).toBe(403);
 

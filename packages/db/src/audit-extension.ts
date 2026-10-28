@@ -4,6 +4,7 @@ import { Prisma, type PrismaClient } from "./generated/client";
 // Entidades de negocio cuyos cambios quedan en `audit_log`. El producto agrega acá las suyas.
 const auditedModels = [
   "Organization",
+  "User",
   "Member",
   "Invitation",
   "UserProfile",

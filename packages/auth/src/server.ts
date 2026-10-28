@@ -1,11 +1,28 @@
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { prisma, runWithAuditActor } from "@repo/db";
-import { institutionSlug, pickMembership } from "@repo/domain";
+import {
+  contrasenaSchema,
+  correoEnDominiosPermitidos,
+  institutionSlug,
+  mensajeContrasena,
+  mensajeDominiosRechazados,
+  pickMembership,
+} from "@repo/domain";
 import { betterAuth } from "better-auth";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { bearer, organization } from "better-auth/plugins";
 
+import { authEmails } from "./emails";
 import { authEnv } from "./env";
+
+const linkLifetimeSeconds = 24 * 60 * 60;
+const passwordPaths: Record<string, "password" | "newPassword"> = {
+  "/sign-up/email": "password",
+  "/reset-password": "newPassword",
+};
+
+export const deactivatedAccountMessage = "Tu cuenta está desactivada";
 
 const invitationExpiresInSeconds = 7 * 24 * 60 * 60;
 
@@ -53,11 +70,70 @@ const resolveActiveOrganizationId = async (userId: string) => {
   return preferred ? preferred.organizationId : joinInstitutionAsStudent(userId);
 };
 
+const appOrigin = new URL(authEnv.baseUrl).origin;
+
+const rejectDisallowedDomain = async (email: string) => {
+  const settings = await prisma.organizationSettings.findFirst({
+    where: { organization: { slug: institutionSlug } },
+    select: { dominiosPermitidos: true },
+  });
+  const dominios = settings?.dominiosPermitidos ?? [];
+  if (!correoEnDominiosPermitidos(email, dominios)) {
+    throw new APIError("BAD_REQUEST", { message: mensajeDominiosRechazados(dominios) });
+  }
+};
+
+const rejectDeactivatedAccount = async (userId: string) => {
+  const profile = await prisma.userProfile.findUnique({
+    where: { userId },
+    select: { activo: true },
+  });
+  if (profile && !profile.activo) {
+    throw new APIError("FORBIDDEN", {
+      message: deactivatedAccountMessage,
+      code: "ACCOUNT_DEACTIVATED",
+    });
+  }
+};
+
 export const auth = betterAuth({
   baseURL: authEnv.baseUrl,
   secret: authEnv.secret,
   database: prismaAdapter(prisma, { provider: "postgresql" }),
-  emailAndPassword: { enabled: true, minPasswordLength: 8 },
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,
+    requireEmailVerification: true,
+    resetPasswordTokenExpiresIn: linkLifetimeSeconds,
+    // El enlace de activación llega al correo de la cuenta: abrirlo lo verifica.
+    sendResetPassword: ({ user, token }) =>
+      authEmails().sendActivation({
+        to: user.email,
+        name: user.name,
+        url: `${appOrigin}/activar-cuenta?token=${token}`,
+      }),
+    onPasswordReset: async ({ user }) => {
+      await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
+    },
+  },
+  emailVerification: {
+    expiresIn: linkLifetimeSeconds,
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: ({ user, url }) =>
+      authEmails().sendVerification({ to: user.email, name: user.name, url }),
+  },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      const field = passwordPaths[ctx.path];
+      if (!field) return;
+      const password = (ctx.body as Record<string, unknown> | undefined)?.[field];
+      if (!contrasenaSchema.safeParse(password).success) {
+        throw new APIError("BAD_REQUEST", { message: mensajeContrasena });
+      }
+    }),
+  },
   // La sesión viaja firmada en una cookie 5 minutos: la mayoría de las requests no tocan la
   // base para autenticar; una sesión revocada deja de servir al vencer la caché.
   session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
@@ -73,14 +149,26 @@ export const auth = betterAuth({
     accountLinking: { enabled: true, trustedProviders: ["google"] },
   },
   databaseHooks: {
+    // El autorregistro y Google respetan los dominios permitidos (RF-10); las altas de
+    // Bedel y Autoridad no pasan por acá.
+    user: {
+      create: {
+        before: async (user) => {
+          await rejectDisallowedDomain(user.email);
+        },
+      },
+    },
     session: {
       create: {
-        before: async (session) => ({
-          data: {
-            ...session,
-            activeOrganizationId: await resolveActiveOrganizationId(session.userId),
-          },
-        }),
+        before: async (session) => {
+          await rejectDeactivatedAccount(session.userId);
+          return {
+            data: {
+              ...session,
+              activeOrganizationId: await resolveActiveOrganizationId(session.userId),
+            },
+          };
+        },
       },
     },
   },

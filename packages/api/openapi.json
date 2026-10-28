@@ -3,7 +3,7 @@
   "info": {
     "title": "SiGA API",
     "version": "1.0.0",
-    "description": "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante, datos académicos base, aulas, solicitudes de aula, asistencia docente e incidencias de infraestructura. Autenticación por cookie (web) o bearer token (móvil)."
+    "description": "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante, datos académicos base, aulas, solicitudes de aula, asistencia docente, incidencias de infraestructura y gestión de usuarios y perfiles. Autenticación por cookie (web) o bearer token (móvil)."
   },
   "security": [
     {
@@ -311,73 +311,100 @@
           "ok"
         ]
       },
-      "PendingInvitation": {
+      "Usuario": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string"
           },
-          "email": {
+          "nombre": {
             "type": "string"
           },
-          "expiresAt": {
+          "correo": {
             "type": "string"
           },
-          "createdAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "email",
-          "expiresAt",
-          "createdAt"
-        ]
-      },
-      "Invitation": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "organizationName": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "ACCEPTED",
-              "REJECTED",
-              "CANCELED",
-              "EXPIRED"
+          "dni": {
+            "type": [
+              "string",
+              "null"
             ]
           },
-          "expiresAt": {
-            "type": "string"
+          "legajo": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
-          "forCurrentUser": {
+          "perfil": {
+            "type": "string",
+            "enum": [
+              "ESTUDIANTE",
+              "DOCENTE",
+              "BEDEL",
+              "AUTORIDAD"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVO",
+              "PENDIENTE",
+              "DESACTIVADO"
+            ]
+          },
+          "comisiones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "codigo": {
+                  "type": "string"
+                },
+                "materia": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "codigo",
+                "materia"
+              ]
+            },
+            "description": "Comisiones que dicta (solo Docente)"
+          },
+          "esPropio": {
             "type": "boolean",
-            "description": "La invitación es para el email de la sesión"
+            "description": "Es la cuenta de quien consulta"
           }
         },
         "required": [
           "id",
-          "organizationName",
-          "status",
-          "expiresAt",
-          "forCurrentUser"
+          "nombre",
+          "correo",
+          "dni",
+          "legajo",
+          "perfil",
+          "estado",
+          "comisiones",
+          "esPropio"
         ]
       },
-      "InvitationResolution": {
+      "DominiosPermitidos": {
         "type": "object",
         "properties": {
-          "organizationName": {
-            "type": "string"
+          "dominios": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Dominios aceptados en el autorregistro; vacía acepta cualquiera"
           }
         },
         "required": [
-          "organizationName"
+          "dominios"
         ]
       },
       "EstadoInstitucional": {
@@ -3050,21 +3077,47 @@
         }
       }
     },
-    "/api/v1/invitations": {
+    "/api/v1/usuarios": {
       "get": {
         "tags": [
-          "Invitaciones"
+          "Usuarios"
         ],
-        "summary": "Listar las invitaciones vigentes de la organización activa",
+        "summary": "Usuarios de la institución",
+        "description": "Solo Bedel y Autoridad. Se busca por nombre, correo o DNI (`q`) y se filtra por `perfil`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ESTUDIANTE",
+                "DOCENTE",
+                "BEDEL",
+                "AUTORIDAD"
+              ]
+            },
+            "required": false,
+            "name": "perfil",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Invitaciones vigentes",
+            "description": "Usuarios",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/PendingInvitation"
+                    "$ref": "#/components/schemas/Usuario"
                   }
                 }
               }
@@ -3134,10 +3187,10 @@
       },
       "post": {
         "tags": [
-          "Invitaciones"
+          "Usuarios"
         ],
-        "summary": "Invitar a alguien por email a la organización activa",
-        "description": "Crea una invitación de miembro que vence a los 7 días y encola el email con el link. 409 si ya es miembro o ya tiene una invitación vigente.",
+        "summary": "Dar de alta un usuario",
+        "description": "Solo Bedel y Autoridad. Queda Pendiente de activación y recibe un correo con un enlace de 24 horas para definir su contraseña. 409 con el campo `dni` o `correo` si ya existe.",
         "requestBody": {
           "required": true,
           "content": {
@@ -3145,12 +3198,49 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "email": {
+                  "nombre": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "dni": {
+                    "type": "string",
+                    "pattern": "^\\d{7,8}$"
+                  },
+                  "correo": {
                     "type": "string"
+                  },
+                  "legajo": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 20
+                  },
+                  "perfil": {
+                    "type": "string",
+                    "enum": [
+                      "ESTUDIANTE",
+                      "DOCENTE",
+                      "BEDEL",
+                      "AUTORIDAD"
+                    ]
+                  },
+                  "comisionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 30,
+                    "default": []
                   }
                 },
                 "required": [
-                  "email"
+                  "nombre",
+                  "dni",
+                  "correo",
+                  "perfil"
                 ]
               }
             }
@@ -3158,11 +3248,11 @@
         },
         "responses": {
           "201": {
-            "description": "Invitación creada",
+            "description": "Creado",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PendingInvitation"
+                  "$ref": "#/components/schemas/Usuario"
                 }
               }
             }
@@ -3230,211 +3320,121 @@
         }
       }
     },
-    "/api/v1/invitations/{id}/resend": {
-      "post": {
-        "tags": [
-          "Invitaciones"
-        ],
-        "summary": "Reenviar el email de una invitación vigente",
-        "description": "Mismo link y mismo vencimiento; el primero sigue sirviendo.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Invitación reenviada",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PendingInvitation"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Solicitud inválida",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No autenticado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Sin permiso",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No encontrado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Error de validación",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/invitations/{id}/cancel": {
-      "post": {
-        "tags": [
-          "Invitaciones"
-        ],
-        "summary": "Cancelar una invitación vigente",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Invitación cancelada",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Ok"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Solicitud inválida",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No autenticado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Sin permiso",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No encontrado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Error de validación",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/invitations/{id}": {
+    "/api/v1/usuarios/dominios": {
       "get": {
         "tags": [
-          "Invitaciones"
+          "Usuarios"
         ],
-        "summary": "Leer una invitación recibida",
-        "description": "La organización que invita y el estado: `PENDING` (se puede aceptar o rechazar), `EXPIRED`, `CANCELED`, `ACCEPTED` o `REJECTED`. `forCurrentUser` dice si es para el email de la sesión.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
+        "summary": "Dominios de correo permitidos para registrarse",
+        "description": "Solo Bedel y Autoridad. Lista vacía: cualquier dominio.",
         "responses": {
           "200": {
-            "description": "Invitación",
+            "description": "Dominios",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Invitation"
+                  "$ref": "#/components/schemas/DominiosPermitidos"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Reemplazar los dominios de correo permitidos",
+        "description": "Solo Bedel y Autoridad. Rige para el autorregistro y Google, no para las altas.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dominios": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "required": [
+                  "dominios"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dominios",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DominiosPermitidos"
                 }
               }
             }
@@ -3502,13 +3502,13 @@
         }
       }
     },
-    "/api/v1/invitations/{id}/accept": {
-      "post": {
+    "/api/v1/usuarios/{id}": {
+      "patch": {
         "tags": [
-          "Invitaciones"
+          "Usuarios"
         ],
-        "summary": "Aceptar la invitación",
-        "description": "Solo con el email invitado y mientras esté vigente (si no, 400 o 403). Hace miembro a la cuenta y deja activa la organización propia.",
+        "summary": "Editar un usuario",
+        "description": "Solo Bedel y Autoridad. El correo no se edita. Nadie cambia su propio perfil (422). Pasar `comisionIds` reemplaza las comisiones del Docente.",
         "parameters": [
           {
             "schema": {
@@ -3519,13 +3519,58 @@
             "in": "path"
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "dni": {
+                    "type": "string",
+                    "pattern": "^\\d{7,8}$"
+                  },
+                  "legajo": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 20
+                  },
+                  "perfil": {
+                    "type": "string",
+                    "enum": [
+                      "ESTUDIANTE",
+                      "DOCENTE",
+                      "BEDEL",
+                      "AUTORIDAD"
+                    ]
+                  },
+                  "comisionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 30
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Invitación aceptada",
+            "description": "Actualizado",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InvitationResolution"
+                  "$ref": "#/components/schemas/Usuario"
                 }
               }
             }
@@ -3593,13 +3638,13 @@
         }
       }
     },
-    "/api/v1/invitations/{id}/reject": {
+    "/api/v1/usuarios/{id}/desactivar": {
       "post": {
         "tags": [
-          "Invitaciones"
+          "Usuarios"
         ],
-        "summary": "Rechazar la invitación",
-        "description": "Solo con el email invitado y mientras esté vigente (si no, 400 o 403).",
+        "summary": "Desactivar un usuario",
+        "description": "Solo Bedel y Autoridad. Baja lógica: pierde el acceso y se conserva su historia. Nadie se desactiva a sí mismo (422).",
         "parameters": [
           {
             "schema": {
@@ -3612,11 +3657,193 @@
         ],
         "responses": {
           "200": {
-            "description": "Invitación rechazada",
+            "description": "Desactivado",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InvitationResolution"
+                  "$ref": "#/components/schemas/Usuario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/usuarios/{id}/reactivar": {
+      "post": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Reactivar un usuario",
+        "description": "Solo Bedel y Autoridad.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reactivado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usuario"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/usuarios/{id}/reenviar-activacion": {
+      "post": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Reenviar el enlace de activación",
+        "description": "Solo Bedel y Autoridad. Invalida el enlace anterior. 409 si la cuenta ya está activada.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reenviado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usuario"
                 }
               }
             }

@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
-    "./services": "./src/services/index.ts"
+    "./services": "./src/services/index.ts",
+    "./auth-emails": "./src/auth-emails.ts"
   },
   "scripts": {
     "lint": "eslint .",

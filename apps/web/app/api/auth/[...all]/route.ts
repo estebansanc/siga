@@ -1,3 +1,4 @@
+import "@repo/api/auth-emails";
 import { auth } from "@repo/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 

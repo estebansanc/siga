@@ -1,7 +1,8 @@
-import type { AuthContext } from "@repo/auth";
+import { auth, type AuthContext } from "@repo/auth";
 import { prisma, runWithAuditActor, toDateColumn, type AuditActor } from "@repo/db";
 import { institutionSlug, type Perfil } from "@repo/domain";
 
+import "../auth-emails";
 import { findOwnedOrganizationId } from "../services/memberships";
 
 const tables = [
@@ -285,3 +286,15 @@ export const createClase = (
       aulaId,
     },
   });
+
+// El autorregistro por email exige verificar el correo: se registra, se marca verificado y se
+// inicia sesión de verdad (con los hooks de `packages/auth`). Devuelve la cookie de la sesión.
+export const signUpVerified = async (body: { name: string; email: string; password: string }) => {
+  await auth.api.signUpEmail({ body });
+  await prisma.user.update({ where: { email: body.email }, data: { emailVerified: true } });
+  const { headers } = await auth.api.signInEmail({
+    body: { email: body.email, password: body.password },
+    returnHeaders: true,
+  });
+  return new Headers({ cookie: headers.get("set-cookie") ?? "" });
+};

@@ -1,6 +1,8 @@
-export { auth, type Auth, type Session } from "./server";
+export { auth, deactivatedAccountMessage, type Auth, type Session } from "./server";
+export { configureAuthEmails, type AuthEmailInput, type AuthEmails } from "./emails";
 export {
   getAuthContext,
+  isAccountDeactivated,
   readAuthContext,
   requireAuthContext,
   roleOf,

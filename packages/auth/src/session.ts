@@ -122,3 +122,15 @@ export const requireAuthContext = async (headers: Headers): Promise<AuthContext>
   if (!context) throw new UnauthorizedError();
   return context;
 };
+
+// Una sesión válida cuya cuenta desactivó un administrador: la web la distingue de "sin
+// sesión" para decir "Tu cuenta está desactivada" en vez de pedir login en bucle.
+export const isAccountDeactivated = async (headers: Headers): Promise<boolean> => {
+  const session = await auth.api.getSession({ headers });
+  if (!session) return false;
+  const profile = await prisma.userProfile.findUnique({
+    where: { userId: session.user.id },
+    select: { activo: true },
+  });
+  return profile?.activo === false;
+};

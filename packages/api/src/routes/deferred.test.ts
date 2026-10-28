@@ -1,5 +1,4 @@
 import type * as Auth from "@repo/auth";
-import { prisma } from "@repo/db";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiBasePath, createApi } from "../app";
@@ -34,24 +33,6 @@ describe("respuestas rápidas: lo diferido corre después de responder", () => {
     expect(header).toMatch(/^total;dur=\d+(\.\d)?/);
     expect(header).toContain("session;dur=");
     expect(header).toContain("db;dur=");
-  });
-
-  it("invitar responde al instante y el email se encola después, con el actor de auditoría", async () => {
-    const response = await call("/invitations", {
-      method: "POST",
-      body: JSON.stringify({ email: "ana@example.com" }),
-    });
-    expect(response.status).toBe(201);
-    expect(await prisma.emailOutbox.count()).toBe(0);
-    expect(deferred.pending()).toBe(1);
-
-    await deferred.flush();
-    expect(await prisma.emailOutbox.findMany()).toEqual([
-      expect.objectContaining({
-        to: "ana@example.com",
-        organizationId: organization.organizationId,
-      }),
-    ]);
   });
 });
 

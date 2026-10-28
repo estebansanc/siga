@@ -50,12 +50,7 @@ ${footer}
 </body>
 </html>`;
 
-export type InvitationEmailContext = {
-  organizationName: string;
-  inviterName: string;
-  url: string;
-  expiresAt: Date;
-};
+export type CuentaEmailContext = { nombre: string; url: string };
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
   timeZone: apiEnv.timeZone,
@@ -65,20 +60,33 @@ const dateFormatter = new Intl.DateTimeFormat("es-AR", {
 
 export const formatEmailDate = (date: Date) => dateFormatter.format(date);
 
-export const invitationEmail = (context: InvitationEmailContext): EmailContent => ({
-  subject: `${context.inviterName} te invitó a ${context.organizationName}`,
+const linkLifetimeNote = "El enlace vale 24 horas. Si no lo pediste, ignorá este correo.";
+
+export const activationEmail = (context: CuentaEmailContext): EmailContent => ({
+  subject: "Activá tu cuenta de SiGA",
   html: emailLayout(
-    `Invitación a ${context.organizationName}`,
+    "Activá tu cuenta",
     [
-      "Hola,",
-      `${escapeHtml(context.inviterName)} te invitó a unirte a la organización ${escapeHtml(context.organizationName)}. Iniciá sesión o registrate con este mismo email y aceptá la invitación.`,
-      `El link vence el ${escapeHtml(formatEmailDate(context.expiresAt))}.`,
+      `Hola ${escapeHtml(context.nombre)},`,
+      "La institución te creó una cuenta en SiGA. Definí tu contraseña para ingresar.",
+      linkLifetimeNote,
     ],
+    [],
+    { label: "Definir mi contraseña", url: context.url },
+  ),
+});
+
+export const verificationEmail = (context: CuentaEmailContext): EmailContent => ({
+  subject: "Verificá tu correo en SiGA",
+  html: emailLayout(
+    "Verificá tu correo",
     [
-      ["Organización", context.organizationName],
-      ["Te invita", context.inviterName],
+      `Hola ${escapeHtml(context.nombre)},`,
+      "Confirmá que este correo es tuyo para terminar de crear tu cuenta en SiGA.",
+      linkLifetimeNote,
     ],
-    { label: "Ver la invitación", url: context.url },
+    [],
+    { label: "Verificar mi correo", url: context.url },
   ),
 });
 

@@ -10,8 +10,8 @@ import {
   estadoIncidenciaSchema,
   estadoInstitucionSchema,
   estadoNovedadSchema,
+  estadoUsuarioSchema,
   gravedadIncidenciaSchema,
-  invitationStatusSchema,
   metodoAsistenciaSchema,
   memberRoleSchema,
   modalidadSchema,
@@ -106,34 +106,6 @@ export const memberSchema = z
   })
   .openapi("Member");
 export type MemberDto = z.infer<typeof memberSchema>;
-
-export const pendingInvitationSchema = z
-  .object({
-    id: z.string(),
-    email: z.string(),
-    expiresAt: z.string(),
-    createdAt: z.string(),
-  })
-  .openapi("PendingInvitation");
-export type PendingInvitationDto = z.infer<typeof pendingInvitationSchema>;
-
-export const invitationSchema = z
-  .object({
-    id: z.string(),
-    organizationName: z.string(),
-    status: invitationStatusSchema,
-    expiresAt: z.string(),
-    forCurrentUser: z
-      .boolean()
-      .openapi({ description: "La invitación es para el email de la sesión" }),
-  })
-  .openapi("Invitation");
-export type InvitationDto = z.infer<typeof invitationSchema>;
-
-export const invitationResolutionSchema = z
-  .object({ organizationName: z.string() })
-  .openapi("InvitationResolution");
-export type InvitationResolutionDto = z.infer<typeof invitationResolutionSchema>;
 
 export const cronResultSchema = z
   .object({ processed: z.number(), failed: z.number() })
@@ -681,3 +653,31 @@ export type DiaNoLaborableGestionDto = z.infer<typeof diaNoLaborableGestionSchem
 
 export const docenteAsignableSchema = usuarioResumenSchema.openapi("DocenteAsignable");
 export type DocenteAsignableDto = z.infer<typeof docenteAsignableSchema>;
+
+// ---------- Usuarios y perfiles (RF-10) ----------
+
+export const usuarioSchema = z
+  .object({
+    id: z.string(),
+    nombre: z.string(),
+    correo: z.string(),
+    dni: z.string().nullable(),
+    legajo: z.string().nullable(),
+    perfil: perfilSchema,
+    estado: estadoUsuarioSchema,
+    comisiones: z
+      .array(z.object({ id: z.string(), codigo: z.string(), materia: z.string() }))
+      .openapi({ description: "Comisiones que dicta (solo Docente)" }),
+    esPropio: z.boolean().openapi({ description: "Es la cuenta de quien consulta" }),
+  })
+  .openapi("Usuario");
+export type UsuarioDto = z.infer<typeof usuarioSchema>;
+
+export const dominiosPermitidosDtoSchema = z
+  .object({
+    dominios: z.array(z.string()).openapi({
+      description: "Dominios aceptados en el autorregistro; vacía acepta cualquiera",
+    }),
+  })
+  .openapi("DominiosPermitidos");
+export type DominiosPermitidosDto = z.infer<typeof dominiosPermitidosDtoSchema>;

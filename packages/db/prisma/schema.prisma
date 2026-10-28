@@ -170,15 +170,17 @@ model Invitation {
 // Preferencias de la organización. El producto agrega acá sus propios campos; el nombre vive
 // en `Organization`.
 model OrganizationSettings {
-  organizationId String       @id
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId     String       @id
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   // Franjas de los turnos {MANANA|TARDE|NOCHE: {inicio, fin}} en "HH:mm" argentino; null usa
   // los valores iniciales del dominio.
-  turnos         Json?
+  turnos             Json?
   // Presencia del docente al registrar por QR {latitud, longitud, radioMetros, redes[]}
   // (CFG-1); null usa la sede y el radio iniciales, con la red institucional vacía.
-  presencia      Json?
-  updatedAt      DateTime     @updatedAt
+  presencia          Json?
+  // Dominios de correo aceptados en el autorregistro (RF-10); vacía acepta cualquiera.
+  dominiosPermitidos String[]     @default([])
+  updatedAt          DateTime     @updatedAt
 
   @@map("organization_settings")
 }
