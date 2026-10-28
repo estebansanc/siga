@@ -1,7 +1,7 @@
 "use client";
 
-import { authClient } from "@repo/auth/client";
 import type { PoliticaPrivacidadDto } from "@repo/api/client";
+import { authClient } from "@repo/auth/client";
 import { fechaArgentina, mensajeVersionDesactualizada, parrafosDeLaPolitica } from "@repo/domain";
 import { Alert, AlertDescription } from "@repo/ui/components/alert";
 import { Button } from "@repo/ui/components/button";
@@ -15,6 +15,7 @@ import {
 } from "@repo/ui/components/card";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Spinner } from "@repo/ui/components/spinner";
+import { cn } from "@repo/ui/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
@@ -25,10 +26,9 @@ import {
   useAceptarPolitica,
   usePoliticaPrivacidad,
 } from "@/hooks/use-politica-privacidad";
-import { formatFechaCorta } from "@/lib/dates";
 import { RequestError } from "@/lib/api-client";
+import { formatFechaCorta } from "@/lib/dates";
 import { queryKeys } from "@/lib/query-keys";
-import { cn } from "@repo/ui/lib/utils";
 
 type Props = {
   initialPolitica: PoliticaPrivacidadDto;
