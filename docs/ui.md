@@ -90,7 +90,7 @@ Reglas que cumple la UI:
 - **Nombres accesibles**: todo botón de solo ícono lleva `aria-label` con su acción, en español.
 - **360 px**: ninguna pantalla scrollea en horizontal.
 
-Cómo se verifica: `apps/web/e2e/accesibilidad.spec.ts` mide con el navegador, sin dependencias, el contraste de cada texto y borde de campo (tema claro y oscuro, una pasada por perfil sobre todas sus pantallas), el tamaño táctil de cada elemento interactivo (proyecto `mobile`, Pixel 7), el foco visible y el orden de Tab, Escape con devolución del foco y el desborde horizontal a 360 px. `components/__tests__/accesibilidad-teclado.test.tsx` cubre el nombre accesible de los botones de ícono y Escape con devolución del foco.
+Cómo se verifica: `apps/web/e2e/accesibilidad.spec.ts` mide con el navegador, sin dependencias, el contraste de cada texto y borde de campo (tema claro y oscuro, una pasada por perfil sobre todas sus pantallas), el tamaño táctil de cada elemento interactivo (proyecto `mobile`, Pixel 7), placeholders, íconos accionables, el foco (3:1) y el orden de Tab, la cámara bloqueada del Docente, Escape con devolución del foco y el desborde horizontal a 360 px. `components/__tests__/accesibilidad-teclado.test.tsx` cubre el nombre accesible de los botones de ícono y Escape con devolución del foco.
 
 ### Hallazgos
 
@@ -98,7 +98,7 @@ Cómo se verifica: `apps/web/e2e/accesibilidad.spec.ts` mide con el navegador, s
 | --- | --- | --- | --- |
 | Todas las pantallas con texto secundario | Todos | Contraste de texto 4,5:1 (tema claro) | `--muted-foreground` pasa de `oklch(0.556)` a `oklch(0.49)`: placeholders y textos secundarios sobre fondos `muted` superan 4,5:1. |
 | Badge Ocupada de Aulas; textos y badges destructivos | Bedel, Docente, Autoridad | Contraste de texto 4,5:1 (3,97:1 medido, tema claro) | `--destructive` claro pasa a `oklch(0.5 0.22 27.325)`. |
-| Formularios de todas las pantallas (login, Mi perfil, Estado institucional, Publicar novedad, Configuración) | Todos | Contraste no textual 3:1 (bordes de campos, 1,2:1 medido) | `--input` pasa a `oklch(0.6 0 0)` en claro y `oklch(1 0 0 / 40%)` en oscuro. |
+| Formularios de todas las pantallas (login, Mi perfil, Estado institucional, Publicar novedad, Configuración) | Todos | Contraste no textual 3:1 (bordes de campos, 1,2:1 medido) | Nuevo token `--field` (`oklch(0.6 0)` en claro, `oklch(1 0 0 / 40%)` en oscuro) para el borde de campos y controles (`border-field`); `--input` queda solo para rellenos, así no se aclaran las superficies `dark:bg-input/30`. |
 | Foco de botones, campos y menús | Todos | Contraste no textual 3:1 (foco) | `--ring` y `--sidebar-ring` claros pasan a `oklch(0.55 0 0)`. |
 | Menú lateral y botones de ícono | Todos | Nombre accesible en el idioma del producto | El botón del menú era "Toggle Sidebar" y el panel móvil "Sidebar": pasan a "Alternar menú lateral" y "Menú lateral". |
 | Botones, links de menú, botón del menú lateral, indicador de Estado institucional | Todos | Zona táctil 44x44 px (en táctil) | `Button` suma `pointer-coarse:min-h-11 min-w-11`; ítems del menú lateral `pointer-coarse:h-11`; los indicadores del encabezado (Estado institucional y Aviso urgente) `pointer-coarse:min-h-11`. |
@@ -108,37 +108,48 @@ Cómo se verifica: `apps/web/e2e/accesibilidad.spec.ts` mide con el navegador, s
 
 ### Matriz de navegadores
 
-Chrome de escritorio y Chrome Android quedan cubiertos por el e2e (en Android, con el emulador de Pixel 7 de Playwright, no con un dispositivo real). Firefox, Safari y Edge no suman minutos de CI: se recorren a mano en staging con el usuario de QA (Bedel y Administrador) y se completa la columna Resultado. Flujos a verificar por perfil: Estudiante guarda comisiones en Preferencias y las ve en Mis clases de hoy; Docente publica una novedad y la ve en Novedades; Bedel registra un estado (visible en el historial) y publica una novedad; Autoridad ve Clases de hoy; Administrador abre el "?" de Configuración.
+Qué está verificado y qué no, sin mezclarlos:
+
+- Chrome de escritorio: lo cubre el e2e `desktop`.
+- Chrome Android: el e2e `mobile` usa el emulador de Pixel 7 de Playwright (no un dispositivo real) y solo corre `mobile.spec.ts` y `accesibilidad.spec.ts`.
+- Firefox, WebKit y Safari iOS: evidencia local con Playwright (Firefox y WebKit de escritorio pasan `flujo-principal.spec.ts` y `settings.spec.ts`; WebKit con perfil iPhone, el Bedel registra un estado y el Docente publica una novedad). Playwright WebKit no es Safari real: no reemplaza el recorrido manual. Edge no se pudo probar.
+- El resto lo completa a mano quien hace la verificación en staging (https://siga-orcin-staging.vercel.app) antes de pasar el cambio a `main`, anotando el resultado en la columna Resultado de esta tabla.
+
+Usuarios de QA por perfil (`.claude/flow.json`, clave `demo1234`): Bedel `demo@example.com` (también Administrador de la institución, ve Configuración), Docente `docente@example.com`, Estudiante `estudiante@example.com`, Autoridad `autoridad@example.com`.
+
+Flujos a recorrer en cada navegador: Estudiante guarda comisiones en Preferencias y las ve en Mis clases de hoy; Docente publica una novedad y la ve en Novedades; Bedel registra un estado (visible en el historial) y publica una novedad; Autoridad ve Clases de hoy; Administrador abre el "?" de Configuración.
+
+Teclado en Safari: en macOS, Tab por defecto salta los links y llega solo a campos y botones; para recorrer links hay que usar Option+Tab (o activar "Pulsar la tecla Tab para resaltar cada elemento" en Ajustes de Safari). No es un defecto de la app.
 
 | Navegador | Dispositivo | Perfil | Resultado |
 | --- | --- | --- | --- |
-| Chrome | Escritorio (dos últimas versiones) | Estudiante | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `desktop` (Chrome)) |
-| Chrome | Escritorio (dos últimas versiones) | Docente | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `desktop` (Chrome)) |
-| Chrome | Escritorio (dos últimas versiones) | Bedel | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `desktop` (Chrome)) |
-| Chrome | Escritorio (dos últimas versiones) | Autoridad | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `desktop` (Chrome)) |
-| Chrome | Escritorio (dos últimas versiones) | Administrador | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `desktop` (Chrome)) |
-| Firefox | Escritorio (dos últimas versiones) | Estudiante | Pendiente: recorrido manual en staging |
-| Firefox | Escritorio (dos últimas versiones) | Docente | Pendiente: recorrido manual en staging |
-| Firefox | Escritorio (dos últimas versiones) | Bedel | Pendiente: recorrido manual en staging |
-| Firefox | Escritorio (dos últimas versiones) | Autoridad | Pendiente: recorrido manual en staging |
-| Firefox | Escritorio (dos últimas versiones) | Administrador | Pendiente: recorrido manual en staging |
-| Safari | Escritorio (dos últimas versiones) | Estudiante | Pendiente: recorrido manual en staging |
-| Safari | Escritorio (dos últimas versiones) | Docente | Pendiente: recorrido manual en staging |
-| Safari | Escritorio (dos últimas versiones) | Bedel | Pendiente: recorrido manual en staging |
-| Safari | Escritorio (dos últimas versiones) | Autoridad | Pendiente: recorrido manual en staging |
-| Safari | Escritorio (dos últimas versiones) | Administrador | Pendiente: recorrido manual en staging |
-| Edge | Escritorio (dos últimas versiones) | Estudiante | Pendiente: recorrido manual en staging |
-| Edge | Escritorio (dos últimas versiones) | Docente | Pendiente: recorrido manual en staging |
-| Edge | Escritorio (dos últimas versiones) | Bedel | Pendiente: recorrido manual en staging |
-| Edge | Escritorio (dos últimas versiones) | Autoridad | Pendiente: recorrido manual en staging |
-| Edge | Escritorio (dos últimas versiones) | Administrador | Pendiente: recorrido manual en staging |
-| Chrome | Android 10+ | Estudiante | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `mobile` (Pixel 7, emulado)) |
-| Chrome | Android 10+ | Docente | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `mobile` (Pixel 7, emulado)) |
-| Chrome | Android 10+ | Bedel | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `mobile` (Pixel 7, emulado)) |
-| Chrome | Android 10+ | Autoridad | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `mobile` (Pixel 7, emulado)) |
-| Chrome | Android 10+ | Administrador | Automático: contraste, teclado, 360 px y flujos del perfil en e2e (Playwright `mobile` (Pixel 7, emulado)) |
-| Safari | iOS 15+ | Estudiante | Pendiente: recorrido manual en staging |
-| Safari | iOS 15+ | Docente | Pendiente: recorrido manual en staging |
-| Safari | iOS 15+ | Bedel | Pendiente: recorrido manual en staging |
-| Safari | iOS 15+ | Autoridad | Pendiente: recorrido manual en staging |
-| Safari | iOS 15+ | Administrador | Pendiente: recorrido manual en staging |
+| Chrome | Escritorio (dos últimas versiones) | Estudiante | Verificado: e2e `desktop` (contraste en ambos temas, teclado, 360 px y el flujo del perfil en `flujo-principal` y `settings`) |
+| Chrome | Escritorio (dos últimas versiones) | Docente | Verificado: e2e `desktop` (contraste en ambos temas, teclado, 360 px y el flujo del perfil en `flujo-principal` y `settings`) |
+| Chrome | Escritorio (dos últimas versiones) | Bedel | Verificado: e2e `desktop` (contraste en ambos temas, teclado, 360 px y el flujo del perfil en `flujo-principal` y `settings`) |
+| Chrome | Escritorio (dos últimas versiones) | Autoridad | Verificado: e2e `desktop` (contraste en ambos temas, teclado, 360 px y el flujo del perfil en `flujo-principal` y `settings`); Autoridad: Clases de hoy en `flujo-principal` |
+| Chrome | Escritorio (dos últimas versiones) | Administrador | Verificado: e2e `desktop` (contraste en ambos temas, teclado, 360 px y el flujo del perfil en `flujo-principal` y `settings`) |
+| Firefox | Escritorio (dos últimas versiones) | Estudiante | Parcial: pasan `flujo-principal` y `settings` en Firefox (corrida local del review); falta el recorrido manual en staging |
+| Firefox | Escritorio (dos últimas versiones) | Docente | Parcial: pasan `flujo-principal` y `settings` en Firefox (corrida local del review); falta el recorrido manual en staging |
+| Firefox | Escritorio (dos últimas versiones) | Bedel | Parcial: pasan `flujo-principal` y `settings` en Firefox (corrida local del review); falta el recorrido manual en staging |
+| Firefox | Escritorio (dos últimas versiones) | Autoridad | Pendiente: recorrido manual en staging (ver pasos) |
+| Firefox | Escritorio (dos últimas versiones) | Administrador | Parcial: pasan `flujo-principal` y `settings` en Firefox (corrida local del review); falta el recorrido manual en staging |
+| Safari | Escritorio (dos últimas versiones) | Estudiante | Parcial: pasan `flujo-principal` y `settings` en WebKit (no es Safari real); falta el recorrido manual en staging |
+| Safari | Escritorio (dos últimas versiones) | Docente | Parcial: pasan `flujo-principal` y `settings` en WebKit (no es Safari real); falta el recorrido manual en staging |
+| Safari | Escritorio (dos últimas versiones) | Bedel | Parcial: pasan `flujo-principal` y `settings` en WebKit (no es Safari real); falta el recorrido manual en staging |
+| Safari | Escritorio (dos últimas versiones) | Autoridad | Pendiente: recorrido manual en staging (ver pasos) |
+| Safari | Escritorio (dos últimas versiones) | Administrador | Parcial: pasan `flujo-principal` y `settings` en WebKit (no es Safari real); falta el recorrido manual en staging |
+| Edge | Escritorio (dos últimas versiones) | Estudiante | Pendiente: Edge no se pudo probar; recorrido manual en staging |
+| Edge | Escritorio (dos últimas versiones) | Docente | Pendiente: Edge no se pudo probar; recorrido manual en staging |
+| Edge | Escritorio (dos últimas versiones) | Bedel | Pendiente: Edge no se pudo probar; recorrido manual en staging |
+| Edge | Escritorio (dos últimas versiones) | Autoridad | Pendiente: Edge no se pudo probar; recorrido manual en staging |
+| Edge | Escritorio (dos últimas versiones) | Administrador | Pendiente: Edge no se pudo probar; recorrido manual en staging |
+| Chrome | Android 10+ | Estudiante | Parcial: e2e `mobile` (Pixel 7 emulado) verifica zonas táctiles, teclado, Escape y 360 px; contraste y flujos del perfil solo corren en `desktop`. Pendiente: recorrido manual en staging (ver pasos) |
+| Chrome | Android 10+ | Docente | Parcial: e2e `mobile` (Pixel 7 emulado) verifica zonas táctiles, teclado, Escape y 360 px; contraste y flujos del perfil solo corren en `desktop`. Pendiente: recorrido manual en staging (ver pasos) |
+| Chrome | Android 10+ | Bedel | Parcial: e2e `mobile` (Pixel 7 emulado) verifica zonas táctiles, teclado, Escape y 360 px; contraste y flujos del perfil solo corren en `desktop`. Pendiente: recorrido manual en staging (ver pasos) |
+| Chrome | Android 10+ | Autoridad | Parcial: e2e `mobile` (Pixel 7 emulado) verifica zonas táctiles, teclado, Escape y 360 px; contraste y flujos del perfil solo corren en `desktop`. Pendiente: recorrido manual en staging (ver pasos) |
+| Chrome | Android 10+ | Administrador | Parcial: e2e `mobile` (Pixel 7 emulado) verifica zonas táctiles, teclado, Escape y 360 px; contraste y flujos del perfil solo corren en `desktop`. Pendiente: recorrido manual en staging (ver pasos) |
+| Safari | iOS 15+ | Estudiante | Pendiente: recorrido manual en staging (ver pasos) |
+| Safari | iOS 15+ | Docente | Parcial: en WebKit con perfil iPhone el Docente publica una novedad; falta el recorrido manual en un iPhone |
+| Safari | iOS 15+ | Bedel | Parcial: en WebKit con perfil iPhone el Bedel registra un estado; falta el recorrido manual en un iPhone |
+| Safari | iOS 15+ | Autoridad | Pendiente: recorrido manual en staging (ver pasos) |
+| Safari | iOS 15+ | Administrador | Pendiente: recorrido manual en staging (ver pasos) |

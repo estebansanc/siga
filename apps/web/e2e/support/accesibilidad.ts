@@ -10,10 +10,7 @@ const describeInPage = `
   };
 `;
 
-// Contraste de texto (4,5:1; 3:1 si es grande) y de bordes de campos (3:1), medido con el navegador.
-export const medirContraste = (page: Page): Promise<Hallazgo[]> =>
-  page.evaluate(`(() => {
-    ${describeInPage}
+const utilidadesDeColor = `
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 1;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
@@ -59,6 +56,13 @@ export const medirContraste = (page: Page): Promise<Hallazgo[]> =>
       const s = getComputedStyle(el);
       return r.width > 1 && r.height > 1 && s.visibility !== "hidden" && s.display !== "none";
     };
+`;
+
+// Contraste de texto (4,5:1; 3:1 si es grande) y de bordes de campos (3:1), medido con el navegador.
+export const medirContraste = (page: Page): Promise<Hallazgo[]> =>
+  page.evaluate(`(() => {
+    ${describeInPage}
+    ${utilidadesDeColor}
     const out = [];
     for (const el of document.body.querySelectorAll("*")) {
       if (!visible(el) || el.closest("[disabled],[aria-disabled=true],[data-disabled],nextjs-portal,[data-sonner-toast]")) continue;
@@ -74,6 +78,17 @@ export const medirContraste = (page: Page): Promise<Hallazgo[]> =>
         const minimo = grande ? 3 : 4.5;
         const r = ratio(color, fondo);
         if (r < minimo) out.push({ selector: describir(el), detalle: "texto " + r.toFixed(2) + ":1 (mínimo " + minimo + ")" });
+      }
+      if (el.matches("input[placeholder], textarea[placeholder]")) {
+        const ph = rgba(getComputedStyle(el, "::placeholder").color);
+        const fondoCampo = over(rgba(s.backgroundColor), fondo);
+        const r = ratio(over(ph, fondoCampo), fondoCampo);
+        if (r < 4.5) out.push({ selector: describir(el), detalle: "placeholder " + r.toFixed(2) + ":1 (mínimo 4.5)" });
+      }
+      if (el.matches("button, a[href]") && el.querySelector("svg") && !el.textContent.trim() && !el.disabled) {
+        const icono = over(rgba(s.color), fondo);
+        const r = ratio(icono, fondo);
+        if (r < 3) out.push({ selector: describir(el), detalle: "ícono accionable " + r.toFixed(2) + ":1 (mínimo 3)" });
       }
       if (["INPUT", "TEXTAREA"].includes(el.tagName) && !["checkbox", "radio", "hidden"].includes(el.type)) {
         const borde = over(rgba(s.borderTopColor), fondo);
@@ -126,3 +141,27 @@ export const foco = (page: Page): Promise<string> =>
     const el = document.activeElement;
     return el ? (el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 40) : "";
   });
+
+// Indicador de foco (borde o contorno sólido) de cada elemento enfocable con Tab: 3:1 contra su fondo.
+export const medirFoco = async (page: Page, pasos = 25): Promise<Hallazgo[]> => {
+  const hallazgos: Hallazgo[] = [];
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  for (let paso = 0; paso < pasos; paso++) {
+    await page.keyboard.press("Tab");
+    hallazgos.push(
+      ...((await page.evaluate(`(() => {
+        ${describeInPage}
+        ${utilidadesDeColor}
+        const el = document.activeElement;
+        if (!el || el === document.body) return [];
+        const s = getComputedStyle(el);
+        const fondo = fondoDe(el.parentElement ?? el);
+        const contorno = s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0 ? rgba(s.outlineColor) : null;
+        const borde = parseFloat(s.borderTopWidth) > 0 ? rgba(s.borderTopColor) : null;
+        const mejor = Math.max(...[contorno, borde].filter(Boolean).map((c) => ratio(over(c, fondo), fondo)), 0);
+        return mejor < 3 ? [{ selector: describir(el), detalle: "foco " + mejor.toFixed(2) + ":1 (mínimo 3)" }] : [];
+      })()`)) as Hallazgo[]),
+    );
+  }
+  return hallazgos;
+};

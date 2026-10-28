@@ -6,6 +6,7 @@ import {
   foco,
   focoVisible,
   medirContraste,
+  medirFoco,
   medirZonasTactiles,
 } from "./support/accesibilidad";
 import {
@@ -202,21 +203,71 @@ test.describe("Teclado", () => {
   });
 });
 
+test.describe("Contraste de estados y foco", () => {
+  for (const tema of ["light", "dark"] as const) {
+    test(`la cámara bloqueada del Docente cumple el contraste AA en tema ${tema === "light" ? "claro" : "oscuro"}`, async ({
+      browser,
+      isMobile,
+    }) => {
+      test.skip(isMobile, "El contraste se mide una sola vez, en escritorio");
+      const context = await browser.newContext({ colorScheme: tema, locale: "es-AR" });
+      await context.addInitScript(() => {
+        Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+          configurable: true,
+          value: () => Promise.reject(new DOMException("denegado", "NotAllowedError")),
+        });
+      });
+      const docente = await context.newPage();
+      await loginViaUi(docente, seededUsers.docente);
+      await docente.goto("/asistencia");
+      await expect(docente.getByText("La cámara está bloqueada")).toBeVisible({ timeout: 30_000 });
+      expect((await medirContraste(docente)).map((h) => `${h.selector} ${h.detalle}`)).toEqual([]);
+      await context.close();
+    });
+
+    test(`el foco del teclado tiene al menos 3:1 en tema ${tema === "light" ? "claro" : "oscuro"}`, async ({
+      page,
+      isMobile,
+    }) => {
+      test.skip(isMobile, "El contraste se mide una sola vez, en escritorio");
+      await page.emulateMedia({ colorScheme: tema });
+      await loginViaUi(page, seededUsers.bedel);
+      const hallazgos: string[] = [];
+      for (const ruta of ["/estado-institucional", "/novedades", "/configuracion", "/mi-perfil"]) {
+        await page.goto(ruta);
+        await esperarPantalla(page);
+        for (const h of await medirFoco(page)) hallazgos.push(`${ruta} ${h.selector} ${h.detalle}`);
+      }
+      expect(hallazgos).toEqual([]);
+    });
+  }
+});
+
 test.describe("360 px", () => {
   test.use({ viewport: { width: 360, height: 740 } });
 
-  test("login, 404, Mi perfil y los menús de Bedel y Administrador no scrollean a lo ancho", async ({
-    page,
-  }) => {
-    await page.goto("/login");
-    await expectNoHorizontalPageScroll(page);
-    await page.goto("/ruta-que-no-existe");
-    await expectNoHorizontalPageScroll(page);
-    await loginViaUi(page, seededUsers.bedel);
-    for (const ruta of ["/mi-perfil", "/configuracion", "/novedades", "/estado-institucional"]) {
+  test("login, registro, recuperación y 404 no scrollean a lo ancho", async ({ page }) => {
+    for (const ruta of ["/login", "/registro", "/recuperar-contrasena", "/ruta-que-no-existe"]) {
       await page.goto(ruta);
-      await esperarPantalla(page);
       await expectNoHorizontalPageScroll(page);
     }
   });
+
+  for (const [perfil, { user }] of Object.entries(perfiles)) {
+    test(`${perfil}: todas las pantallas de su menú no scrollean a lo ancho`, async ({ page }) => {
+      await loginViaUi(page, user);
+      const rutas = [
+        ...rutasComunes,
+        ...rutasPorPerfil[perfil as keyof typeof perfiles],
+        "/estado-institucional",
+        "/aulas/solicitar",
+        "/aulas/mis-solicitudes",
+      ];
+      for (const ruta of rutas) {
+        await page.goto(ruta);
+        await esperarPantalla(page);
+        await expectNoHorizontalPageScroll(page);
+      }
+    });
+  }
 });
