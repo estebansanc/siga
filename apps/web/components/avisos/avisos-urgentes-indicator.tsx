@@ -19,7 +19,7 @@ export function AvisosUrgentesIndicator() {
       ? `Aviso urgente: ${urgentes[0].titulo}`
       : `${urgentes.length} avisos urgentes`;
   return (
-    <Link href="/avisos" className="flex min-w-0 hover:opacity-80" aria-label={texto}>
+    <Link href="/avisos" className="flex min-w-0 items-center hover:opacity-80 pointer-coarse:min-h-11" aria-label={texto}>
       <Badge variant="outline" className={cn("max-w-48 gap-1.5 sm:max-w-80", tonoClassNames.rojo)}>
         <TriangleAlertIcon aria-hidden="true" />
         <span className="truncate">{texto}</span>
