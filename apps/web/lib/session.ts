@@ -1,4 +1,4 @@
-import { getAuthContext } from "@repo/auth";
+import { getAuthContext, isAccountDeactivated } from "@repo/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
@@ -8,6 +8,7 @@ const readSession = cache(async () => getAuthContext(await headers()));
 
 export const requireSession = async () => {
   const context = await readSession();
-  if (!context) redirect("/login");
-  return context;
+  if (context) return context;
+  if (await isAccountDeactivated(await headers())) redirect("/cuenta-desactivada");
+  redirect("/login");
 };

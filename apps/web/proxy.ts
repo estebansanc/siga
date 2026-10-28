@@ -13,7 +13,6 @@ const protectedRoutes = [
   "/",
   "/configuracion",
   "/mi-perfil",
-  "/invitacion",
   "/clases",
   "/novedades",
   "/estado-institucional",

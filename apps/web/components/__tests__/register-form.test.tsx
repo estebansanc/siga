@@ -39,22 +39,28 @@ beforeEach(() => {
 });
 
 describe("RegisterForm", () => {
-  it("sin destino va al inicio y el link a Ingresar no lleva next", async () => {
+  it("tras registrarse pide revisar el correo, sin entrar todavía", async () => {
     renderWithProviders(<RegisterForm />);
     expect(screen.getByRole("link", { name: "Ingresá" })).toHaveAttribute("href", "/login");
     await fillAndSubmit();
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/"));
+    expect(await screen.findByText("Revisá tu correo")).toBeInTheDocument();
+    expect(screen.getByText(/nueva@example.com/)).toBeInTheDocument();
+    expect(signUpEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "nueva@example.com", callbackURL: "/" }),
+    );
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
-  it("respeta next al registrarse y en el link a Ingresar", async () => {
-    state.search = "next=%2Finvitacion%2Finv-1";
+  it("el enlace de verificación vuelve al destino pedido y el link a Ingresar lo conserva", async () => {
+    state.search = "next=%2Fclases";
     renderWithProviders(<RegisterForm />);
     expect(screen.getByRole("link", { name: "Ingresá" })).toHaveAttribute(
       "href",
-      "/login?next=%2Finvitacion%2Finv-1",
+      "/login?next=%2Fclases",
     );
     await fillAndSubmit();
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/invitacion/inv-1"));
+    await screen.findByText("Revisá tu correo");
+    expect(signUpEmail).toHaveBeenCalledWith(expect.objectContaining({ callbackURL: "/clases" }));
   });
 
   it("Continuar con Google vuelve al destino pedido", async () => {
@@ -78,6 +84,20 @@ describe("RegisterForm", () => {
     state.search = "next=https%3A%2F%2Fmalo.com";
     renderWithProviders(<RegisterForm />);
     await fillAndSubmit();
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/"));
+    await screen.findByText("Revisá tu correo");
+    expect(signUpEmail).toHaveBeenCalledWith(expect.objectContaining({ callbackURL: "/" }));
+  });
+
+  it("un correo de otro dominio muestra el rechazo con los dominios aceptados", async () => {
+    signUpEmail.mockResolvedValue({
+      error: { message: "Solo se aceptan correos de frt.utn.edu.ar" },
+    });
+    renderWithProviders(<RegisterForm />);
+    await fillAndSubmit();
+    const { toast } = await import("sonner");
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith("Solo se aceptan correos de frt.utn.edu.ar"),
+    );
+    expect(screen.queryByText("Revisá tu correo")).not.toBeInTheDocument();
   });
 });

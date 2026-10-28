@@ -110,7 +110,7 @@ export const auth = betterAuth({
       authEmails().sendActivation({
         to: user.email,
         name: user.name,
-        url: `${appOrigin}/activar-cuenta?token=${token}`,
+        url: `${appOrigin}/activar-cuenta?token=${token}&email=${encodeURIComponent(user.email)}`,
       }),
     onPasswordReset: async ({ user }) => {
       await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
@@ -119,7 +119,6 @@ export const auth = betterAuth({
   emailVerification: {
     expiresIn: linkLifetimeSeconds,
     sendOnSignUp: true,
-    sendOnSignIn: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: ({ user, url }) =>
       authEmails().sendVerification({ to: user.email, name: user.name, url }),

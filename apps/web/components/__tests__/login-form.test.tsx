@@ -5,15 +5,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LoginForm } from "@/components/auth/login-form";
 import { renderWithProviders } from "@/test/render";
 
-const { signInEmail, signInWithGoogle, pushMock, state } = vi.hoisted(() => ({
-  signInEmail: vi.fn(),
-  signInWithGoogle: vi.fn(),
-  pushMock: vi.fn(),
-  state: { search: "" },
-}));
+const { signInEmail, sendVerificationEmail, signInWithGoogle, pushMock, state } = vi.hoisted(
+  () => ({
+    signInEmail: vi.fn(),
+    sendVerificationEmail: vi.fn(),
+    signInWithGoogle: vi.fn(),
+    pushMock: vi.fn(),
+    state: { search: "" },
+  }),
+);
 
 vi.mock("@repo/auth/client", () => ({
-  authClient: { signIn: { email: signInEmail } },
+  authClient: { signIn: { email: signInEmail }, sendVerificationEmail },
   signInWithGoogle,
 }));
 
@@ -79,5 +82,32 @@ describe("LoginForm", () => {
     expect(google).toBeDisabled();
     expect(within(google).getByRole("status")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Ingresar/ })).toBeDisabled();
+  });
+
+  it("sin verificar el correo lo indica y permite reenviar el enlace", async () => {
+    signInEmail.mockResolvedValue({ error: { code: "EMAIL_NOT_VERIFIED" } });
+    sendVerificationEmail.mockResolvedValue({ error: null });
+    renderWithProviders(<LoginForm />);
+    await fillAndSubmit();
+    expect(await screen.findByText("Verificá tu correo para ingresar")).toBeInTheDocument();
+    expect(pushMock).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Reenviar enlace" }));
+    await waitFor(() =>
+      expect(sendVerificationEmail).toHaveBeenCalledWith({
+        email: "demo@example.com",
+        callbackURL: "/",
+      }),
+    );
+  });
+
+  it("una cuenta desactivada ve el motivo en vez de credenciales incorrectas", async () => {
+    signInEmail.mockResolvedValue({
+      error: { code: "ACCOUNT_DEACTIVATED", message: "Tu cuenta está desactivada" },
+    });
+    renderWithProviders(<LoginForm />);
+    await fillAndSubmit();
+    const { toast } = await import("sonner");
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Tu cuenta está desactivada"));
   });
 });

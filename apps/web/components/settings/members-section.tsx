@@ -1,12 +1,11 @@
 "use client";
 
-import type { MemberDto, PendingInvitationDto } from "@repo/api/client";
+import type { MemberDto } from "@repo/api/client";
 import { memberRoleLabels } from "@repo/domain";
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -27,17 +26,14 @@ import {
   ItemTitle,
 } from "@repo/ui/components/item";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { MoreHorizontalIcon, PlusIcon } from "lucide-react";
+import { MoreHorizontalIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { useCancelInvitation, useInvitations, useResendInvitation } from "@/hooks/use-invitation";
 import { useMembers, useRemoveMember } from "@/hooks/use-members";
-import { formatDate } from "@/lib/dates";
 import { showRequestError } from "@/lib/form-errors";
 
 import { ConfirmDialog } from "./confirm-dialog";
-import { InviteMemberDialog } from "./invite-member-dialog";
 
 function MemberItem({
   member,
@@ -82,68 +78,10 @@ function MemberItem({
   );
 }
 
-function InvitationItem({
-  invitation,
-  onCancel,
-}: {
-  invitation: PendingInvitationDto;
-  onCancel: () => void;
-}) {
-  const resend = useResendInvitation();
-
-  const resendInvitation = async () => {
-    try {
-      await resend.mutateAsync(invitation.id);
-      toast.success("Invitación reenviada");
-    } catch (error) {
-      showRequestError(error);
-    }
-  };
-
-  return (
-    <Item variant="outline">
-      <ItemContent>
-        <ItemTitle>
-          {invitation.email}
-          <Badge variant="outline">Invitación enviada</Badge>
-        </ItemTitle>
-        <ItemDescription>Vence el {formatDate(invitation.expiresAt)}</ItemDescription>
-      </ItemContent>
-      <ItemActions>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`Acciones de la invitación a ${invitation.email}`}
-              />
-            }
-          >
-            <MoreHorizontalIcon />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem disabled={resend.isPending} onClick={resendInvitation}>
-              Reenviar invitación
-            </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onClick={onCancel}>
-              Cancelar invitación
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </ItemActions>
-    </Item>
-  );
-}
-
 export function MembersSection({ currentUserId }: { currentUserId: string }) {
   const members = useMembers();
-  const invitations = useInvitations();
   const removeMember = useRemoveMember();
-  const cancelInvitation = useCancelInvitation();
-  const [inviting, setInviting] = useState(false);
   const [removing, setRemoving] = useState<MemberDto | null>(null);
-  const [canceling, setCanceling] = useState<PendingInvitationDto | null>(null);
 
   const confirmRemove = async () => {
     if (!removing) return;
@@ -156,34 +94,16 @@ export function MembersSection({ currentUserId }: { currentUserId: string }) {
     }
   };
 
-  const confirmCancel = async () => {
-    if (!canceling) return;
-    try {
-      await cancelInvitation.mutateAsync(canceling.id);
-      toast.success("Invitación cancelada");
-      setCanceling(null);
-    } catch (error) {
-      showRequestError(error);
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Miembros</CardTitle>
         <CardDescription>
-          Quiénes pueden entrar a esta organización. Invitá por email a alguien con cuenta o sin
-          ella.
+          Quiénes pueden entrar a esta organización. Las cuentas nuevas se dan de alta en Usuarios.
         </CardDescription>
-        <CardAction>
-          <Button size="sm" onClick={() => setInviting(true)}>
-            <PlusIcon />
-            Invitar
-          </Button>
-        </CardAction>
       </CardHeader>
       <CardContent>
-        {members.isPending || invitations.isPending ? (
+        {members.isPending ? (
           <div className="flex flex-col gap-2">
             {Array.from({ length: 2 }).map((_, index) => (
               <Skeleton key={index} className="h-14 w-full" />
@@ -199,38 +119,19 @@ export function MembersSection({ currentUserId }: { currentUserId: string }) {
                 onRemove={() => setRemoving(member)}
               />
             ))}
-            {invitations.data?.map((invitation) => (
-              <InvitationItem
-                key={invitation.id}
-                invitation={invitation}
-                onCancel={() => setCanceling(invitation)}
-              />
-            ))}
           </ItemGroup>
         )}
       </CardContent>
 
-      <InviteMemberDialog open={inviting} onOpenChange={setInviting} />
       {removing ? (
         <ConfirmDialog
           open
           onOpenChange={(open) => !open && setRemoving(null)}
           title={`¿Quitar a ${removing.name}?`}
-          description="Deja de ver esta organización. Su cuenta y su organización propia siguen igual; podés invitarlo de nuevo cuando quieras."
+          description="Deja de ver esta organización. Su cuenta y su organización propia siguen igual; puede volver a entrar cuando quieras."
           confirmLabel="Quitar"
           pending={removeMember.isPending}
           onConfirm={confirmRemove}
-        />
-      ) : null}
-      {canceling ? (
-        <ConfirmDialog
-          open
-          onOpenChange={(open) => !open && setCanceling(null)}
-          title={`¿Cancelar la invitación a ${canceling.email}?`}
-          description="El link que le llegó por email deja de servir. Podés invitarlo de nuevo cuando quieras."
-          confirmLabel="Cancelar invitación"
-          pending={cancelInvitation.isPending}
-          onConfirm={confirmCancel}
         />
       ) : null}
     </Card>

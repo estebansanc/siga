@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient, signInWithGoogle } from "@repo/auth/client";
+import { Alert, AlertDescription, AlertTitle } from "@repo/ui/components/alert";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
@@ -33,23 +34,41 @@ export function LoginForm() {
   const next = nextRouteOf(useSearchParams());
   const [pending, setPending] = useState(false);
   const [redirectingToGoogle, setRedirectingToGoogle] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string>();
+  const [resending, setResending] = useState(false);
   const busy = pending || redirectingToGoogle;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const email = formValue(form, "email");
     setPending(true);
+    setUnverifiedEmail(undefined);
     const { error } = await authClient.signIn.email({
-      email: formValue(form, "email"),
+      email,
       password: formValue(form, "password"),
     });
     if (error) {
       setPending(false);
-      toast.error("Email o contraseña incorrectos");
+      if (error.code === "EMAIL_NOT_VERIFIED") setUnverifiedEmail(email);
+      else if (error.code === "ACCOUNT_DEACTIVATED") toast.error(error.message);
+      else toast.error("Email o contraseña incorrectos");
       return;
     }
     router.push(next);
     router.refresh();
+  };
+
+  const resendVerification = async () => {
+    if (!unverifiedEmail) return;
+    setResending(true);
+    const { error } = await authClient.sendVerificationEmail({
+      email: unverifiedEmail,
+      callbackURL: next,
+    });
+    setResending(false);
+    if (error) toast.error("No pudimos reenviar el enlace");
+    else toast.success("Te enviamos un nuevo enlace");
   };
 
   const continueWithGoogle = () => {
@@ -75,6 +94,23 @@ export function LoginForm() {
             <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
               O con tu email
             </FieldSeparator>
+            {unverifiedEmail ? (
+              <Alert>
+                <AlertTitle>Verificá tu correo para ingresar</AlertTitle>
+                <AlertDescription>
+                  Te enviamos un enlace a {unverifiedEmail}.
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="h-auto p-0 pl-1"
+                    disabled={resending}
+                    onClick={resendVerification}
+                  >
+                    Reenviar enlace
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : null}
             <Field>
               <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input id="email" name="email" type="email" autoComplete="email" required />
