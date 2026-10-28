@@ -37,6 +37,13 @@ export const crearUsuarioSchema = z.object({
 export type CrearUsuarioInput = z.input<typeof crearUsuarioSchema>;
 export type CrearUsuario = z.infer<typeof crearUsuarioSchema>;
 
+// Formulario de edición: el correo viaja pero no cambia, y un autorregistrado sin DNI puede
+// seguir sin él.
+export const edicionUsuarioFormSchema = crearUsuarioSchema.extend({
+  correo: z.string(),
+  dni: z.union([dniSchema, z.literal("")]),
+});
+
 // El correo identifica la cuenta: no se edita.
 export const actualizarUsuarioSchema = z.object({
   nombre: nombreSchema.optional(),

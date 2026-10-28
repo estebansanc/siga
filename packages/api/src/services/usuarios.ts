@@ -172,6 +172,12 @@ export const crearUsuario = async (auth: AuthContext, input: CrearUsuario): Prom
       comisionesDictadas: { create: comisionIds.map((comisionId) => ({ comisionId })) },
     },
   });
+  // Sin enlace la cuenta no sirve y reintentar daría 409: si no se encola, el alta no persiste.
+  await enviarEnlaceDeActivacion(userId, input.correo).catch(async () => {
+    await prisma.verification.deleteMany({ where: { value: userId } });
+    await prisma.user.delete({ where: { id: userId } });
+    throw unavailable("No pudimos enviar el enlace de activación: reintentá el alta en un rato");
+  });
   await prisma.auditLog.create({
     data: {
       organizationId,
@@ -181,11 +187,6 @@ export const crearUsuario = async (auth: AuthContext, input: CrearUsuario): Prom
       action: "create",
       after: { perfil: input.perfil, dni: input.dni, legajo: input.legajo ?? null, comisionIds },
     },
-  });
-  await enviarEnlaceDeActivacion(userId, input.correo).catch(() => {
-    throw unavailable(
-      "La cuenta se creó pero no pudimos enviar el enlace: usá «Reenviar enlace de activación» en su fila",
-    );
   });
   return toUsuarioDto(await buscarUsuario(organizationId, userId), auth.userId);
 };

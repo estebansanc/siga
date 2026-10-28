@@ -38,6 +38,8 @@ const completarAlta = async (
 };
 
 test.describe("Usuarios", () => {
+  test.afterEach(() => borrarClaseDeAsistencia());
+
   test("el bedel da de alta a un docente, que activa su cuenta; luego lo desactiva y lo reactiva", async ({
     page,
     browser,
@@ -102,7 +104,6 @@ test.describe("Usuarios", () => {
     await paginaDocente.goto("/");
     await expect(paginaDocente.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
     await sesionDocente.close();
-    borrarClaseDeAsistencia();
   });
 
   test("en su propia cuenta el bedel no puede desactivarse ni cambiar su perfil", async ({

@@ -1,7 +1,7 @@
 import { auth, AuthApiError, getAuthContext } from "@repo/auth";
 import { prisma } from "@repo/db";
 import { fechaArgentina } from "@repo/domain";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "../errors";
 import {
@@ -111,6 +111,30 @@ describe("alta de usuarios", () => {
     expect(correo).toMatchObject({ status: 409, issues: [{ path: "correo" }] });
     expect(await prisma.userProfile.count({ where: { dni: "30555111" } })).toBe(0);
   });
+
+  it("un alta cuyo correo ya se registró sin verificar lo explica", async () => {
+    await auth.api.signUpEmail({
+      body: { name: "Lucía", email: "ana@example.com", password: "lucia1234" },
+    });
+    const error = await rejection(crearUsuario(bedel(), alta));
+    expect(error).toMatchObject({
+      status: 409,
+      issues: [{ path: "correo", message: expect.stringContaining("todavía no verificó") }],
+    });
+  });
+
+  it("si no se puede encolar el enlace el alta no persiste y responde 503", async () => {
+    const pedido = vi
+      .spyOn(auth.api, "requestPasswordReset")
+      .mockRejectedValueOnce(new Error("sin correo"));
+    const error = await rejection(crearUsuario(bedel(), alta));
+    pedido.mockRestore();
+
+    expect(error).toMatchObject({ status: 503 });
+    expect(await prisma.user.count({ where: { email: alta.correo } })).toBe(0);
+    expect(await prisma.userProfile.count({ where: { dni: alta.dni } })).toBe(0);
+    expect((await crearUsuario(bedel(), alta)).estado).toBe("PENDIENTE");
+  });
 });
 
 describe("activación con el enlace", () => {
@@ -178,6 +202,31 @@ describe("activación con el enlace", () => {
     const usuario = await crearUsuario(bedel(), alta);
     await prisma.user.update({ where: { id: usuario.id }, data: { emailVerified: true } });
     expect(await rejection(reenviarActivacion(bedel(), usuario.id))).toMatchObject({ status: 409 });
+  });
+});
+
+describe("correo del enlace según la cuenta", () => {
+  const asuntos = async (correo: string) =>
+    (
+      await prisma.emailOutbox.findMany({ where: { to: correo }, orderBy: { createdAt: "asc" } })
+    ).map((email) => email.subject);
+
+  it("una cuenta pendiente que reenvía recibe la activación", async () => {
+    const usuario = await crearUsuario(bedel(), alta);
+    await reenviarActivacion(bedel(), usuario.id);
+    expect(await asuntos(alta.correo)).toEqual([
+      "Activá tu cuenta de SiGA",
+      "Activá tu cuenta de SiGA",
+    ]);
+  });
+
+  it("una cuenta verificada que pide el reset recibe el correo genérico", async () => {
+    const usuario = await crearUsuario(bedel(), alta);
+    await prisma.user.update({ where: { id: usuario.id }, data: { emailVerified: true } });
+    await auth.api.requestPasswordReset({
+      body: { email: alta.correo, redirectTo: "/activar-cuenta" },
+    });
+    expect((await asuntos(alta.correo)).at(-1)).toBe("Definí tu contraseña de SiGA");
   });
 });
 
@@ -405,16 +454,5 @@ describe("PRI-3: el estudiante ve solo el nombre del docente", () => {
     expect(docentes.length).toBeGreaterThan(0);
     for (const docente of docentes) expect(Object.keys(docente).sort()).toEqual(["id", "nombre"]);
     expect(JSON.stringify([comisiones, delDia, detalle])).not.toContain(fixture.docente.userEmail);
-  });
-
-  it("un alta cuyo correo ya se registró sin verificar lo explica", async () => {
-    await auth.api.signUpEmail({
-      body: { name: "Lucía", email: "ana@example.com", password: "lucia1234" },
-    });
-    const error = await rejection(crearUsuario(bedel(), alta));
-    expect(error).toMatchObject({
-      status: 409,
-      issues: [{ path: "correo", message: expect.stringContaining("todavía no verificó") }],
-    });
   });
 });

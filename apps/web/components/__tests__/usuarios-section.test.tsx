@@ -210,4 +210,31 @@ describe("UsuariosSection", () => {
     expect(await within(dialog).findByText("Ya existe un usuario con ese DNI")).toBeVisible();
     expect(screen.getByRole("dialog", { name: "Nuevo usuario" })).toBeInTheDocument();
   });
+
+  it("edita a un autorregistrado sin DNI y guarda un cambio de nombre", async () => {
+    state.usuarios = [usuario({ id: "s", nombre: "Sin Dni", dni: null, correo: "s@example.com" })];
+    renderWithProviders(<UsuariosSection />);
+    await abrirAcciones("Sin Dni");
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Editar" }));
+    const dialog = await screen.findByRole("dialog", { name: "Editar Sin Dni" });
+    await userEvent.type(within(dialog).getByLabelText("Apellido y nombre"), " Pérez");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Guardar" }));
+    await waitFor(() =>
+      expect(mutations.actualizar).toHaveBeenCalledWith({
+        id: "s",
+        input: expect.objectContaining({ nombre: "Sin Dni Pérez", dni: undefined }),
+      }),
+    );
+  });
+
+  it("no deja vaciar un DNI que ya existía", async () => {
+    renderWithProviders(<UsuariosSection />);
+    await abrirAcciones("Pablo Pendiente");
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Editar" }));
+    const dialog = await screen.findByRole("dialog", { name: "Editar Pablo Pendiente" });
+    await userEvent.clear(within(dialog).getByLabelText("DNI"));
+    await userEvent.click(within(dialog).getByRole("button", { name: "Guardar" }));
+    expect(await within(dialog).findByText("El DNI no se puede dejar vacío")).toBeVisible();
+    expect(mutations.actualizar).not.toHaveBeenCalled();
+  });
 });

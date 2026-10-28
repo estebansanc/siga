@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { UsuarioDto } from "@repo/api/client";
 import {
   crearUsuarioSchema,
-  dniSchema,
+  edicionUsuarioFormSchema,
   perfilLabels,
   perfilSchema,
   type CrearUsuario,
@@ -17,18 +17,11 @@ import { Label } from "@repo/ui/components/label";
 import { NativeSelect, NativeSelectOption } from "@repo/ui/components/native-select";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 
 import { CampoEntidad, EntidadFormDialog } from "@/components/datos-academicos/entidad-section";
 import { useComisiones } from "@/hooks/use-datos-academicos";
 import { useActualizarUsuario, useCrearUsuario } from "@/hooks/use-usuarios";
 import { showRequestError } from "@/lib/form-errors";
-
-// Un autorregistrado puede no tener DNI: al editar, vacío es válido y no se envía.
-const edicionUsuarioSchema = crearUsuarioSchema.extend({
-  correo: z.string(),
-  dni: z.union([dniSchema, z.literal("")]),
-});
 
 function SelectorComisiones({
   seleccionadas,
@@ -80,7 +73,7 @@ export function UsuarioFormDialog({
   const crear = useCrearUsuario();
   const actualizar = useActualizarUsuario();
   const form = useForm<CrearUsuarioInput, unknown, CrearUsuario>({
-    resolver: usuario ? zodResolver(edicionUsuarioSchema) : zodResolver(crearUsuarioSchema),
+    resolver: usuario ? zodResolver(edicionUsuarioFormSchema) : zodResolver(crearUsuarioSchema),
     defaultValues: {
       nombre: usuario?.nombre ?? "",
       dni: usuario?.dni ?? "",
@@ -94,6 +87,10 @@ export function UsuarioFormDialog({
   const perfil = form.watch("perfil");
 
   const guardar = async (values: CrearUsuario) => {
+    if (usuario?.dni && !values.dni) {
+      form.setError("dni", { message: "El DNI no se puede dejar vacío" });
+      return;
+    }
     try {
       if (usuario) {
         await actualizar.mutateAsync({

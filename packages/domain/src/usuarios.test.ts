@@ -5,6 +5,7 @@ import {
   contrasenaSchema,
   correoEnDominiosPermitidos,
   crearUsuarioSchema,
+  edicionUsuarioFormSchema,
   dominiosPermitidosSchema,
   estadoDeUsuario,
   mensajeDominiosRechazados,
@@ -87,5 +88,14 @@ describe("estadoDeUsuario", () => {
     expect(estadoDeUsuario({ activo: false, correoVerificado: true })).toBe("DESACTIVADO");
     expect(estadoDeUsuario({ activo: true, correoVerificado: false })).toBe("PENDIENTE");
     expect(estadoDeUsuario({ activo: true, correoVerificado: true })).toBe("ACTIVO");
+  });
+});
+
+describe("edicionUsuarioFormSchema", () => {
+  const edicion = { ...valido, correo: "ana@frt.utn.edu.ar" };
+
+  it("acepta el DNI vacío y valida el que se escribe", () => {
+    expect(edicionUsuarioFormSchema.safeParse({ ...edicion, dni: "" }).success).toBe(true);
+    expect(edicionUsuarioFormSchema.safeParse({ ...edicion, dni: "123" }).success).toBe(false);
   });
 });
