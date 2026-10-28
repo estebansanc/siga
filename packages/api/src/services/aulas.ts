@@ -21,7 +21,6 @@ import type {
 } from "../schemas";
 
 import { claseInclude, toClaseDto as toClaseCompletaDto } from "./clases";
-
 import { listarIncidenciasDeAula } from "./incidencias";
 
 const diasProximos = 7;
