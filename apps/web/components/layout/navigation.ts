@@ -58,6 +58,11 @@ const datosAcademicos: NavigationItem = {
   icon: DatabaseIcon,
 };
 const usuarios: NavigationItem = { title: "Usuarios", href: "/usuarios", icon: UsersIcon };
+const consultasHistoricas: NavigationItem = {
+  title: "Consultas históricas",
+  href: "/historico",
+  icon: HistoryIcon,
+};
 const aulas: NavigationItem = { title: "Aulas", href: "/aulas", icon: DoorOpenIcon };
 const plano: NavigationItem = { title: "Plano de aulas", href: "/plano-de-aulas", icon: MapIcon };
 const configuracion: NavigationItem = {
@@ -92,13 +97,14 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     { title: "QR de asistencia", href: "/qr", icon: QrCodeIcon },
     { title: "Solicitudes", href: "/solicitudes", icon: InboxIcon },
     { title: "Incidencias", href: "/incidencias", icon: TriangleAlertIcon },
+    consultasHistoricas,
     avisos,
     usuarios,
     datosAcademicos,
   ],
   AUTORIDAD: [
     { title: "Clases de hoy", href: "/", icon: CalendarDaysIcon },
-    { title: "Consultas históricas", href: "/historico", icon: HistoryIcon },
+    consultasHistoricas,
     avisos,
     buscar,
     plano,

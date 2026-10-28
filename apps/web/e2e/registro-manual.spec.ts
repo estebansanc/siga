@@ -60,6 +60,14 @@ test.describe("Registro manual de asistencia", () => {
       `Registro manual a las 00:00 por ${seededUsers.bedel.name}`,
     );
     await expect(detalle).toContainText("Teléfono sin batería");
+
+    await page.goto("/historico");
+    const fila = page
+      .getByRole("row")
+      .filter({ hasText: `${materia} · ${comision}` })
+      .filter({ hasText: "Manual" });
+    await expect(fila.first()).toContainText(`${seededUsers.bedel.name} (Bedelía)`);
+    await expect(page.getByLabel("Indicadores")).toContainText("Registros manuales");
   });
 
   test("un docente no ve el botón: /qr lo devuelve al inicio", async ({ page }) => {
