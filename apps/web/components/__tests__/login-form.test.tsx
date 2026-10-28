@@ -20,8 +20,9 @@ vi.mock("@repo/auth/client", () => ({
   signInWithGoogle,
 }));
 
+vi.mock("@/lib/navigation", () => ({ navigateAfterSignIn: pushMock }));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock, refresh: vi.fn() }),
   useSearchParams: () => new URLSearchParams(state.search),
 }));
 

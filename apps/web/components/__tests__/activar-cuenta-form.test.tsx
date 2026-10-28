@@ -16,8 +16,9 @@ vi.mock("@repo/auth/client", () => ({
   authClient: { resetPassword, signIn: { email: signInEmail } },
 }));
 
+vi.mock("@/lib/navigation", () => ({ navigateAfterSignIn: pushMock }));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock, refresh: vi.fn() }),
   useSearchParams: () => new URLSearchParams(state.search),
 }));
 
