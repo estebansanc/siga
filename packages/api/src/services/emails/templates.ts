@@ -76,14 +76,17 @@ export const activationEmail = (context: CuentaEmailContext): EmailContent => ({
   ),
 });
 
+const recoveryLinkLifetimeNote =
+  "El enlace vale 60 minutos y sirve una sola vez. Si no lo pediste, ignorá este correo.";
+
 export const passwordResetEmail = (context: CuentaEmailContext): EmailContent => ({
-  subject: "Definí tu contraseña de SiGA",
+  subject: "Recuperá tu contraseña de SiGA",
   html: emailLayout(
-    "Definí tu contraseña",
+    "Recuperá tu contraseña",
     [
       `Hola ${escapeHtml(context.nombre)},`,
-      "Usá el enlace para elegir una contraseña nueva.",
-      linkLifetimeNote,
+      "Pediste recuperar tu contraseña. Usá el enlace para elegir una nueva.",
+      recoveryLinkLifetimeNote,
     ],
     [],
     { label: "Definir mi contraseña", url: context.url },

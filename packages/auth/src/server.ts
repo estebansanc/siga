@@ -105,15 +105,23 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     requireEmailVerification: true,
     resetPasswordTokenExpiresIn: linkLifetimeSeconds,
-    // El enlace de activación llega al correo de la cuenta: abrirlo lo verifica.
+    revokeSessionsOnPasswordReset: true,
+    // Una cuenta sin verificar recibe el enlace de activación (abrirlo verifica el correo); una
+    // verificada, el de recuperación.
     sendResetPassword: ({ user, token }) => {
-      const email = {
+      const emails = authEmails();
+      if (user.emailVerified) {
+        return emails.sendPasswordReset({
+          to: user.email,
+          name: user.name,
+          url: `${appOrigin}/definir-contrasena?token=${token}`,
+        });
+      }
+      return emails.sendActivation({
         to: user.email,
         name: user.name,
         url: `${appOrigin}/activar-cuenta?token=${token}&email=${encodeURIComponent(user.email)}`,
-      };
-      const emails = authEmails();
-      return user.emailVerified ? emails.sendPasswordReset(email) : emails.sendActivation(email);
+      });
     },
     onPasswordReset: async ({ user }) => {
       await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });

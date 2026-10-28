@@ -35,8 +35,9 @@ describe("plantillas de email", () => {
 
   it("el correo de recuperación es genérico y lleva el enlace", () => {
     const email = passwordResetEmail({ nombre: "Ana", url: "https://app.test/reset" });
-    expect(email.subject).toBe("Definí tu contraseña de SiGA");
+    expect(email.subject).toBe("Recuperá tu contraseña de SiGA");
     expect(email.html).toContain('href="https://app.test/reset"');
+    expect(email.html).toContain("60 minutos");
   });
 
   it("el correo de verificación lleva el enlace", () => {

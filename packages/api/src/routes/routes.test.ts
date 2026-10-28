@@ -38,7 +38,11 @@ const call = (path: string, init?: RequestInit) =>
     headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
   });
 
-const json = (body: unknown, method = "POST") => ({ method, body: JSON.stringify(body) });
+const json = (body: unknown, method = "POST", headers: Record<string, string> = {}) => ({
+  method,
+  body: JSON.stringify(body),
+  headers,
+});
 
 const ownerAuthOf = (test: TestOrganization): Auth.AuthContext => ({
   userId: test.userId,
@@ -155,10 +159,47 @@ describe("contrato HTTP", () => {
     expect(await (await call("/members")).json()).toHaveLength(1);
   });
 
+  it("la recuperación de contraseña es pública y se limita por IP", async () => {
+    const pedir = (correo: string) =>
+      call(
+        "/cuenta/recuperar-contrasena",
+        json({ correo }, "POST", { "x-forwarded-for": "203.0.113.9" }),
+      );
+    for (let pedido = 1; pedido <= 5; pedido += 1) {
+      const response = await pedir(`otro${pedido}@example.com`);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ ok: true });
+    }
+    const limitada = await pedir("otro6@example.com");
+    expect(limitada.status).toBe(429);
+    expect(await limitada.json()).toMatchObject({ error: { code: "RATE_LIMITED" } });
+  });
+
+  it("definir la contraseña valida la política y el enlace sin pedir sesión", async () => {
+    const distintas = await call(
+      "/cuenta/definir-contrasena",
+      json({ token: "t", contrasena: "nueva1234", confirmacion: "otra1234" }),
+    );
+    expect(distintas.status).toBe(422);
+    expect(await distintas.json()).toMatchObject({
+      error: { issues: [{ path: "confirmacion", message: "Las contraseñas no coinciden." }] },
+    });
+    const invalido = await call(
+      "/cuenta/definir-contrasena",
+      json({ token: "inventado", contrasena: "nueva1234", confirmacion: "nueva1234" }),
+    );
+    expect(invalido.status).toBe(400);
+    expect(await invalido.json()).toMatchObject({
+      error: { message: "El enlace venció o ya fue usado." },
+    });
+  });
+
   it("el spec OpenAPI incluye todos los recursos", async () => {
     const spec = (await (await call("/openapi.json")).json()) as { paths: Record<string, unknown> };
     for (const path of [
       "/api/v1/me",
+      "/api/v1/cuenta/recuperar-contrasena",
+      "/api/v1/cuenta/definir-contrasena",
       "/api/v1/settings",
       "/api/v1/members",
       "/api/v1/usuarios",

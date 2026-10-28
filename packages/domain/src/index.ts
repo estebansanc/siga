@@ -11,6 +11,7 @@ export * from "./incidencias";
 export * from "./institucion";
 export * from "./novedades";
 export * from "./preferencias";
+export * from "./recuperar-contrasena";
 export * from "./presencia";
 export * from "./profile";
 export * from "./settings";

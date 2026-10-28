@@ -238,7 +238,7 @@ describe("correo del enlace según la cuenta", () => {
     await auth.api.requestPasswordReset({
       body: { email: alta.correo, redirectTo: "/activar-cuenta" },
     });
-    expect((await asuntos(alta.correo)).at(-1)).toBe("Definí tu contraseña de SiGA");
+    expect((await asuntos(alta.correo)).at(-1)).toBe("Recuperá tu contraseña de SiGA");
   });
 });
 
