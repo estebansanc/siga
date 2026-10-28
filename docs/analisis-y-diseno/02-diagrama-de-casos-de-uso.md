@@ -122,14 +122,14 @@ flowchart LR
   CU11 -.->|extend| CU12
 ```
 
-| CU    | Nombre                                 | Actor          | RF           | Resumen                                                                                 |
-| ----- | -------------------------------------- | -------------- | ------------ | --------------------------------------------------------------------------------------- |
-| CU-11 | Consultar mis clases de hoy            | Estudiante     | RF-07        | Comisiones seguidas, estado del docente, aula, novedades activas; se actualiza sola.    |
-| CU-12 | Buscar clases con filtros              | Estudiante     | RF-07        | Carrera, año, comisión, materia, fecha, combinables.                                    |
-| CU-13 | Publicar novedad de clase              | Docente, Bedel | RF-05        | Ausencia, demora, virtual, suspensión, cambio de aula; una o varias clases.             |
-| CU-14 | Editar o finalizar novedad             | Docente, Bedel | RF-05        | Cada cambio queda en el historial.                                                      |
-| CU-15 | Notificar novedad por correo           | Sistema        | RF-05, RF-17 | Un correo por novedad a cada estudiante suscripto.                                      |
-| CU-38 | Finalizar clases al terminar la franja | Reloj          | RF-07        | Toda clase pasa a Finalizada al terminar su horario; sin registro si seguía Programada. |
+| CU    | Nombre                       | Actor          | RF           | Resumen                                                                              |
+| ----- | ---------------------------- | -------------- | ------------ | ------------------------------------------------------------------------------------ |
+| CU-11 | Consultar mis clases de hoy  | Estudiante     | RF-07        | Comisiones seguidas, estado del docente, aula, novedades activas; se actualiza sola. |
+| CU-12 | Buscar clases con filtros    | Estudiante     | RF-07        | Carrera, año, comisión, materia, fecha, combinables.                                 |
+| CU-13 | Publicar novedad de clase    | Docente, Bedel | RF-05        | Ausencia, demora, virtual, suspensión, cambio de aula; una o varias clases.          |
+| CU-14 | Editar o finalizar novedad   | Docente, Bedel | RF-05        | Cada cambio queda en el historial.                                                   |
+| CU-15 | Notificar novedad por correo | Sistema        | RF-05, RF-17 | Un correo por novedad a cada estudiante suscripto.                                   |
+| CU-38 | Finalizar clases al terminar la franja | Reloj | RF-07   | Toda clase pasa a Finalizada al terminar su horario; sin registro si seguía Programada. |
 
 ## Módulo Aulas y espacios
 
