@@ -28,11 +28,11 @@ test.describe("Política de privacidad", () => {
     await expect(page.getByTestId("user-menu-trigger")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Preferencias" })).toHaveCount(0);
 
-    await page.goto("/novedades");
-    await expect(page).toHaveURL(/\/politica-de-privacidad\?next=%2Fnovedades/);
+    await page.goto("/preferencias");
+    await expect(page).toHaveURL(/\/politica-de-privacidad\?next=%2Fpreferencias/);
 
     await page.getByRole("button", { name: "Aceptar y continuar" }).click();
-    await expect(page).toHaveURL(/\/novedades$/);
+    await expect(page).toHaveURL(/\/preferencias$/);
     await expect(page.getByTestId("user-menu-trigger")).toBeVisible();
 
     await logoutViaUi(page);

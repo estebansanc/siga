@@ -6,6 +6,7 @@ import {
   enlaceDelUltimoCorreo,
 } from "./support/db";
 import {
+  aceptarPoliticaViaUi,
   expect,
   expectNoHorizontalPageScroll,
   loginViaUi,
@@ -81,6 +82,7 @@ test.describe("Usuarios", () => {
     await paginaDocente.goto(enlace);
     await paginaDocente.getByLabel("Contraseña").fill(docente.password);
     await paginaDocente.getByRole("button", { name: /Definir contraseña/ }).click();
+    await aceptarPoliticaViaUi(paginaDocente);
     await expect(paginaDocente.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
     await expect(paginaDocente.getByText(/5K2/).first()).toBeVisible();
 
