@@ -1162,6 +1162,128 @@
           "publicadaPorBedelia"
         ]
       },
+      "ConsultaAsistenciasResultado": {
+        "type": "object",
+        "properties": {
+          "indicadores": {
+            "type": "object",
+            "properties": {
+              "clasesBase": {
+                "type": "integer"
+              },
+              "clasesConAsistencia": {
+                "type": "integer"
+              },
+              "porcentajeAsistencia": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "clasesSinRegistro": {
+                "type": "integer"
+              },
+              "registrosQr": {
+                "type": "integer"
+              },
+              "porcentajeQr": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "registrosManuales": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "clasesBase",
+              "clasesConAsistencia",
+              "porcentajeAsistencia",
+              "clasesSinRegistro",
+              "registrosQr",
+              "porcentajeQr",
+              "registrosManuales"
+            ]
+          },
+          "total": {
+            "type": "integer"
+          },
+          "pagina": {
+            "type": "integer"
+          },
+          "tamanioPagina": {
+            "type": "integer"
+          },
+          "totalPaginas": {
+            "type": "integer"
+          },
+          "registros": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegistroHistorico"
+            }
+          }
+        },
+        "required": [
+          "indicadores",
+          "total",
+          "pagina",
+          "tamanioPagina",
+          "totalPaginas",
+          "registros"
+        ]
+      },
+      "RegistroHistorico": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "registradaEn": {
+            "type": "string"
+          },
+          "docente": {
+            "type": "string"
+          },
+          "materia": {
+            "type": "string"
+          },
+          "comision": {
+            "type": "string"
+          },
+          "aula": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metodo": {
+            "type": "string",
+            "enum": [
+              "QR",
+              "MANUAL"
+            ]
+          },
+          "registradaPor": {
+            "type": "string"
+          },
+          "registradaPorBedelia": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "registradaEn",
+          "docente",
+          "materia",
+          "comision",
+          "aula",
+          "metodo",
+          "registradaPor",
+          "registradaPorBedelia"
+        ]
+      },
       "OpcionesHistorico": {
         "type": "object",
         "properties": {
@@ -5384,6 +5506,16 @@
           },
           {
             "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "pagina",
+            "in": "query"
+          },
+          {
+            "schema": {
               "anyOf": [
                 {
                   "type": "string",
@@ -5405,16 +5537,6 @@
             },
             "required": false,
             "name": "tipo",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            },
-            "required": false,
-            "name": "pagina",
             "in": "query"
           }
         ],
@@ -5492,13 +5614,162 @@
         }
       }
     },
+    "/api/v1/historico/asistencias": {
+      "get": {
+        "tags": [
+          "Consultas históricas"
+        ],
+        "summary": "Asistencia docente en un rango de fechas, con indicadores",
+        "description": "Autoridad académica y Bedel. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por la fecha de la clase; los filtros opcionales se combinan. Los indicadores cuentan todo el período filtrado; el detalle pagina de a 20, el registro más reciente primero.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "desde",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "hasta",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "carreraId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "materiaId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "comisionId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "docenteId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "aulaId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "pagina",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Indicadores y detalle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaAsistenciasResultado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/historico/opciones": {
       "get": {
         "tags": [
           "Consultas históricas"
         ],
         "summary": "Docentes y aulas para los filtros de las consultas históricas",
-        "description": "Solo Autoridad académica.",
+        "description": "Autoridad académica y Bedel.",
         "responses": {
           "200": {
             "description": "Opciones",

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { consultaNovedadesSchema } from "./historico";
+import {
+  calcularIndicadoresAsistencia,
+  consultaAsistenciasSchema,
+  consultaNovedadesSchema,
+} from "./historico";
 import { sumarMeses } from "./tiempo";
 
 const mensajes = (input: unknown) => {
@@ -52,5 +56,68 @@ describe("consulta histórica de novedades", () => {
   it("rechaza tipos desconocidos y páginas menores a 1", () => {
     expect(mensajes({ desde: "2026-01-01", hasta: "2026-01-02", tipo: "OTRO" })).toHaveLength(1);
     expect(mensajes({ desde: "2026-01-01", hasta: "2026-01-02", pagina: 0 })).toHaveLength(1);
+  });
+});
+
+describe("consulta histórica de asistencia docente", () => {
+  it("comparte el rango de novedades y no pide tipo", () => {
+    expect(consultaAsistenciasSchema.parse({ desde: "2026-01-01", hasta: "2026-01-31" })).toEqual({
+      desde: "2026-01-01",
+      hasta: "2026-01-31",
+      pagina: 1,
+    });
+    const resultado = consultaAsistenciasSchema.safeParse({
+      desde: "2025-01-01",
+      hasta: "2026-01-02",
+    });
+    expect(resultado.success ? [] : resultado.error.issues.map((issue) => issue.message)).toEqual([
+      "El rango de fechas no puede superar los 12 meses",
+    ]);
+  });
+});
+
+describe("indicadores de asistencia docente", () => {
+  it("mide la asistencia sobre la base y el QR sobre los registros", () => {
+    expect(
+      calcularIndicadoresAsistencia({
+        clasesBase: 8,
+        clasesConAsistencia: 6,
+        clasesSinRegistro: 1,
+        registrosQr: 3,
+        registrosManuales: 1,
+      }),
+    ).toEqual({
+      clasesBase: 8,
+      clasesConAsistencia: 6,
+      porcentajeAsistencia: 75,
+      clasesSinRegistro: 1,
+      registrosQr: 3,
+      porcentajeQr: 75,
+      registrosManuales: 1,
+    });
+  });
+
+  it("sin base ni registros los porcentajes quedan sin dato", () => {
+    const indicadores = calcularIndicadoresAsistencia({
+      clasesBase: 0,
+      clasesConAsistencia: 0,
+      clasesSinRegistro: 0,
+      registrosQr: 0,
+      registrosManuales: 0,
+    });
+    expect(indicadores.porcentajeAsistencia).toBeNull();
+    expect(indicadores.porcentajeQr).toBeNull();
+  });
+
+  it("redondea a un decimal", () => {
+    expect(
+      calcularIndicadoresAsistencia({
+        clasesBase: 3,
+        clasesConAsistencia: 1,
+        clasesSinRegistro: 2,
+        registrosQr: 1,
+        registrosManuales: 0,
+      }).porcentajeAsistencia,
+    ).toBe(33.3);
   });
 });

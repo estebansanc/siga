@@ -1,15 +1,22 @@
 import type { AuthContext } from "@repo/auth";
-import { fromDateColumn, prisma, type Prisma } from "@repo/db";
+import { fromDateColumn, prisma, toDateColumn, type Prisma } from "@repo/db";
 import {
+  calcularIndicadoresAsistencia,
   rangoDelDia,
   tamanioPaginaHistorico,
   tipoNovedadSchema,
+  type ConsultaAsistencias,
   type ConsultaNovedades,
   type TipoNovedad,
 } from "@repo/domain";
 
-import type { ConsultaNovedadesResultadoDto, OpcionesHistoricoDto } from "../schemas";
+import type {
+  ConsultaAsistenciasResultadoDto,
+  ConsultaNovedadesResultadoDto,
+  OpcionesHistoricoDto,
+} from "../schemas";
 
+import { finalizarClasesVencidas } from "./clases";
 import { assertPerfil } from "./permisos";
 
 const filtrosDe = (
@@ -105,7 +112,7 @@ export const consultarNovedades = async (
 // Docentes que dictan alguna comisión y todas las aulas (también las dadas de baja: pueden
 // figurar en el histórico).
 export const opcionesHistorico = async (auth: AuthContext): Promise<OpcionesHistoricoDto> => {
-  await assertPerfil(auth, "AUTORIDAD");
+  await assertPerfil(auth, "AUTORIDAD", "BEDEL");
   const [docentes, aulas] = await Promise.all([
     prisma.user.findMany({
       where: {
@@ -121,4 +128,118 @@ export const opcionesHistorico = async (auth: AuthContext): Promise<OpcionesHist
     }),
   ]);
   return { docentes: docentes.map(({ id, name }) => ({ id, nombre: name })), aulas };
+};
+
+// El rango filtra por la fecha de la clase (mide clases dictadas). El docente es el de la
+// asistencia o, si la clase no tiene registro, alguno de los de la comisión.
+const clasesDelPeriodo = (
+  organizationId: string,
+  consulta: ConsultaAsistencias,
+): Prisma.ClaseProgramadaWhereInput => ({
+  organizationId,
+  fecha: { gte: toDateColumn(consulta.desde), lte: toDateColumn(consulta.hasta) },
+  aulaId: consulta.aulaId,
+  comisionId: consulta.comisionId,
+  comision: {
+    materiaId: consulta.materiaId,
+    materia: consulta.carreraId ? { carreraId: consulta.carreraId } : undefined,
+  },
+  ...(consulta.docenteId
+    ? {
+        OR: [
+          { asistencia: { docenteId: consulta.docenteId } },
+          {
+            asistencia: null,
+            comision: { docentes: { some: { docenteId: consulta.docenteId } } },
+          },
+        ],
+      }
+    : {}),
+});
+
+// Base de la asistencia: presenciales ya terminadas. Las Suspendidas y Virtuales no admiten
+// asistencia presencial; una Ausente cuenta sin asistencia porque fue avisada.
+const clasesBase = (
+  periodo: Prisma.ClaseProgramadaWhereInput,
+  ahora: Date,
+): Prisma.ClaseProgramadaWhereInput => ({
+  AND: [
+    periodo,
+    { modalidad: "PRESENCIAL", estado: { in: ["FINALIZADA", "AUSENTE"] }, fin: { lt: ahora } },
+  ],
+});
+
+const asistenciaInclude = {
+  docente: { select: { name: true } },
+  registradaPor: { select: { name: true } },
+  clase: {
+    select: {
+      aula: { select: { codigo: true } },
+      comision: { select: { codigo: true, materia: { select: { nombre: true } } } },
+    },
+  },
+} satisfies Prisma.AsistenciaDocenteInclude;
+
+// RF-09 / RF-18 / EF-5: historial de asistencia docente para la Autoridad y, como historial
+// operativo, para el Bedel.
+export const consultarAsistencias = async (
+  auth: AuthContext,
+  consulta: ConsultaAsistencias,
+  ahora = new Date(),
+): Promise<ConsultaAsistenciasResultadoDto> => {
+  await assertPerfil(auth, "AUTORIDAD", "BEDEL");
+  await finalizarClasesVencidas(auth.organizationId, ahora);
+  const periodo = clasesDelPeriodo(auth.organizationId, consulta);
+  const base = clasesBase(periodo, ahora);
+  const registros = { clase: periodo };
+
+  const [
+    clasesBaseTotal,
+    clasesConAsistencia,
+    clasesSinRegistro,
+    registrosQr,
+    registrosManuales,
+    detalle,
+  ] = await Promise.all([
+    prisma.claseProgramada.count({ where: base }),
+    prisma.claseProgramada.count({ where: { AND: [base, { asistencia: { isNot: null } }] } }),
+    prisma.claseProgramada.count({
+      where: { AND: [base, { estado: "FINALIZADA", asistencia: null }] },
+    }),
+    prisma.asistenciaDocente.count({ where: { ...registros, metodo: "QR" } }),
+    prisma.asistenciaDocente.count({ where: { ...registros, metodo: "MANUAL" } }),
+    prisma.asistenciaDocente.findMany({
+      where: registros,
+      include: asistenciaInclude,
+      orderBy: [{ horaLlegada: "desc" }, { id: "desc" }],
+      skip: (consulta.pagina - 1) * tamanioPaginaHistorico,
+      take: tamanioPaginaHistorico,
+    }),
+  ]);
+  const total = registrosQr + registrosManuales;
+
+  return {
+    indicadores: calcularIndicadoresAsistencia({
+      clasesBase: clasesBaseTotal,
+      clasesConAsistencia,
+      clasesSinRegistro,
+      registrosQr,
+      registrosManuales,
+    }),
+    total,
+    pagina: consulta.pagina,
+    tamanioPagina: tamanioPaginaHistorico,
+    totalPaginas: Math.ceil(total / tamanioPaginaHistorico),
+    registros: detalle.map((asistencia) => ({
+      id: asistencia.id,
+      registradaEn: asistencia.horaLlegada.toISOString(),
+      docente: asistencia.docente.name,
+      materia: asistencia.clase.comision.materia.nombre,
+      comision: asistencia.clase.comision.codigo,
+      aula: asistencia.clase.aula?.codigo ?? null,
+      metodo: asistencia.metodo,
+      registradaPor: asistencia.registradaPor.name,
+      registradaPorBedelia: asistencia.metodo === "MANUAL",
+    })),
+  };
 };

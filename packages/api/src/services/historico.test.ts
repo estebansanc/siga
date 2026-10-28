@@ -1,5 +1,10 @@
 import { prisma } from "@repo/db";
-import { instanteArgentino, type TipoNovedad } from "@repo/domain";
+import {
+  instanteArgentino,
+  type EstadoClase,
+  type MetodoAsistencia,
+  type TipoNovedad,
+} from "@repo/domain";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -15,7 +20,7 @@ import {
   type TestUser,
 } from "../test/db";
 
-import { consultarNovedades, opcionesHistorico } from "./historico";
+import { consultarAsistencias, consultarNovedades, opcionesHistorico } from "./historico";
 
 let institution: TestOrganization;
 let fixture: AcademicFixture;
@@ -249,21 +254,213 @@ describe("opciones y permisos", () => {
     expect(opciones.aulas.map((a) => a.codigo)).toEqual(["Aula 12", "Aula 7"]);
   });
 
-  it.each(["BEDEL", "DOCENTE", "ESTUDIANTE"] as const)(
-    "%s recibe Acceso denegado y queda auditado",
+  it("el Bedel no consulta novedades y queda auditado", async () => {
+    const auth = authOf(institution, institution);
+    await expect(
+      consultarNovedades(auth, { desde: "2026-03-01", hasta: "2026-03-31", pagina: 1 }),
+    ).rejects.toMatchObject({ status: 403, message: "Acceso denegado" });
+    expect(await accesosDenegados(auth.userId)).toBe(1);
+  });
+
+  it.each(["DOCENTE", "ESTUDIANTE"] as const)(
+    "%s recibe Acceso denegado en todas las consultas y queda auditado",
     async (perfil) => {
-      const usuario =
-        perfil === "BEDEL" ? institution : await createUserWithPerfil(institution, perfil);
-      const auth = authOf(institution, usuario);
-      await expect(
-        consultarNovedades(auth, { desde: "2026-03-01", hasta: "2026-03-31", pagina: 1 }),
-      ).rejects.toMatchObject({ status: 403, message: "Acceso denegado" });
+      const auth = authOf(institution, await createUserWithPerfil(institution, perfil));
+      const rango = { desde: "2026-03-01", hasta: "2026-03-31", pagina: 1 };
+      await expect(consultarNovedades(auth, rango)).rejects.toMatchObject({ status: 403 });
+      await expect(consultarAsistencias(auth, rango)).rejects.toMatchObject({
+        status: 403,
+        message: "Acceso denegado",
+      });
       await expect(opcionesHistorico(auth)).rejects.toMatchObject({ status: 403 });
-      expect(
-        await prisma.auditLog.count({
-          where: { userId: auth.userId, entity: "Permiso", action: "acceso_denegado" },
-        }),
-      ).toBe(2);
+      expect(await accesosDenegados(auth.userId)).toBe(3);
     },
   );
+});
+
+const accesosDenegados = (userId: string) =>
+  prisma.auditLog.count({ where: { userId, entity: "Permiso", action: "acceso_denegado" } });
+
+const ahora = new Date("2026-03-20T15:00:00.000Z");
+
+const consultaAsistencias = (
+  extra: Partial<Parameters<typeof consultarAsistencias>[1]> = {},
+  usuario: TestUser | TestOrganization = autoridad,
+) =>
+  consultarAsistencias(
+    authOf(institution, usuario),
+    { desde: "2026-03-01", hasta: "2026-03-31", pagina: 1, ...extra },
+    ahora,
+  );
+
+type ClaseSeed = {
+  fecha: string;
+  hora?: string;
+  comisionId?: string;
+  aulaId?: string;
+  estado?: EstadoClase;
+  modalidad?: "PRESENCIAL" | "VIRTUAL";
+  asistencia?: { metodo: MetodoAsistencia; docenteId?: string; llegada?: string };
+};
+
+const crearClaseConAsistencia = async ({
+  fecha,
+  hora = horaDeOrden(),
+  comisionId = fixture.comisionId,
+  aulaId = fixture.aulaId,
+  estado = "FINALIZADA",
+  modalidad = "PRESENCIAL",
+  asistencia,
+}: ClaseSeed) => {
+  const clase = await createClase(institution, { comisionId, aulaId }, fecha, hora, "23:59");
+  await prisma.claseProgramada.update({ where: { id: clase.id }, data: { estado, modalidad } });
+  if (asistencia) {
+    await prisma.asistenciaDocente.create({
+      data: {
+        organizationId: institution.organizationId,
+        claseId: clase.id,
+        docenteId: asistencia.docenteId ?? fixture.docente.userId,
+        metodo: asistencia.metodo,
+        horaLlegada: instanteArgentino(fecha, asistencia.llegada ?? "19:10"),
+        motivo: asistencia.metodo === "MANUAL" ? "Sin celular" : null,
+        registradaPorId:
+          asistencia.metodo === "MANUAL"
+            ? institution.userId
+            : (asistencia.docenteId ?? fixture.docente.userId),
+      },
+    });
+  }
+  return clase;
+};
+
+describe("consultas históricas de asistencia docente", () => {
+  it("sin clases en el período devuelve indicadores vacíos y lista vacía", async () => {
+    await crearClaseConAsistencia({ fecha: "2026-02-10", asistencia: { metodo: "QR" } });
+    const resultado = await consultaAsistencias();
+    expect(resultado).toMatchObject({ total: 0, totalPaginas: 0, registros: [] });
+    expect(resultado.indicadores).toMatchObject({
+      clasesBase: 0,
+      porcentajeAsistencia: null,
+      porcentajeQr: null,
+      registrosManuales: 0,
+    });
+  });
+
+  it("calcula los indicadores: base, ausentes, suspendidas, virtuales y sin registro", async () => {
+    await crearClaseConAsistencia({ fecha: "2026-03-02", asistencia: { metodo: "QR" } });
+    await crearClaseConAsistencia({ fecha: "2026-03-03", asistencia: { metodo: "QR" } });
+    await crearClaseConAsistencia({ fecha: "2026-03-04", asistencia: { metodo: "MANUAL" } });
+    await crearClaseConAsistencia({ fecha: "2026-03-05" });
+    await crearClaseConAsistencia({ fecha: "2026-03-06", estado: "AUSENTE" });
+    await crearClaseConAsistencia({ fecha: "2026-03-09", estado: "SUSPENDIDA" });
+    await crearClaseConAsistencia({ fecha: "2026-03-10", estado: "VIRTUAL", modalidad: "VIRTUAL" });
+    await crearClaseConAsistencia({ fecha: "2026-03-25" });
+
+    const { indicadores, total } = await consultaAsistencias();
+    expect(indicadores).toEqual({
+      clasesBase: 5,
+      clasesConAsistencia: 3,
+      porcentajeAsistencia: 60,
+      clasesSinRegistro: 1,
+      registrosQr: 2,
+      porcentajeQr: 66.7,
+      registrosManuales: 1,
+    });
+    expect(total).toBe(3);
+  });
+
+  it("una clase vencida que seguía Programada pasa a sin registro", async () => {
+    await crearClaseConAsistencia({ fecha: "2026-03-02", asistencia: { metodo: "QR" } });
+    await crearClaseConAsistencia({ fecha: "2026-03-03", estado: "PROGRAMADA" });
+    const { indicadores } = await consultaAsistencias();
+    expect(indicadores).toMatchObject({
+      clasesBase: 2,
+      clasesSinRegistro: 1,
+      porcentajeAsistencia: 50,
+    });
+  });
+
+  it("muestra cada fila con método y registrante, el más reciente primero", async () => {
+    await crearClaseConAsistencia({
+      fecha: "2026-03-02",
+      asistencia: { metodo: "QR", llegada: "19:05" },
+    });
+    await crearClaseConAsistencia({
+      fecha: "2026-03-03",
+      asistencia: { metodo: "MANUAL", llegada: "19:20" },
+    });
+    const bedel = await prisma.user.findUniqueOrThrow({ where: { id: institution.userId } });
+    const { registros } = await consultaAsistencias();
+    expect(registros.map((registro) => registro.metodo)).toEqual(["MANUAL", "QR"]);
+    expect(registros[0]).toMatchObject({
+      registradaEn: instanteArgentino("2026-03-03", "19:20").toISOString(),
+      docente: fixture.docente.userName,
+      materia: "Proyecto Final",
+      comision: "5K2",
+      aula: "Aula 12",
+      registradaPor: bedel.name,
+      registradaPorBedelia: true,
+    });
+    expect(registros[1]).toMatchObject({
+      registradaPor: fixture.docente.userName,
+      registradaPorBedelia: false,
+    });
+  });
+
+  it("el rango incluye ambos días de la clase", async () => {
+    await crearClaseConAsistencia({ fecha: "2026-03-01", asistencia: { metodo: "QR" } });
+    await crearClaseConAsistencia({ fecha: "2026-03-31", asistencia: { metodo: "QR" } });
+    await crearClaseConAsistencia({ fecha: "2026-02-28", asistencia: { metodo: "QR" } });
+    await crearClaseConAsistencia({ fecha: "2026-04-01", asistencia: { metodo: "QR" } });
+    expect((await consultaAsistencias()).total).toBe(2);
+  });
+
+  it("cada filtro restringe indicadores y detalle, y se combinan", async () => {
+    const otra = await segundaComision();
+    await crearClaseConAsistencia({ fecha: "2026-03-02", asistencia: { metodo: "QR" } });
+    await crearClaseConAsistencia({
+      fecha: "2026-03-03",
+      comisionId: otra.comision.id,
+      aulaId: fixture.otraAulaId,
+      asistencia: { metodo: "MANUAL", docenteId: otra.docente.userId },
+    });
+    await crearClaseConAsistencia({ fecha: "2026-03-04" });
+    await crearClaseConAsistencia({ fecha: "2026-03-05", comisionId: otra.comision.id });
+
+    const con = async (extra: Parameters<typeof consultaAsistencias>[0]) => {
+      const { total, indicadores } = await consultaAsistencias(extra);
+      return [total, indicadores.clasesBase, indicadores.clasesSinRegistro];
+    };
+    expect(await con({})).toEqual([2, 4, 2]);
+    expect(await con({ carreraId: otra.carrera.id })).toEqual([1, 2, 1]);
+    expect(await con({ materiaId: fixture.materiaId })).toEqual([1, 2, 1]);
+    expect(await con({ comisionId: otra.comision.id })).toEqual([1, 2, 1]);
+    expect(await con({ docenteId: otra.docente.userId })).toEqual([1, 2, 1]);
+    expect(await con({ aulaId: fixture.otraAulaId })).toEqual([1, 1, 0]);
+    expect(await con({ aulaId: fixture.aulaId })).toEqual([1, 3, 2]);
+    expect(await con({ carreraId: otra.carrera.id, aulaId: fixture.aulaId })).toEqual([0, 1, 1]);
+  });
+
+  it("los indicadores cuentan todo el período aunque el detalle pagine de a 20", async () => {
+    for (let dia = 1; dia <= 25; dia++) {
+      await crearClaseConAsistencia({
+        fecha: `2026-03-${String(dia).padStart(2, "0")}`,
+        asistencia: { metodo: dia % 5 === 0 ? "MANUAL" : "QR" },
+      });
+    }
+    const primera = await consultaAsistencias();
+    const segunda = await consultaAsistencias({ pagina: 2 });
+    expect([primera.total, primera.totalPaginas]).toEqual([25, 2]);
+    expect(primera.indicadores).toMatchObject({ registrosQr: 20, registrosManuales: 5 });
+    expect(primera.registros).toHaveLength(20);
+    expect(segunda.registros).toHaveLength(5);
+    const ids = new Set([...primera.registros, ...segunda.registros].map((r) => r.id));
+    expect(ids.size).toBe(25);
+  });
+
+  it("el Bedel también consulta y las opciones", async () => {
+    await crearClaseConAsistencia({ fecha: "2026-03-02", asistencia: { metodo: "MANUAL" } });
+    expect((await consultaAsistencias({}, institution)).total).toBe(1);
+    expect((await opcionesHistorico(authOf(institution, institution))).aulas).toHaveLength(2);
+  });
 });

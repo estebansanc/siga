@@ -582,6 +582,41 @@ export const opcionesHistoricoSchema = z
   .openapi("OpcionesHistorico");
 export type OpcionesHistoricoDto = z.infer<typeof opcionesHistoricoSchema>;
 
+export const registroHistoricoSchema = z
+  .object({
+    id: z.string(),
+    registradaEn: z.string(),
+    docente: z.string(),
+    materia: z.string(),
+    comision: z.string(),
+    aula: z.string().nullable(),
+    metodo: metodoAsistenciaSchema,
+    registradaPor: z.string(),
+    registradaPorBedelia: z.boolean(),
+  })
+  .openapi("RegistroHistorico");
+export type RegistroHistoricoDto = z.infer<typeof registroHistoricoSchema>;
+
+export const consultaAsistenciasResultadoSchema = z
+  .object({
+    indicadores: z.object({
+      clasesBase: z.number().int(),
+      clasesConAsistencia: z.number().int(),
+      porcentajeAsistencia: z.number().nullable(),
+      clasesSinRegistro: z.number().int(),
+      registrosQr: z.number().int(),
+      porcentajeQr: z.number().nullable(),
+      registrosManuales: z.number().int(),
+    }),
+    total: z.number().int(),
+    pagina: z.number().int(),
+    tamanioPagina: z.number().int(),
+    totalPaginas: z.number().int(),
+    registros: z.array(registroHistoricoSchema),
+  })
+  .openapi("ConsultaAsistenciasResultado");
+export type ConsultaAsistenciasResultadoDto = z.infer<typeof consultaAsistenciasResultadoSchema>;
+
 export const clasesSinAulaSchema = z
   .object({ clases: z.array(claseSchema) })
   .openapi("ClasesSinAula");
