@@ -110,4 +110,18 @@ describe("LoginForm", () => {
     const { toast } = await import("sonner");
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Tu cuenta está desactivada"));
   });
+
+  it("ofrece recuperar la contraseña", () => {
+    renderWithProviders(<LoginForm />);
+    expect(screen.getByRole("link", { name: "¿Olvidaste tu contraseña?" })).toHaveAttribute(
+      "href",
+      "/recuperar-contrasena",
+    );
+  });
+
+  it("tras definir una contraseña nueva avisa que se actualizó", () => {
+    state.search = "contrasena=actualizada";
+    renderWithProviders(<LoginForm />);
+    expect(screen.getByText("Tu contraseña se actualizó")).toBeInTheDocument();
+  });
 });

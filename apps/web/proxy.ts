@@ -1,10 +1,10 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Con sesión, login y registro redirigen al inicio. La página offline se abre igual con o sin
-// sesión.
+// Con sesión, login y registro redirigen al inicio. La página offline y la recuperación de contraseña se
+// abren igual con o sin sesión.
 const authRoutes = ["/login", "/registro"];
-const openRoutes = ["/~offline"];
+const openRoutes = ["/~offline", "/recuperar-contrasena", "/definir-contrasena"];
 // Rutas internas de la app: piden sesión. Una URL que no está en esta lista (incluida una que
 // no exista) sigue de largo y la resuelve Next, que la 404 con la pantalla neutra en vez de
 // pedir login primero: el proxy no sabe qué rutas existen de verdad, así que solo protege las

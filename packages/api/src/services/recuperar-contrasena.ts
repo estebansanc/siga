@@ -1,6 +1,6 @@
 import { auth, AuthApiError } from "@repo/auth";
 import { prisma } from "@repo/db";
-import { institutionSlug, mensajeEnlaceVencido, type DefinirContrasena } from "@repo/domain";
+import { mensajeEnlaceVencido, type DefinirContrasena } from "@repo/domain";
 
 import "../auth-emails";
 import { badRequest } from "../errors";
@@ -10,15 +10,13 @@ import { consumeRateLimit } from "./rate-limit";
 const recoveryLinkLifetimeMs = 60 * 60 * 1000;
 const emailRateLimit = { limit: 3, windowSeconds: 60 * 60 };
 
+// Una cuenta sin perfil aún no inició sesión (el perfil se crea en la primera): no está desactivada.
 const isActiveAccount = async (correo: string) => {
   const user = await prisma.user.findUnique({
     where: { email: correo },
-    select: {
-      members: { where: { organization: { slug: institutionSlug } }, select: { id: true } },
-      profile: { select: { activo: true } },
-    },
+    select: { profile: { select: { activo: true } } },
   });
-  return Boolean(user?.profile?.activo && user.members.length > 0);
+  return Boolean(user) && user?.profile?.activo !== false;
 };
 
 // El enlace de Better Auth dura lo mismo para activar que para recuperar (24 horas); el de

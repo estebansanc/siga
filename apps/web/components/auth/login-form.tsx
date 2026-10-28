@@ -31,7 +31,9 @@ import { GoogleIcon } from "./google-icon";
 
 export function LoginForm() {
   const router = useRouter();
-  const next = nextRouteOf(useSearchParams());
+  const searchParams = useSearchParams();
+  const next = nextRouteOf(searchParams);
+  const passwordUpdated = searchParams.get("contrasena") === "actualizada";
   const [pending, setPending] = useState(false);
   const [redirectingToGoogle, setRedirectingToGoogle] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string>();
@@ -94,6 +96,11 @@ export function LoginForm() {
             <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
               O con tu email
             </FieldSeparator>
+            {passwordUpdated ? (
+              <Alert>
+                <AlertTitle>Tu contraseña se actualizó</AlertTitle>
+              </Alert>
+            ) : null}
             {unverifiedEmail ? (
               <Alert>
                 <AlertTitle>Verificá tu correo para ingresar</AlertTitle>
@@ -124,6 +131,9 @@ export function LoginForm() {
                 autoComplete="current-password"
                 required
               />
+              <FieldDescription>
+                <Link href="/recuperar-contrasena">¿Olvidaste tu contraseña?</Link>
+              </FieldDescription>
             </Field>
             <Field>
               <Button type="submit" disabled={busy}>
