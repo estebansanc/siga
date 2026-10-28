@@ -149,7 +149,7 @@ export const medirFoco = async (page: Page, pasos = 25): Promise<Hallazgo[]> => 
   for (let paso = 0; paso < pasos; paso++) {
     await page.keyboard.press("Tab");
     hallazgos.push(
-      ...((await page.evaluate(`(() => {
+      ...(await page.evaluate(`(() => {
         ${describeInPage}
         ${utilidadesDeColor}
         const el = document.activeElement;
@@ -160,7 +160,7 @@ export const medirFoco = async (page: Page, pasos = 25): Promise<Hallazgo[]> => 
         const borde = parseFloat(s.borderTopWidth) > 0 ? rgba(s.borderTopColor) : null;
         const mejor = Math.max(...[contorno, borde].filter(Boolean).map((c) => ratio(over(c, fondo), fondo)), 0);
         return mejor < 3 ? [{ selector: describir(el), detalle: "foco " + mejor.toFixed(2) + ":1 (mínimo 3)" }] : [];
-      })()`)) as Hallazgo[]),
+      })()`)),
     );
   }
   return hallazgos;
