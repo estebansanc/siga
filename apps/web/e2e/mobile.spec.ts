@@ -1,4 +1,4 @@
-import { verificarCorreo } from "./support/db";
+import { publicarPolitica, retirarPolitica, verificarCorreo } from "./support/db";
 import {
   expect,
   newUser,
@@ -179,10 +179,22 @@ test.describe("Móvil", () => {
     const user = newUser();
     await request.post("/api/auth/sign-up/email", { data: user });
     verificarCorreo(user.email);
-    await loginViaUi(page, user);
-    await expect(page).toHaveURL(/\/politica-de-privacidad/);
-    await expect(page.getByRole("button", { name: "Aceptar y continuar" })).toBeInViewport();
-    await expect(page.getByRole("button", { name: "Cerrar sesión" })).toBeInViewport();
-    await expectNoHorizontalPageScroll(page);
+    const parrafo = "Texto de la versión dos de la política de privacidad. ".repeat(12);
+    publicarPolitica(2, Array.from({ length: 15 }, () => parrafo).join("\n\n"));
+    try {
+      await loginViaUi(page, user);
+      await expect(page).toHaveURL(/\/politica-de-privacidad/);
+      await expect(page.getByRole("button", { name: "Aceptar y continuar" })).toBeInViewport();
+      await expect(page.getByRole("button", { name: "Cerrar sesión" })).toBeInViewport();
+      await expectNoHorizontalPageScroll(page);
+
+      const texto = page.getByTestId("politica-texto").locator("[data-slot=scroll-area-viewport]");
+      expect(await texto.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+      await texto.evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
+      expect(await texto.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+      await expect(page.getByRole("button", { name: "Aceptar y continuar" })).toBeInViewport();
+    } finally {
+      retirarPolitica(2);
+    }
   });
 });

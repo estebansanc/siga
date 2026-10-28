@@ -32,7 +32,7 @@ export const aceptarPolitica = (email: string) =>
     ON CONFLICT DO NOTHING;
   `);
 
-// Publica una versión nueva de la política y devuelve la forma de retirarla.
+// Publica una versión nueva de la política; `retirarPolitica` la quita al terminar el test.
 export const publicarPolitica = (version: number, texto: string) =>
   runSql(`
     INSERT INTO politica_privacidad ("version", "titulo", "texto")
