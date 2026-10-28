@@ -22,6 +22,7 @@ import { toIso, toIsoOrNull } from "../serializers";
 
 import { claseInclude, finalizarClasesVencidas, toClaseDto } from "./clases";
 import { assertPerfil, accesoDenegado, esBedel } from "./permisos";
+import { registrarAsignacionAula } from "./registro-asignaciones";
 
 export const aulaOcupada = "El aula ya está asignada en esa franja";
 const aulaNoDisponible = "El aula no está disponible";
@@ -257,7 +258,16 @@ export const crearSolicitudAula = async (
   return prisma
     .$transaction(async (tx) => {
       await assertSinPendiente(tx, clase.id);
-      if (inmediata) await asignarAulaALaClase(tx, auth.organizationId, clase, input.aulaId);
+      if (inmediata) {
+        await asignarAulaALaClase(tx, auth.organizationId, clase, input.aulaId);
+        await registrarAsignacionAula(tx, {
+          organizationId: auth.organizationId,
+          claseId: clase.id,
+          aulaId: input.aulaId,
+          origen: "ASIGNACION_INMEDIATA",
+          usuarioId: auth.userId,
+        });
+      }
       const solicitud = await tx.solicitudAula.create({
         data: {
           organizationId: auth.organizationId,

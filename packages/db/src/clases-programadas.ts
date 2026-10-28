@@ -17,7 +17,7 @@ export type ResumenGeneracion = { creadas: number; existentes: number; sinAula: 
 
 type Ejecutor = Db | DbTransaction;
 
-type Filtro = { periodoLectivoId?: string; comisionId?: string };
+type Filtro = { periodoLectivoId?: string; comisionId?: string; usuarioId?: string };
 
 // RF-13: una clase por comisión, fecha y franja desde hoy hasta el fin del período, sin
 // días no laborables ni bajas. Nace Programada con el aula habitual, salvo que el aula no esté
@@ -73,7 +73,7 @@ export const generarClasesProgramadas = async (
         }
         const aulaId = await aulaDisponiblePara(db, horario.aulaHabitual, inicio, fin);
         if (!aulaId) resumen.sinAula += 1;
-        await db.claseProgramada.create({
+        const clase = await db.claseProgramada.create({
           data: {
             organizationId,
             comisionId: comision.id,
@@ -84,12 +84,26 @@ export const generarClasesProgramadas = async (
             aulaId,
           },
         });
+        if (aulaId) {
+          await registrarAsignacionGenerada(db, organizationId, clase.id, aulaId, filtro.usuarioId);
+        }
         resumen.creadas += 1;
       }
     }
   }
   return resumen;
 };
+
+const registrarAsignacionGenerada = (
+  db: Ejecutor,
+  organizationId: string,
+  claseId: string,
+  aulaId: string,
+  usuarioId?: string,
+) =>
+  db.asignacionAula.create({
+    data: { organizationId, claseId, aulaId, origen: "GENERACION_CLASES", usuarioId },
+  });
 
 const aulaDisponiblePara = async (
   db: Ejecutor,
@@ -170,7 +184,13 @@ export const reubicarClasesFuturas = async (
       where: { comisionId: clase.comisionId, inicio, id: { not: clase.id } },
       select: { id: true },
     });
-    if (fecha < hoy || fecha < inicioPeriodo || fecha > finPeriodo || diasNoLaborables.has(fecha) || otra) {
+    if (
+      fecha < hoy ||
+      fecha < inicioPeriodo ||
+      fecha > finPeriodo ||
+      diasNoLaborables.has(fecha) ||
+      otra
+    ) {
       await db.claseProgramada.delete({ where: { id: clase.id } });
       continue;
     }
@@ -179,5 +199,8 @@ export const reubicarClasesFuturas = async (
       where: { id: clase.id },
       data: { fecha: toDateColumn(fecha), inicio, fin, aulaId },
     });
+    if (aulaId && aulaId !== clase.aulaId) {
+      await registrarAsignacionGenerada(db, horario.organizationId, clase.id, aulaId);
+    }
   }
 };

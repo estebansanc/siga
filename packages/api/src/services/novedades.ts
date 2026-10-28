@@ -20,6 +20,7 @@ import { registrarCambioMasivo } from "./auditoria";
 import { finalizarClasesVencidas } from "./clases";
 import { notificarNovedadPublicada } from "./notificaciones";
 import { accesoDenegado, assertPerfil, esBedel } from "./permisos";
+import { registrarAsignacionAula } from "./registro-asignaciones";
 import { bloquearAula, estadosSinSolicitud } from "./solicitudes-aula";
 
 const novedadInclude = {
@@ -188,6 +189,17 @@ export const publicarNovedad = async (
         ...(aulaNueva ? { aulaId: aulaNueva.id } : {}),
       },
     });
+    if (aulaNueva) {
+      for (const clase of clases.filter(({ aulaId }) => aulaId !== aulaNueva.id)) {
+        await registrarAsignacionAula(tx, {
+          organizationId: auth.organizationId,
+          claseId: clase.id,
+          aulaId: aulaNueva.id,
+          origen: "CAMBIO_AULA",
+          usuarioId: auth.userId,
+        });
+      }
+    }
     await registrarCambioMasivo(tx, auth.organizationId, "ClaseProgramada", "novedad_publicada", {
       claseIds,
       tipo: input.tipo,
@@ -254,6 +266,13 @@ export const finalizarNovedad = async (
         await tx.claseProgramada.update({
           where: { id: clase.id },
           data: { aulaId: aulaAnteriorId },
+        });
+        await registrarAsignacionAula(tx, {
+          organizationId: auth.organizationId,
+          claseId: clase.id,
+          aulaId: aulaAnteriorId,
+          origen: "CAMBIO_AULA",
+          usuarioId: auth.userId,
         });
         restituidas.push(clase.id);
       }

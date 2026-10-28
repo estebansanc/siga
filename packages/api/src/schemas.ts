@@ -14,6 +14,7 @@ import {
   estadoUsuarioSchema,
   gravedadIncidenciaSchema,
   metodoAsistenciaSchema,
+  origenAsignacionAulaSchema,
   memberRoleSchema,
   modalidadSchema,
   perfilSchema,
@@ -616,6 +617,55 @@ export const consultaAsistenciasResultadoSchema = z
   })
   .openapi("ConsultaAsistenciasResultado");
 export type ConsultaAsistenciasResultadoDto = z.infer<typeof consultaAsistenciasResultadoSchema>;
+
+export const ocupacionAulaSchema = z
+  .object({
+    horasOcupadas: z.number(),
+    horasDisponibles: z.number(),
+    porcentaje: z.number().int(),
+  })
+  .openapi("OcupacionAula");
+
+export const ocupacionPorAulaSchema = ocupacionAulaSchema
+  .extend({
+    id: z.string(),
+    codigo: z.string(),
+    edificio: z.string(),
+    piso: z.string(),
+    activa: z.boolean(),
+  })
+  .openapi("OcupacionPorAula");
+export type OcupacionPorAulaDto = z.infer<typeof ocupacionPorAulaSchema>;
+
+export const asignacionAulaHistoricaSchema = z
+  .object({
+    id: z.string(),
+    asignadaEn: z.string(),
+    aula: z.string(),
+    materia: z.string(),
+    comision: z.string(),
+    fechaClase: z.string(),
+    horaInicioClase: z.string(),
+    horaFinClase: z.string(),
+    origen: origenAsignacionAulaSchema,
+    usuario: z.string(),
+  })
+  .openapi("AsignacionAulaHistorica");
+export type AsignacionAulaHistoricaDto = z.infer<typeof asignacionAulaHistoricaSchema>;
+
+export const consultaUsoAulasResultadoSchema = z
+  .object({
+    ocupacionGeneral: ocupacionAulaSchema,
+    aulas: z.array(ocupacionPorAulaSchema),
+    clasesDelPeriodo: z.number().int(),
+    total: z.number().int(),
+    pagina: z.number().int(),
+    tamanioPagina: z.number().int(),
+    totalPaginas: z.number().int(),
+    asignaciones: z.array(asignacionAulaHistoricaSchema),
+  })
+  .openapi("ConsultaUsoAulasResultado");
+export type ConsultaUsoAulasResultadoDto = z.infer<typeof consultaUsoAulasResultadoSchema>;
 
 export const clasesSinAulaSchema = z
   .object({ clases: z.array(claseSchema) })

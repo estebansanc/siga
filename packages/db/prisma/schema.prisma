@@ -38,6 +38,7 @@ model User {
   asistenciasRegistradas   AsistenciaDocente[]        @relation("AsistenciaRegistrada")
   solicitudesAulaResueltas SolicitudAula[]            @relation("SolicitudAulaResueltaPor")
   incidenciasReportadas    Incidencia[]
+  asignacionesDeAula       AsignacionAula[]
   incidenciaEstados        IncidenciaEstado[]
   intentosAsistencia       IntentoAsistenciaFallido[]
 
@@ -131,6 +132,7 @@ model Organization {
   asistencias            AsistenciaDocente[]
   intentosAsistencia     IntentoAsistenciaFallido[]
   incidencias            Incidencia[]
+  asignacionesAula       AsignacionAula[]
 
   @@unique([slug])
   @@map("organization")
@@ -428,6 +430,7 @@ model Aula {
   solicitudes         SolicitudAula[]
   sesionesQr          SesionQr[]
   incidencias         Incidencia[]
+  asignaciones        AsignacionAula[]
 
   @@unique([organizationId, codigo])
   @@map("aula")
@@ -491,6 +494,7 @@ model ClaseProgramada {
   novedades       NovedadClase[]
   solicitudesAula SolicitudAula[]
   asistencia      AsistenciaDocente?
+  asignaciones    AsignacionAula[]
 
   @@unique([comisionId, inicio])
   @@index([organizationId, fecha])
@@ -808,4 +812,36 @@ model IncidenciaEstado {
   @@index([incidenciaId, createdAt])
   @@index([userId])
   @@map("incidencia_estado")
+}
+
+// ---------- SiGA: histórico de uso de aulas ----------
+
+enum OrigenAsignacionAula {
+  GENERACION_CLASES
+  SOLICITUD_APROBADA
+  ASIGNACION_INMEDIATA
+  ASIGNACION_BEDELIA
+  CAMBIO_AULA
+}
+
+// Solo inserts: cada vez que una clase recibe aula se guarda quién, cómo y cuándo (RF-09,
+// EF-5). `usuarioId` es nulo cuando no consta (generación de clases desde el seed o una
+// cuenta eliminada).
+model AsignacionAula {
+  id             String               @id @default(cuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  claseId        String
+  clase          ClaseProgramada      @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  aulaId         String
+  aula           Aula                 @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+  origen         OrigenAsignacionAula
+  usuarioId      String?
+  usuario        User?                @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  createdAt      DateTime             @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, aulaId, createdAt])
+  @@index([claseId])
+  @@map("asignacion_aula")
 }

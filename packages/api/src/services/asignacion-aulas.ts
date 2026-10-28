@@ -6,6 +6,7 @@ import {
   sumarDias,
   type ElegirAula,
   type EstadoSolicitudAula,
+  type OrigenAsignacionAula,
   type RechazarSolicitudAula,
 } from "@repo/domain";
 
@@ -18,6 +19,7 @@ import { notificarNovedadPublicada } from "./notificaciones";
 import { entregarCorreosDeAula, registrarCorreosDeAula } from "./notificaciones-aula";
 import { crearNovedadCambioAula } from "./novedades";
 import { assertPerfil } from "./permisos";
+import { registrarAsignacionAula } from "./registro-asignaciones";
 import {
   asignarAulaALaClase,
   estadosSinSolicitud,
@@ -114,9 +116,18 @@ const cambiarAulaDeLaClase = async (
   auth: AuthContext,
   clase: ClaseAsignable,
   aulaId: string,
+  origen: OrigenAsignacionAula,
 ) => {
   const aula = await asignarAulaALaClase(tx, auth.organizationId, clase, aulaId);
-  if (!clase.aulaId || clase.aulaId === aulaId) return { aula, novedad: null };
+  if (clase.aulaId === aulaId) return { aula, novedad: null };
+  await registrarAsignacionAula(tx, {
+    organizationId: auth.organizationId,
+    claseId: clase.id,
+    aulaId,
+    origen,
+    usuarioId: auth.userId,
+  });
+  if (!clase.aulaId) return { aula, novedad: null };
   const novedad = await crearNovedadCambioAula(tx, {
     organizationId: auth.organizationId,
     publicadaPorId: auth.userId,
@@ -149,7 +160,13 @@ export const aprobarSolicitudAula = async (
       include: solicitudInclude,
     });
     const clase = await leerClaseAsignable(tx, auth.organizationId, solicitud.claseId, ahora);
-    const { aula, novedad } = await cambiarAulaDeLaClase(tx, auth, clase, aulaId);
+    const { aula, novedad } = await cambiarAulaDeLaClase(
+      tx,
+      auth,
+      clase,
+      aulaId,
+      "SOLICITUD_APROBADA",
+    );
     await registrarCambioMasivo(tx, auth.organizationId, "SolicitudAula", "solicitud_aprobada", {
       solicitudId,
       claseId: clase.id,
@@ -237,7 +254,7 @@ export const reasignarSolicitudAula = async (
     const clase = await leerClaseAsignable(tx, auth.organizationId, previa.claseId, ahora);
     if (clase.aulaId === aulaId) throw unprocessable("La clase ya tiene esa aula");
     const aulaAnterior = await codigoDeAula(tx, clase.aulaId);
-    const { aula, novedad } = await cambiarAulaDeLaClase(tx, auth, clase, aulaId);
+    const { aula, novedad } = await cambiarAulaDeLaClase(tx, auth, clase, aulaId, "CAMBIO_AULA");
     const solicitud = await tx.solicitudAula.update({
       where: { id: solicitudId },
       data: { aulaId, resueltaPorId: auth.userId, resueltaEn: ahora },
@@ -276,6 +293,13 @@ export const asignarAulaAClaseSinAula = async (
     });
     if (pendiente) throw conflict(claseConPendiente);
     const aula = await asignarAulaALaClase(tx, auth.organizationId, clase, aulaId);
+    await registrarAsignacionAula(tx, {
+      organizationId: auth.organizationId,
+      claseId,
+      aulaId,
+      origen: "ASIGNACION_BEDELIA",
+      usuarioId: auth.userId,
+    });
     await registrarCambioMasivo(tx, auth.organizationId, "ClaseProgramada", "aula_asignada", {
       claseId,
       aulaId,

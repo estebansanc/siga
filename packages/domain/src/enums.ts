@@ -132,3 +132,20 @@ export const equipamientoLabels: Record<Equipamiento, string> = {
   Pizarra: "Pizarra",
   Conectividad: "Conectividad",
 };
+
+export const origenAsignacionAulaSchema = z.enum([
+  "GENERACION_CLASES",
+  "SOLICITUD_APROBADA",
+  "ASIGNACION_INMEDIATA",
+  "ASIGNACION_BEDELIA",
+  "CAMBIO_AULA",
+]);
+export type OrigenAsignacionAula = z.infer<typeof origenAsignacionAulaSchema>;
+
+export const origenAsignacionAulaLabels: Record<OrigenAsignacionAula, string> = {
+  GENERACION_CLASES: "Generación de clases",
+  SOLICITUD_APROBADA: "Solicitud aprobada",
+  ASIGNACION_INMEDIATA: "Asignación inmediata",
+  ASIGNACION_BEDELIA: "Asignación de bedelía",
+  CAMBIO_AULA: "Cambio de aula",
+};

@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 import { isoDate } from "./common";
-import { tipoNovedadSchema } from "./enums";
-import { sumarMeses } from "./tiempo";
+import { origenAsignacionAulaSchema, tipoNovedadSchema } from "./enums";
+import { diaSemanaDe, fechasEntre, sumarMeses } from "./tiempo";
+import type { Turnos } from "./turnos";
 
 export const mesesMaximosHistorico = 12;
 export const tamanioPaginaHistorico = 20;
@@ -70,6 +71,50 @@ export type ConsultaNovedadesInput = z.input<typeof consultaNovedadesSchema>;
 export const consultaAsistenciasSchema = z.object(rangoYFiltros).superRefine(validarRango);
 export type ConsultaAsistencias = z.infer<typeof consultaAsistenciasSchema>;
 export type ConsultaAsistenciasInput = z.input<typeof consultaAsistenciasSchema>;
+
+// RF-09 / CA-06 / EF-5: mismo rango y filtros; `origen` restringe solo las asignaciones.
+export const consultaUsoAulasSchema = z
+  .object({
+    ...rangoYFiltros,
+    origen: origenAsignacionAulaSchema.optional().or(z.literal("").transform(() => undefined)),
+  })
+  .superRefine(validarRango);
+export type ConsultaUsoAulas = z.infer<typeof consultaUsoAulasSchema>;
+export type ConsultaUsoAulasInput = z.input<typeof consultaUsoAulasSchema>;
+
+const minutosDe = (hora: string) => {
+  const [horas, minutos] = hora.split(":").map(Number) as [number, number];
+  return horas * 60 + minutos;
+};
+
+export const horasDeClase = (inicio: Date, fin: Date) =>
+  (fin.getTime() - inicio.getTime()) / 3_600_000;
+
+export const horasDiariasDeTurnos = (turnos: Turnos) =>
+  Object.values(turnos).reduce(
+    (suma, { inicio, fin }) => suma + (minutosDe(fin) - minutosDe(inicio)) / 60,
+    0,
+  );
+
+// Hay cursado de lunes a sábado; el domingo y los días no laborables no suman disponibilidad.
+export const diasConDisponibilidad = (
+  desde: string,
+  hasta: string,
+  diasNoLaborables: ReadonlySet<string>,
+) =>
+  fechasEntre(desde, hasta).filter(
+    (fecha) => diaSemanaDe(fecha) !== 7 && !diasNoLaborables.has(fecha),
+  ).length;
+
+export const horasDisponiblesEnRango = (
+  turnos: Turnos,
+  desde: string,
+  hasta: string,
+  diasNoLaborables: ReadonlySet<string>,
+) => horasDiariasDeTurnos(turnos) * diasConDisponibilidad(desde, hasta, diasNoLaborables);
+
+export const porcentajeOcupacion = (horasOcupadas: number, horasDisponibles: number) =>
+  horasDisponibles === 0 ? 0 : Math.round((horasOcupadas / horasDisponibles) * 100);
 
 export type ConteosAsistencia = {
   clasesBase: number;

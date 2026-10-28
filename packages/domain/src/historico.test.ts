@@ -4,6 +4,12 @@ import {
   calcularIndicadoresAsistencia,
   consultaAsistenciasSchema,
   consultaNovedadesSchema,
+  consultaUsoAulasSchema,
+  diasConDisponibilidad,
+  horasDeClase,
+  horasDiariasDeTurnos,
+  horasDisponiblesEnRango,
+  porcentajeOcupacion,
 } from "./historico";
 import { sumarMeses } from "./tiempo";
 
@@ -119,5 +125,63 @@ describe("indicadores de asistencia docente", () => {
         registrosManuales: 0,
       }).porcentajeAsistencia,
     ).toBe(33.3);
+  });
+});
+
+describe("uso de aulas", () => {
+  const turnos = {
+    MANANA: { inicio: "07:00", fin: "13:00" },
+    TARDE: { inicio: "13:00", fin: "18:00" },
+    NOCHE: { inicio: "18:00", fin: "23:30" },
+  };
+
+  it("valida el rango como Novedades y acepta el origen vacío", () => {
+    expect(
+      consultaUsoAulasSchema.parse({ desde: "2026-01-01", hasta: "2026-01-31", origen: "" }),
+    ).toMatchObject({ origen: undefined, pagina: 1 });
+    const invertido = consultaUsoAulasSchema.safeParse({
+      desde: "2026-02-01",
+      hasta: "2026-01-01",
+    });
+    expect(invertido.error?.issues[0]?.message).toBe(
+      "La fecha desde no puede ser posterior a la fecha hasta",
+    );
+    expect(
+      consultaUsoAulasSchema.safeParse({ desde: "2025-10-21", hasta: "2026-10-21" }).success,
+    ).toBe(true);
+    expect(
+      consultaUsoAulasSchema.safeParse({ desde: "2025-10-21", hasta: "2026-10-22" }).success,
+    ).toBe(false);
+  });
+
+  it("rechaza un origen desconocido", () => {
+    expect(
+      consultaUsoAulasSchema.safeParse({ desde: "2026-01-01", hasta: "2026-01-31", origen: "X" })
+        .success,
+    ).toBe(false);
+  });
+
+  it("suma las horas de los tres turnos configurados", () => {
+    expect(horasDiariasDeTurnos(turnos)).toBe(16.5);
+  });
+
+  it("cuenta lunes a sábado y descarta domingos y días no laborables", () => {
+    // 2026-10-05 es lunes: la semana completa tiene 6 días con cursado.
+    expect(diasConDisponibilidad("2026-10-05", "2026-10-11", new Set())).toBe(6);
+    expect(diasConDisponibilidad("2026-10-05", "2026-10-11", new Set(["2026-10-07"]))).toBe(5);
+    expect(diasConDisponibilidad("2026-10-11", "2026-10-11", new Set())).toBe(0);
+  });
+
+  it("calcula horas disponibles y porcentaje entero", () => {
+    expect(horasDisponiblesEnRango(turnos, "2026-10-05", "2026-10-05", new Set())).toBe(16.5);
+    expect(porcentajeOcupacion(4, 16.5)).toBe(24);
+    expect(porcentajeOcupacion(0, 16.5)).toBe(0);
+    expect(porcentajeOcupacion(3, 0)).toBe(0);
+  });
+
+  it("mide las horas de una clase", () => {
+    expect(horasDeClase(new Date("2026-10-05T22:00:00Z"), new Date("2026-10-06T02:00:00Z"))).toBe(
+      4,
+    );
   });
 });

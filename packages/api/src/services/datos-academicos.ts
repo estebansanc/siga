@@ -116,7 +116,12 @@ export const generarClases = async (
   hoy?: string,
 ): Promise<GeneracionClasesDto> => {
   const organizationId = await gestor(auth);
-  return generarClasesProgramadas(prisma, organizationId, filtro, hoy);
+  return generarClasesProgramadas(
+    prisma,
+    organizationId,
+    { ...filtro, usuarioId: auth.userId },
+    hoy,
+  );
 };
 
 // ---------- Administración (RF-13): Bedel y Autoridad ----------
