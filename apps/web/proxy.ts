@@ -1,6 +1,8 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { requestedPathHeader } from "@/lib/requested-path";
+
 // Con sesión, login y registro redirigen al inicio. La página offline y la recuperación de contraseña se
 // abren igual con o sin sesión.
 const authRoutes = ["/login", "/registro"];
@@ -31,6 +33,14 @@ const protectedRoutes = [
 const startsWithAny = (pathname: string, routes: string[]) =>
   routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 
+// La cookie de sesión puede seguir en el navegador con la sesión ya vencida o cerrada desde otro
+// dispositivo: `requireSession` necesita la ruta pedida para mandar al login con `next`.
+const withRequestedPath = (request: NextRequest) => {
+  const headers = new Headers(request.headers);
+  headers.set(requestedPathHeader, request.nextUrl.pathname + request.nextUrl.search);
+  return headers;
+};
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = Boolean(getSessionCookie(request));
@@ -47,6 +57,8 @@ export function proxy(request: NextRequest) {
   if (hasSession && isAuthRoute) {
     return NextResponse.redirect(new URL("/", request.url));
   }
+  if (isProtectedRoute)
+    return NextResponse.next({ request: { headers: withRequestedPath(request) } });
   return NextResponse.next();
 }
 

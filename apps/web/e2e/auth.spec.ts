@@ -46,7 +46,7 @@ test.describe("Autenticación", () => {
     for (let attempt = 0; attempt < 4; attempt += 1) {
       await page.getByLabel("Contraseña").fill("incorrecta1");
       await page.getByRole("button", { name: "Ingresar" }).click();
-      await expect(page.getByText("Email o contraseña incorrectos")).toBeVisible();
+      await expect(page.getByText("Email o contraseña incorrectos")).toHaveCount(attempt + 1);
     }
     await page.getByLabel("Contraseña").fill("incorrecta1");
     await page.getByRole("button", { name: "Ingresar" }).click();
