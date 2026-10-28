@@ -19,8 +19,8 @@ export const findOwnedOrganizationId = async (userId: string) => {
   return membership.organizationId;
 };
 
-// Las organizaciones de la cuenta (la propia y las que la invitaron), para el selector de
-// organización.
+// Las organizaciones de la cuenta (la propia y las que la invitaron), para saber de cuáles
+// es miembro.
 export const listOrganizationsOf = async (userId: string) => {
   const memberships = await prisma.member.findMany({
     where: { userId },

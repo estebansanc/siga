@@ -21,7 +21,7 @@ export const useUpdateSettings = () => {
       unwrap<SettingsDto>(api.settings.$patch({ json: input })),
     onSuccess: async (_settings, input) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.settings });
-      // El selector de organización lee el nombre de "quién soy", no de los ajustes.
+      // La barra lateral lee el nombre de "quién soy", no de los ajustes.
       if ("name" in input) await queryClient.invalidateQueries({ queryKey: queryKeys.me });
     },
   });

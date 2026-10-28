@@ -17,7 +17,7 @@ export const meRoutes = new OpenAPIHono<ApiEnv>()
       tags,
       summary: "Quién soy: usuario, rol y organización activa",
       description:
-        "`organizations` lista todas las organizaciones de la cuenta (la propia y las que la invitaron), para el selector de organización.",
+        "`organizations` lista todas las organizaciones de la cuenta (la propia y las que la invitaron), para saber de cuáles es miembro.",
       responses: { 200: jsonResponse(meSchema, "Sesión"), ...commonErrors },
     }),
     async (c) => c.json(await getMe(c.get("auth")), 200),

@@ -26,7 +26,7 @@ import { NavUser } from "./nav-user";
 import { navigationFor } from "./navigation";
 
 // La sesión está fija en la institución: la barra muestra la marca del producto y su nombre,
-// con link al inicio, sin selector de organización.
+// con link al inicio.
 function AppIdentity({ institutionName }: { institutionName: string }) {
   return (
     <SidebarMenu>

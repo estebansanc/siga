@@ -7,7 +7,7 @@ import type { MeDto } from "../schemas";
 import { listOrganizationsOf } from "./memberships";
 
 // "Quién soy": la sesión ya resuelve rol y organización activa (`AuthContext`); esto agrega la
-// lista de organizaciones para el selector y el nombre leído de la base, así un cambio hecho
+// lista de organizaciones de la cuenta y el nombre leído de la base, así un cambio hecho
 // en Mi perfil se ve sin esperar a que venza la caché de sesión en cookie. `lostOrganization`
 // pasa igual la que ya resolvió la sesión: la organización que se dejó, para el aviso del shell.
 export const getMe = async (auth: AuthContext): Promise<MeDto> => {

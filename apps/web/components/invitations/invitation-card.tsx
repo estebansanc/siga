@@ -108,8 +108,8 @@ function PendingInvitation({ invitation }: { invitation: InvitationDto }) {
       <CardHeader className="text-center">
         <CardTitle className="text-xl">{invitation.organizationName}</CardTitle>
         <CardDescription>
-          Te invitaron a unirte como miembro. Vas a poder cambiar a esa organización desde el
-          selector de la barra lateral con tu propia cuenta.
+          Te invitaron a unirte como miembro. Al aceptar, tu cuenta queda como miembro de esa
+          organización.
         </CardDescription>
       </CardHeader>
       <CardContent className="text-muted-foreground text-center text-sm">

@@ -34,7 +34,7 @@ export function OrganizationSection() {
       <CardHeader>
         <CardTitle>Organización</CardTitle>
         <CardDescription>
-          El nombre que ven los miembros en el selector de organización y en la invitación.
+          El nombre que ven los miembros en la barra lateral y en la invitación.
         </CardDescription>
       </CardHeader>
       <CardContent>
