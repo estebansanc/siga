@@ -1,9 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import {
-  editarNovedadSchema,
-  listarNovedadesQuerySchema,
-  publicarNovedadSchema,
-} from "@repo/domain";
+import { editarNovedadSchema, listarNovedadesQuerySchema, publicarNovedadSchema } from "@repo/domain";
 
 import type { ApiEnv } from "../context";
 import { perfilOnly } from "../middleware";
@@ -56,7 +52,11 @@ export const novedadRoutes = new OpenAPIHono<ApiEnv>()
     }),
     async (c) =>
       c.json(
-        await novedades.editarNovedad(c.get("auth"), c.req.valid("param").id, c.req.valid("json")),
+        await novedades.editarNovedad(
+          c.get("auth"),
+          c.req.valid("param").id,
+          c.req.valid("json"),
+        ),
         200,
       ),
   )
