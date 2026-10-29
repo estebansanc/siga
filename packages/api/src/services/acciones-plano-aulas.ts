@@ -33,9 +33,6 @@ const mismaClase = "La clase que entra no puede ser la que ocupa el aula";
 const sinAulaPrevia = "La clase no tiene aula: asignale una";
 const mismaAula = "La clase ya tiene esa aula";
 
-const estadosFinales = estadosSinSolicitud as readonly string[];
-
-// La clase no guarda su cantidad de alumnos: se toman los estudiantes que siguen la comisión.
 const alumnosPorComision = async (comisionIds: string[]) => {
   const grupos = await prisma.comisionSeguida.groupBy({
     by: ["comisionId"],
@@ -216,14 +213,15 @@ export const reemplazarClaseDeAula = async (
       where: {
         aulaId,
         organizationId: auth.organizationId,
+        modalidad: "PRESENCIAL",
+        estado: { notIn: [...estadosSinSolicitud] },
         inicio: { lte: ahora },
         fin: { gt: ahora },
       },
-      select: { id: true, estado: true },
+      select: { id: true },
+      orderBy: { inicio: "asc" },
     });
-    if (!enCurso || estadosFinales.includes(enCurso.estado)) {
-      throw unprocessable(enCurso ? "La clase ya no admite asignación de aula" : sinClaseEnCurso);
-    }
+    if (!enCurso) throw unprocessable(sinClaseEnCurso);
     if (enCurso.id === claseId) throw unprocessable(mismaClase);
     const desplazada = conAula(
       await leerClaseAsignable(tx, auth.organizationId, enCurso.id, ahora),

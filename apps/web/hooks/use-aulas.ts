@@ -105,6 +105,7 @@ export const useAulasDestino = (claseId: string) =>
   useQuery({
     queryKey: queryKeys.aulasDestino(claseId),
     queryFn: () => unwrap<AulaDto[]>(api.aulas.destinos.$get({ query: { claseId } })),
+    enabled: Boolean(claseId),
     ...realtimeQueryOptions,
   });
 

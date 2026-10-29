@@ -197,4 +197,29 @@ test.describe("Móvil", () => {
       retirarPolitica(2);
     }
   });
+
+  test.describe("Ayuda a 360 px", () => {
+    test.use({ viewport: { width: 360, height: 740 }, hasTouch: true });
+
+    test("Ayuda está en el menú, no scrollea a lo ancho y cada pestaña se abre con un toque", async ({
+      page,
+    }) => {
+      await loginViaUi(page, seededUsers.docente);
+      await page.getByRole("button", { name: "Alternar menú lateral" }).click();
+      await page.getByRole("link", { name: "Ayuda" }).click();
+      await expect(page.getByRole("heading", { name: "Ayuda" })).toBeVisible();
+      await expect(page.getByRole("tab", { name: "Guía rápida", selected: true })).toBeVisible();
+      await expectNoHorizontalPageScroll(page);
+
+      await page.getByRole("tab", { name: "Manual de usuario" }).tap();
+      await expect(
+        page.getByRole("tab", { name: "Manual de usuario", selected: true }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "Asistencia" }).first().click();
+      await expectNoHorizontalPageScroll(page);
+
+      await page.getByRole("tab", { name: "Guía rápida" }).tap();
+      await expect(page.getByRole("tab", { name: "Guía rápida", selected: true })).toBeVisible();
+    });
+  });
 });

@@ -709,6 +709,43 @@ describe("Acciones del plano por HTTP", () => {
     );
     expect(movida.status).toBe(200);
     expect(((await movida.json()) as { aula: { codigo: string } }).aula.codigo).toBe("Aula 7");
+
+    const sinAula = await prisma.claseProgramada.create({
+      data: {
+        organizationId: institution.organizationId,
+        comisionId: fixture.comisionId,
+        fecha: toDateColumn(hoy),
+        inicio: new Date(Date.now() - 30_000),
+        fin: new Date(Date.now() + 3_600_000),
+      },
+    });
+    const asignada = await call(`/clases/${sinAula.id}/aula`, json({ aulaId: fixture.aulaId }));
+    expect(asignada.status).toBe(200);
+
+    const otraSinAula = await prisma.claseProgramada.create({
+      data: {
+        organizationId: institution.organizationId,
+        comisionId: fixture.comisionId,
+        fecha: toDateColumn(hoy),
+        inicio: new Date(Date.now() - 20_000),
+        fin: new Date(Date.now() + 3_600_000),
+      },
+    });
+    const destino = await prisma.aula.create({
+      data: {
+        organizationId: institution.organizationId,
+        codigo: "Aula 99",
+        edificio: "Edificio A",
+        piso: "PB",
+        capacidad: 40,
+        equipamiento: [],
+      },
+    });
+    const reemplazo = await call(
+      `/aulas/${fixture.aulaId}/reemplazar-clase`,
+      json({ claseId: otraSinAula.id, aulaDestinoId: destino.id }),
+    );
+    expect(reemplazo.status).toBe(200);
   });
 });
 

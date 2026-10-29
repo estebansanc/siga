@@ -370,6 +370,32 @@ describe("reemplazar", () => {
     expect(await novedades()).toHaveLength(0);
   });
 
+  it("ignora una clase suspendida que conserva el aula y reemplaza a la activa", async () => {
+    const { enCurso, entrante } = await preparar();
+    const suspendida = await otraComision("5K7");
+    const clase = await createClase(
+      institution,
+      { comisionId: suspendida, aulaId: fixture.aulaId },
+      fecha,
+      "08:30",
+      "10:30",
+    );
+    await prisma.claseProgramada.update({
+      where: { id: clase.id },
+      data: { estado: "SUSPENDIDA" },
+    });
+
+    await reemplazarClaseDeAula(
+      bedel(),
+      fixture.aulaId,
+      { claseId: entrante.id, aulaDestinoId: aulaLibreId },
+      ahora,
+    );
+
+    expect(await aulaDe(enCurso.id)).toBe(aulaLibreId);
+    expect(await aulaDe(entrante.id)).toBe(fixture.aulaId);
+  });
+
   it("responde 422 si el aula no tiene clase en curso y 403 al docente", async () => {
     const { entrante } = await preparar();
     await expect(
