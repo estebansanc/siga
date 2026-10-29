@@ -155,6 +155,7 @@ export const reubicarClasesFuturas = async (
   horarioId: string,
   diaSemanaAnterior: number,
   ahora = new Date(),
+  usuarioId?: string,
 ) => {
   const horario = await db.horario.findUniqueOrThrow({
     where: { id: horarioId },
@@ -200,7 +201,7 @@ export const reubicarClasesFuturas = async (
       data: { fecha: toDateColumn(fecha), inicio, fin, aulaId },
     });
     if (aulaId && aulaId !== clase.aulaId) {
-      await registrarAsignacionGenerada(db, horario.organizationId, clase.id, aulaId);
+      await registrarAsignacionGenerada(db, horario.organizationId, clase.id, aulaId, usuarioId);
     }
   }
 };

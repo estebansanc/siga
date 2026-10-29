@@ -6,6 +6,7 @@ import {
   authOf,
   createClase,
   createInstitution,
+  createOrganization,
   createUserWithPerfil,
   resetDatabase,
   seedAcademicFixture,
@@ -333,6 +334,25 @@ describe("paginación y permisos", () => {
     expect(segunda.asignaciones).toHaveLength(5);
     expect(primera.asignaciones[0]?.asignadaEn).toBe("2027-01-01T12:24:00.000Z");
     expect(segunda.asignaciones.at(-1)?.asignadaEn).toBe("2027-01-01T12:00:00.000Z");
+  });
+
+  it("no mezcla instituciones", async () => {
+    const clase = await claseEn(lunes, "19:00", "23:00");
+    await prisma.asignacionAula.create({
+      data: {
+        organizationId: institution.organizationId,
+        claseId: clase.id,
+        aulaId: fixture.aulaId,
+        origen: "GENERACION_CLASES",
+      },
+    });
+    const otra = await createOrganization("otra-institucion", "otra-institucion");
+    const resultado = await consultarUsoAulas(
+      authOf(otra, otra),
+      { desde: lunes, hasta: domingo, pagina: 1 },
+      ahora,
+    );
+    expect(resultado).toMatchObject({ aulas: [], clasesDelPeriodo: 0, total: 0, asignaciones: [] });
   });
 
   it("el Bedel consulta", async () => {

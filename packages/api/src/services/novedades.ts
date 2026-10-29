@@ -20,7 +20,7 @@ import { registrarCambioMasivo } from "./auditoria";
 import { finalizarClasesVencidas } from "./clases";
 import { notificarNovedadPublicada } from "./notificaciones";
 import { accesoDenegado, assertPerfil, esBedel } from "./permisos";
-import { registrarAsignacionAula } from "./registro-asignaciones";
+import { registrarAsignacionesAula } from "./registro-asignaciones";
 import { bloquearAula, estadosSinSolicitud } from "./solicitudes-aula";
 
 const novedadInclude = {
@@ -190,15 +190,18 @@ export const publicarNovedad = async (
       },
     });
     if (aulaNueva) {
-      for (const clase of clases.filter(({ aulaId }) => aulaId !== aulaNueva.id)) {
-        await registrarAsignacionAula(tx, {
-          organizationId: auth.organizationId,
-          claseId: clase.id,
-          aulaId: aulaNueva.id,
-          origen: "CAMBIO_AULA",
-          usuarioId: auth.userId,
-        });
-      }
+      await registrarAsignacionesAula(
+        tx,
+        clases
+          .filter(({ aulaId }) => aulaId !== aulaNueva.id)
+          .map((clase) => ({
+            organizationId: auth.organizationId,
+            claseId: clase.id,
+            aulaId: aulaNueva.id,
+            origen: "CAMBIO_AULA" as const,
+            usuarioId: auth.userId,
+          })),
+      );
     }
     await registrarCambioMasivo(tx, auth.organizationId, "ClaseProgramada", "novedad_publicada", {
       claseIds,
@@ -255,6 +258,7 @@ export const finalizarNovedad = async (
 
   return prisma.$transaction(async (tx) => {
     const restituidas: string[] = [];
+    const asignaciones: Parameters<typeof registrarAsignacionesAula>[1] = [];
     if (novedad.tipo === "CAMBIO_AULA") {
       for (const { clase, aulaAnteriorId } of novedad.clases) {
         if (!aulaAnteriorId || esEstadoClaseFinal(clase.estado)) continue;
@@ -267,7 +271,7 @@ export const finalizarNovedad = async (
           where: { id: clase.id },
           data: { aulaId: aulaAnteriorId },
         });
-        await registrarAsignacionAula(tx, {
+        asignaciones.push({
           organizationId: auth.organizationId,
           claseId: clase.id,
           aulaId: aulaAnteriorId,
@@ -276,6 +280,7 @@ export const finalizarNovedad = async (
         });
         restituidas.push(clase.id);
       }
+      await registrarAsignacionesAula(tx, asignaciones);
     } else {
       const estadoActivo = estadoClasePorNovedad[novedad.tipo];
       const claseIds = novedad.clases

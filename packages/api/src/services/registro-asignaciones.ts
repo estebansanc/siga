@@ -13,3 +13,8 @@ export const registrarAsignacionAula = (
     usuarioId: string;
   },
 ) => tx.asignacionAula.create({ data: datos });
+
+export const registrarAsignacionesAula = (
+  tx: Pick<DbTransaction, "asignacionAula">,
+  datos: Parameters<typeof registrarAsignacionAula>[1][],
+) => tx.asignacionAula.createMany({ data: datos });

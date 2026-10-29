@@ -425,6 +425,9 @@ const sembrarSolicitudesDeAula = async () => {
     where: { id: { in: [simulacion.id, inteligencia.id] } },
     data: { aulaId: null },
   });
+  await prisma.asignacionAula.deleteMany({
+    where: { claseId: { in: [simulacion.id, inteligencia.id, administracion.id] } },
+  });
   const base = { organizationId: institution.id };
   await prisma.solicitudAula.createMany({
     data: [
@@ -455,6 +458,18 @@ const sembrarSolicitudesDeAula = async () => {
         estado: "ASIGNADA" as const,
       },
     ],
+  });
+  const asignada = await prisma.solicitudAula.findFirstOrThrow({
+    where: { organizationId: institution.id, estado: "ASIGNADA" },
+  });
+  await prisma.asignacionAula.create({
+    data: {
+      organizationId: institution.id,
+      claseId: asignada.claseId,
+      aulaId: asignada.aulaId,
+      origen: "ASIGNACION_INMEDIATA",
+      usuarioId: asignada.solicitanteId,
+    },
   });
 };
 

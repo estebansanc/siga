@@ -213,6 +213,7 @@ describe("contrato HTTP", () => {
       "/api/v1/novedades",
       "/api/v1/novedades/{id}/finalizar",
       "/api/v1/historico/novedades",
+      "/api/v1/historico/uso-aulas",
       "/api/v1/historico/opciones",
       "/api/v1/preferencias",
       "/api/v1/carreras",
@@ -293,6 +294,22 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
     expect((await call("/historico/novedades?desde=2026-01-01&hasta=2026-01-31")).status).toBe(403);
     como(estudiante);
     expect((await call("/historico/opciones")).status).toBe(403);
+    como(docente);
+    expect((await call("/historico/uso-aulas?desde=2026-01-01&hasta=2026-01-31")).status).toBe(403);
+    como(institution);
+    const usoAulas = await call("/historico/uso-aulas?desde=2026-02-01&hasta=2026-01-01");
+    expect(usoAulas.status).toBe(422);
+    const issuesUsoAulas = (await usoAulas.json()) as {
+      error: { issues: { path: string; message: string }[] };
+    };
+    expect(issuesUsoAulas.error.issues).toEqual([
+      expect.objectContaining({
+        path: "desde",
+        message: "La fecha desde no puede ser posterior a la fecha hasta",
+      }),
+    ]);
+    como(institution);
+    expect((await call("/historico/uso-aulas?desde=2026-01-01&hasta=2026-01-31")).status).toBe(200);
     como(docente);
     expect((await call("/preferencias")).status).toBe(403);
     como(docente);

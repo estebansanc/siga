@@ -768,7 +768,7 @@ export const actualizarHorario = async (
       data: { ...input },
       include: horarioGestionInclude,
     });
-    await reubicarClasesFuturas(tx, id, actual.diaSemana);
+    await reubicarClasesFuturas(tx, id, actual.diaSemana, new Date(), auth.userId);
     return editado;
   });
   return toHorarioGestionDto(horario);
