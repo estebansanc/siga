@@ -2480,6 +2480,35 @@
           "proximaClase"
         ]
       },
+      "ReemplazoAula": {
+        "type": "object",
+        "properties": {
+          "clase": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Clase"
+              },
+              {
+                "description": "La clase que entró al aula"
+              }
+            ]
+          },
+          "desplazada": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Clase"
+              },
+              {
+                "description": "La clase que pasó al aula de destino"
+              }
+            ]
+          }
+        },
+        "required": [
+          "clase",
+          "desplazada"
+        ]
+      },
       "AulaGestion": {
         "allOf": [
           {
@@ -5805,8 +5834,8 @@
         "tags": [
           "Clases"
         ],
-        "summary": "Asignar aula a una clase sin aula (Bedel)",
-        "description": "Solo Bedel. No publica novedad y envía un correo a los docentes de la comisión. 409 si el aula ya está asignada en esa franja o la clase ya tiene aula; 422 si la clase ya no admite asignación.",
+        "summary": "Asignar aula a una clase sin aula (Bedel y Autoridad)",
+        "description": "Bedel y Autoridad. No publica novedad y envía un correo a los docentes de la comisión. 409 si el aula ya está asignada en esa franja o la clase ya tiene aula; 422 si la clase ya no admite asignación.",
         "parameters": [
           {
             "schema": {
@@ -5839,6 +5868,116 @@
         "responses": {
           "200": {
             "description": "Clase con aula",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Clase"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clases/{id}/mover-aula": {
+      "post": {
+        "tags": [
+          "Clases"
+        ],
+        "summary": "Mover una clase con aula a otra aula (Bedel y Autoridad)",
+        "description": "Bedel y Autoridad. Publica un Cambio de aula de bedelía y envía el correo de reasignación a los docentes. 409 si el aula de destino ya está asignada en esa franja (nombra la comisión); 422 si la clase no tiene aula o ya no admite asignación.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "aulaId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "aulaId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Clase en el aula nueva",
             "content": {
               "application/json": {
                 "schema": {
@@ -11492,6 +11631,307 @@
                   "items": {
                     "$ref": "#/components/schemas/PlanoAula"
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/aulas/destinos": {
+      "get": {
+        "tags": [
+          "Aulas"
+        ],
+        "summary": "Aulas a las que se puede mover una clase (Bedel y Autoridad)",
+        "description": "Aulas Disponibles, libres en la franja de la clase y con capacidad para los estudiantes de su comisión, sin la que ya ocupa. Ordenadas por edificio, piso y código.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "claseId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aulas de destino",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Aula"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/aulas/{id}/clases-asignables": {
+      "get": {
+        "tags": [
+          "Aulas"
+        ],
+        "summary": "Clases de hoy sin aula que se pueden asignar al aula (Bedel y Autoridad)",
+        "description": "Clases presenciales de hoy sin aula, que admiten asignación, sin solicitud pendiente, con los estudiantes de su comisión dentro de la capacidad y la franja libre en el aula. Vacío si el aula no está Disponible.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Clases asignables",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClasesSinAula"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/aulas/{id}/reemplazar-clase": {
+      "post": {
+        "tags": [
+          "Aulas"
+        ],
+        "summary": "Reemplazar la clase en curso del aula (Bedel y Autoridad)",
+        "description": "La clase en curso pasa a `aulaDestinoId` (Cambio de aula y correo de reasignación) y `claseId`, sin aula, ocupa este aula (correo de asignación). Todo o nada. 409 si algún aula ya está asignada en esa franja (nombra la comisión); 422 si el aula no tiene clase en curso o una clase ya no admite asignación.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "claseId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "aulaDestinoId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "claseId",
+                  "aulaDestinoId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Clases reubicadas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReemplazoAula"
                 }
               }
             }

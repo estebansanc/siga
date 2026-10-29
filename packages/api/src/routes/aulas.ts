@@ -1,5 +1,10 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { actualizarAulaSchema, crearAulaSchema } from "@repo/domain";
+import {
+  actualizarAulaSchema,
+  crearAulaSchema,
+  destinosAulaQuerySchema,
+  reemplazarClaseSchema,
+} from "@repo/domain";
 
 import type { ApiEnv } from "../context";
 import { perfilOnly } from "../middleware";
@@ -10,8 +15,11 @@ import {
   aulasDisponiblesQuerySchema,
   aulasGestionQuerySchema,
   idParamSchema,
+  clasesSinAulaSchema,
   planoAulaSchema,
+  reemplazoAulaSchema,
 } from "../schemas";
+import * as acciones from "../services/acciones-plano-aulas";
 import * as aulas from "../services/aulas";
 
 import { commonErrors, jsonBody, jsonResponse } from "./shared";
@@ -51,6 +59,64 @@ export const aulaRoutes = new OpenAPIHono<ApiEnv>()
       },
     }),
     async (c) => c.json(await aulas.listarPlanoAulas(c.get("auth").organizationId), 200),
+  )
+  .openapi(
+    createRoute({
+      method: "get",
+      path: "/destinos",
+      tags,
+      summary: "Aulas a las que se puede mover una clase (Bedel y Autoridad)",
+      description:
+        "Aulas Disponibles, libres en la franja de la clase y con capacidad para los estudiantes de su comisión, sin la que ya ocupa. Ordenadas por edificio, piso y código.",
+      request: { query: destinosAulaQuerySchema },
+      middleware: [perfilOnly("BEDEL", "AUTORIDAD")] as const,
+      responses: { 200: jsonResponse(z.array(aulaSchema), "Aulas de destino"), ...commonErrors },
+    }),
+    async (c) =>
+      c.json(
+        await acciones.listarAulasDestinoDeClase(c.get("auth"), c.req.valid("query").claseId),
+        200,
+      ),
+  )
+  .openapi(
+    createRoute({
+      method: "get",
+      path: "/{id}/clases-asignables",
+      tags,
+      summary: "Clases de hoy sin aula que se pueden asignar al aula (Bedel y Autoridad)",
+      description:
+        "Clases presenciales de hoy sin aula, que admiten asignación, sin solicitud pendiente, con los estudiantes de su comisión dentro de la capacidad y la franja libre en el aula. Vacío si el aula no está Disponible.",
+      request: { params: idParamSchema },
+      middleware: [perfilOnly("BEDEL", "AUTORIDAD")] as const,
+      responses: { 200: jsonResponse(clasesSinAulaSchema, "Clases asignables"), ...commonErrors },
+    }),
+    async (c) =>
+      c.json(
+        await acciones.listarClasesAsignablesAlAula(c.get("auth"), c.req.valid("param").id),
+        200,
+      ),
+  )
+  .openapi(
+    createRoute({
+      method: "post",
+      path: "/{id}/reemplazar-clase",
+      tags,
+      summary: "Reemplazar la clase en curso del aula (Bedel y Autoridad)",
+      description:
+        "La clase en curso pasa a `aulaDestinoId` (Cambio de aula y correo de reasignación) y `claseId`, sin aula, ocupa este aula (correo de asignación). Todo o nada. 409 si algún aula ya está asignada en esa franja (nombra la comisión); 422 si el aula no tiene clase en curso o una clase ya no admite asignación.",
+      request: { params: idParamSchema, body: jsonBody(reemplazarClaseSchema) },
+      middleware: [perfilOnly("BEDEL", "AUTORIDAD")] as const,
+      responses: { 200: jsonResponse(reemplazoAulaSchema, "Clases reubicadas"), ...commonErrors },
+    }),
+    async (c) =>
+      c.json(
+        await acciones.reemplazarClaseDeAula(
+          c.get("auth"),
+          c.req.valid("param").id,
+          c.req.valid("json"),
+        ),
+        200,
+      ),
   )
   .openapi(
     createRoute({

@@ -5,6 +5,7 @@ import type { ApiEnv } from "../context";
 import { perfilOnly } from "../middleware";
 import { claseSchema, clasesDelDiaSchema, clasesSinAulaSchema, idParamSchema } from "../schemas";
 import * as asignacion from "../services/asignacion-aulas";
+import * as acciones from "../services/acciones-plano-aulas";
 import * as clases from "../services/clases";
 
 import { commonErrors, jsonBody, jsonResponse } from "./shared";
@@ -54,16 +55,38 @@ export const claseRoutes = new OpenAPIHono<ApiEnv>()
       method: "post",
       path: "/{id}/aula",
       tags,
-      summary: "Asignar aula a una clase sin aula (Bedel)",
+      summary: "Asignar aula a una clase sin aula (Bedel y Autoridad)",
       description:
-        "Solo Bedel. No publica novedad y envía un correo a los docentes de la comisión. 409 si el aula ya está asignada en esa franja o la clase ya tiene aula; 422 si la clase ya no admite asignación.",
+        "Bedel y Autoridad. No publica novedad y envía un correo a los docentes de la comisión. 409 si el aula ya está asignada en esa franja o la clase ya tiene aula; 422 si la clase ya no admite asignación.",
       request: { params: idParamSchema, body: jsonBody(elegirAulaSchema) },
-      middleware: [perfilOnly("BEDEL")] as const,
+      middleware: [perfilOnly("BEDEL", "AUTORIDAD")] as const,
       responses: { 200: jsonResponse(claseSchema, "Clase con aula"), ...commonErrors },
     }),
     async (c) =>
       c.json(
         await asignacion.asignarAulaAClaseSinAula(
+          c.get("auth"),
+          c.req.valid("param").id,
+          c.req.valid("json"),
+        ),
+        200,
+      ),
+  )
+  .openapi(
+    createRoute({
+      method: "post",
+      path: "/{id}/mover-aula",
+      tags,
+      summary: "Mover una clase con aula a otra aula (Bedel y Autoridad)",
+      description:
+        "Bedel y Autoridad. Publica un Cambio de aula de bedelía y envía el correo de reasignación a los docentes. 409 si el aula de destino ya está asignada en esa franja (nombra la comisión); 422 si la clase no tiene aula o ya no admite asignación.",
+      request: { params: idParamSchema, body: jsonBody(elegirAulaSchema) },
+      middleware: [perfilOnly("BEDEL", "AUTORIDAD")] as const,
+      responses: { 200: jsonResponse(claseSchema, "Clase en el aula nueva"), ...commonErrors },
+    }),
+    async (c) =>
+      c.json(
+        await acciones.moverClaseDeAula(
           c.get("auth"),
           c.req.valid("param").id,
           c.req.valid("json"),

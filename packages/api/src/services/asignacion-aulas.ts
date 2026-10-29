@@ -7,6 +7,7 @@ import {
   type ElegirAula,
   type EstadoSolicitudAula,
   type OrigenAsignacionAula,
+  resolucionCorreoDeAula,
   type RechazarSolicitudAula,
 } from "@repo/domain";
 
@@ -30,12 +31,12 @@ import {
 const claseSinAsignacion = "La clase ya no admite asignación de aula";
 const solicitudNoPendiente = "La solicitud ya no está pendiente";
 const solicitudNoAsignada = "La solicitud no está asignada";
-const claseConAula = "La clase ya tiene aula asignada";
+export const claseConAula = "La clase ya tiene aula asignada";
 const claseConPendiente = "La clase tiene una solicitud pendiente: resolvela antes de asignar aula";
 
-type Resultado<T> = { valor: T; novedad: NovedadDto | null; correos: EmailOutbox[] };
+export type Resultado<T> = { valor: T; novedad: NovedadDto | null; correos: EmailOutbox[] };
 
-const entregarResultado = async <T>({ valor, novedad, correos }: Resultado<T>, orgId: string) => {
+export const entregarResultado = async <T>({ valor, novedad, correos }: Resultado<T>, orgId: string) => {
   if (novedad) await notificarNovedadPublicada(orgId, novedad);
   await entregarCorreosDeAula(correos);
   return valor;
@@ -78,7 +79,7 @@ export const listarClasesSinAula = async (
   return { clases: clases.map((clase) => toClaseDto(clase, true)) };
 };
 
-const leerClaseAsignable = async (
+export const leerClaseAsignable = async (
   tx: DbTransaction,
   organizationId: string,
   claseId: string,
@@ -111,7 +112,7 @@ type ClaseAsignable = Awaited<ReturnType<typeof leerClaseAsignable>>;
 
 // Mueve la clase al aula (verificando en la misma transacción que siga libre) y, si ya tenía
 // otra, publica el Cambio de aula que ven los estudiantes.
-const cambiarAulaDeLaClase = async (
+export const cambiarAulaDeLaClase = async (
   tx: DbTransaction,
   auth: AuthContext,
   clase: ClaseAsignable,
@@ -277,43 +278,56 @@ export const reasignarSolicitudAula = async (
   return entregarResultado(resultado, auth.organizationId);
 };
 
+// Asigna el aula a una clase que no tiene (sin novedad: no hay aula anterior que cambiar) y
+// deja el correo de asignación a sus docentes en la misma transacción.
+export const asignarAulaEnTransaccion = async (
+  tx: DbTransaction,
+  auth: AuthContext,
+  claseId: string,
+  aulaId: string,
+  ahora: Date,
+) => {
+  const clase = await leerClaseAsignable(tx, auth.organizationId, claseId, ahora);
+  if (clase.aulaId !== null) throw conflict(claseConAula);
+  const pendiente = await tx.solicitudAula.findFirst({
+    where: { claseId, estado: "PENDIENTE" },
+    select: { id: true },
+  });
+  if (pendiente) throw conflict(claseConPendiente);
+  const aula = await asignarAulaALaClase(tx, auth.organizationId, clase, aulaId);
+  await registrarAsignacionAula(tx, {
+    organizationId: auth.organizationId,
+    claseId,
+    aulaId,
+    origen: "ASIGNACION_BEDELIA",
+    usuarioId: auth.userId,
+  });
+  await registrarCambioMasivo(tx, auth.organizationId, "ClaseProgramada", "aula_asignada", {
+    claseId,
+    aulaId,
+  });
+  const correos = await registrarCorreosDeAula(tx, auth.organizationId, {
+    resolucion: resolucionCorreoDeAula(null),
+    clase,
+    aula: aula.codigo,
+  });
+  const actualizada = await tx.claseProgramada.findUniqueOrThrow({
+    where: { id: claseId },
+    include: claseInclude,
+  });
+  return { clase: toClaseDto(actualizada, true), correos };
+};
+
 export const asignarAulaAClaseSinAula = async (
   auth: AuthContext,
   claseId: string,
   { aulaId }: ElegirAula,
   ahora = new Date(),
 ): Promise<ClaseDto> => {
-  await assertPerfil(auth, "BEDEL");
+  await assertPerfil(auth, "BEDEL", "AUTORIDAD");
   const resultado = await prisma.$transaction(async (tx): Promise<Resultado<ClaseDto>> => {
-    const clase = await leerClaseAsignable(tx, auth.organizationId, claseId, ahora);
-    if (clase.aulaId !== null) throw conflict(claseConAula);
-    const pendiente = await tx.solicitudAula.findFirst({
-      where: { claseId, estado: "PENDIENTE" },
-      select: { id: true },
-    });
-    if (pendiente) throw conflict(claseConPendiente);
-    const aula = await asignarAulaALaClase(tx, auth.organizationId, clase, aulaId);
-    await registrarAsignacionAula(tx, {
-      organizationId: auth.organizationId,
-      claseId,
-      aulaId,
-      origen: "ASIGNACION_BEDELIA",
-      usuarioId: auth.userId,
-    });
-    await registrarCambioMasivo(tx, auth.organizationId, "ClaseProgramada", "aula_asignada", {
-      claseId,
-      aulaId,
-    });
-    const correos = await registrarCorreosDeAula(tx, auth.organizationId, {
-      resolucion: "ASIGNADA",
-      clase,
-      aula: aula.codigo,
-    });
-    const actualizada = await tx.claseProgramada.findUniqueOrThrow({
-      where: { id: claseId },
-      include: claseInclude,
-    });
-    return { valor: toClaseDto(actualizada, true), novedad: null, correos };
+    const { clase, correos } = await asignarAulaEnTransaccion(tx, auth, claseId, aulaId, ahora);
+    return { valor: clase, novedad: null, correos };
   });
   return entregarResultado(resultado, auth.organizationId);
 };

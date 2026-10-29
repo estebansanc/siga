@@ -1,5 +1,6 @@
 import type * as Auth from "@repo/auth";
-import { prisma } from "@repo/db";
+import { prisma, toDateColumn } from "@repo/db";
+import { fechaArgentina } from "@repo/domain";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiBasePath, createApi } from "../app";
@@ -663,6 +664,51 @@ describe("Solicitudes de aula por HTTP", () => {
     const asignada = await call(`/clases/${clase.id}/aula`, json({ aulaId }));
     expect(asignada.status).toBe(200);
     expect(((await asignada.json()) as { aula: { codigo: string } }).aula.codigo).toBe("Aula 7");
+  });
+});
+
+describe("Acciones del plano por HTTP", () => {
+  it("Docente y Estudiante reciben 403; Bedel y Autoridad asignan, mueven y reemplazan", async () => {
+    const institution = await createInstitution();
+    const fixture = await seedAcademicFixture(institution);
+    const hoy = fechaArgentina(new Date());
+    const enCurso = await prisma.claseProgramada.create({
+      data: {
+        organizationId: institution.organizationId,
+        comisionId: fixture.comisionId,
+        fecha: toDateColumn(hoy),
+        inicio: new Date(Date.now() - 60_000),
+        fin: new Date(Date.now() + 3_600_000),
+        aulaId: fixture.aulaId,
+      },
+    });
+    const rutas = async () => [
+      await call(`/aulas/${fixture.aulaId}/clases-asignables`),
+      await call(`/aulas/destinos?claseId=${enCurso.id}`),
+      await call(`/clases/${enCurso.id}/mover-aula`, json({ aulaId: fixture.otraAulaId })),
+      await call(
+        `/aulas/${fixture.aulaId}/reemplazar-clase`,
+        json({ claseId: enCurso.id, aulaDestinoId: fixture.otraAulaId }),
+      ),
+    ];
+    for (const perfil of ["ESTUDIANTE", "DOCENTE"] as const) {
+      getAuthContext.mockResolvedValue(
+        authOf(institution, await createUserWithPerfil(institution, perfil)),
+      );
+      for (const respuesta of await rutas()) expect(respuesta.status).toBe(403);
+    }
+
+    const autoridad = await createUserWithPerfil(institution, "AUTORIDAD");
+    getAuthContext.mockResolvedValue(authOf(institution, autoridad));
+    expect((await call(`/aulas/${fixture.aulaId}/clases-asignables`)).status).toBe(200);
+    const destinos = await call(`/aulas/destinos?claseId=${enCurso.id}`);
+    expect(destinos.status).toBe(200);
+    const movida = await call(
+      `/clases/${enCurso.id}/mover-aula`,
+      json({ aulaId: fixture.otraAulaId }),
+    );
+    expect(movida.status).toBe(200);
+    expect(((await movida.json()) as { aula: { codigo: string } }).aula.codigo).toBe("Aula 7");
   });
 });
 

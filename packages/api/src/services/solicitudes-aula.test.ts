@@ -268,7 +268,10 @@ describe("crear solicitud", () => {
     await createClase(institution, fixture, fecha, "11:00", "13:00", fixture.otraAulaId);
     await expect(
       crearSolicitudAula(docente(), pedido(clase.id, fixture.otraAulaId), ahora),
-    ).rejects.toMatchObject({ status: 409, message: "El aula ya está asignada en esa franja" });
+    ).rejects.toMatchObject({
+      status: 409,
+      message: expect.stringContaining("El aula ya está asignada en esa franja"),
+    });
     expect(await prisma.solicitudAula.count()).toBe(0);
     const actual = await prisma.claseProgramada.findUniqueOrThrow({ where: { id: clase.id } });
     expect(actual.aulaId).toBeNull();
@@ -326,7 +329,10 @@ describe("crear solicitud", () => {
     );
     expect(resultados.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
     expect(resultados.find(({ status }) => status === "rejected")).toMatchObject({
-      reason: { status: 409, message: "El aula ya está asignada en esa franja" },
+      reason: {
+        status: 409,
+        message: expect.stringContaining("El aula ya está asignada en esa franja"),
+      },
     });
     expect(await prisma.claseProgramada.count({ where: { aulaId: fixture.otraAulaId } })).toBe(1);
   });

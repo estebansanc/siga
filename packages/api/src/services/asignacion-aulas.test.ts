@@ -26,7 +26,10 @@ import { crearSolicitudAula } from "./solicitudes-aula";
 
 const fecha = "2026-10-14";
 const ahora = new Date(`${fecha}T10:00:00-03:00`);
-const ocupada = { status: 409, message: "El aula ya está asignada en esa franja" };
+const ocupada = {
+  status: 409,
+  message: expect.stringContaining("El aula ya está asignada en esa franja"),
+};
 
 let institution: TestOrganization;
 let fixture: AcademicFixture;

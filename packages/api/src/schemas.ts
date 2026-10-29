@@ -752,6 +752,14 @@ export const clasesSinAulaSchema = z
   .openapi("ClasesSinAula");
 export type ClasesSinAulaDto = z.infer<typeof clasesSinAulaSchema>;
 
+export const reemplazoAulaSchema = z
+  .object({
+    clase: claseSchema.openapi({ description: "La clase que entró al aula" }),
+    desplazada: claseSchema.openapi({ description: "La clase que pasó al aula de destino" }),
+  })
+  .openapi("ReemplazoAula");
+export type ReemplazoAulaDto = z.infer<typeof reemplazoAulaSchema>;
+
 export const gestionQuerySchema = z.object({
   bajas: z
     .enum(["true", "false"])

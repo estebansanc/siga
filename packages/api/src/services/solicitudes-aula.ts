@@ -226,9 +226,9 @@ export const asignarAulaALaClase = async (
       fin: { gt: clase.inicio },
       estado: { notIn: [...estadosSinSolicitud] },
     },
-    select: { id: true },
+    select: { comision: { select: { codigo: true } } },
   });
-  if (ocupada) throw conflict(aulaOcupada);
+  if (ocupada) throw conflict(`${aulaOcupada}: la ocupa la comisión ${ocupada.comision.codigo}`);
   const { count } = await tx.claseProgramada.updateMany({
     where: { id: clase.id, aulaId: clase.aulaId },
     data: { aulaId },
