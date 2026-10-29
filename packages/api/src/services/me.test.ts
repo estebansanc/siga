@@ -36,6 +36,7 @@ describe("quién soy", () => {
         expect.objectContaining({ id: member.organizationId, role: "owner" }),
         expect.objectContaining({ id: organization.organizationId, role: "member" }),
       ],
+      politicaPendiente: true,
       lostOrganization: null,
     });
   });

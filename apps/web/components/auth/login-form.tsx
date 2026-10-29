@@ -20,17 +20,17 @@ import {
 import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { formValue } from "@/lib/form-data";
+import { navigateAfterSignIn } from "@/lib/navigation";
 
 import { authRouteWithNext, nextRouteOf } from "./auth-routes";
 import { GoogleIcon } from "./google-icon";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = nextRouteOf(searchParams);
   const passwordUpdated = searchParams.get("contrasena") === "actualizada";
@@ -58,8 +58,7 @@ export function LoginForm() {
       else toast.error("Email o contraseña incorrectos");
       return;
     }
-    router.push(next);
-    router.refresh();
+    navigateAfterSignIn(next);
   };
 
   const resendVerification = async () => {

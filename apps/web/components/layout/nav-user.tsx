@@ -19,7 +19,7 @@ import {
 } from "@repo/ui/components/sidebar";
 import { Spinner } from "@repo/ui/components/spinner";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronsUpDownIcon, LogOutIcon, UserIcon } from "lucide-react";
+import { ChevronsUpDownIcon, LogOutIcon, ShieldCheckIcon, UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -87,6 +87,10 @@ export function NavUser({ user }: { user: { name: string; email: string } }) {
               <DropdownMenuItem render={<Link href="/mi-perfil" />}>
                 <UserIcon />
                 Mi perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem render={<Link href="/politica-de-privacidad" />}>
+                <ShieldCheckIcon />
+                Política de privacidad
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

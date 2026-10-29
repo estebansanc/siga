@@ -7,6 +7,7 @@ import { findOwnedOrganizationId } from "../services/memberships";
 
 const tables = [
   "asignacion_aula",
+  "aceptacion_politica",
   "intento_asistencia_fallido",
   "incidencia_estado",
   "incidencia",

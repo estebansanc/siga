@@ -1,6 +1,7 @@
 export const queryKeys = {
   me: ["me"] as const,
   settings: ["settings"] as const,
+  politicaPrivacidad: ["politica-privacidad"] as const,
   members: ["members"] as const,
   usuarios: (query: Record<string, string | undefined>) => ["usuarios", "lista", query] as const,
   dominiosPermitidos: ["usuarios", "dominios"] as const,

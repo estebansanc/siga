@@ -29,6 +29,7 @@ import { incidenciaRoutes } from "./routes/incidencias";
 import { meRoutes } from "./routes/me";
 import { memberRoutes } from "./routes/members";
 import { novedadRoutes } from "./routes/novedades";
+import { politicaPrivacidadRoutes } from "./routes/politica-privacidad";
 import { preferenciaRoutes } from "./routes/preferencias";
 import { qrRoutes } from "./routes/qr";
 import { settingsRoutes } from "./routes/settings";
@@ -110,6 +111,7 @@ export const createApi = ({ defer }: CreateApiOptions = {}) => {
   return app
     .route("/cuenta", cuentaRoutes)
     .route("/me", meRoutes)
+    .route("/politica-de-privacidad", politicaPrivacidadRoutes)
     .route("/settings", settingsRoutes)
     .route("/members", memberRoutes)
     .route("/usuarios", usuarioRoutes)

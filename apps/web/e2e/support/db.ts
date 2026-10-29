@@ -24,6 +24,27 @@ const readSql = (sql: string) =>
 export const verificarCorreo = (email: string) =>
   runSql(`UPDATE "user" SET "emailVerified" = true WHERE email = '${email}';`);
 
+// Las cuentas que no ejercitan la pantalla de la política la dan por aceptada.
+export const aceptarPolitica = (email: string) =>
+  runSql(`
+    INSERT INTO aceptacion_politica ("id", "userId", "version")
+    SELECT 'e2e-' || u.id, u.id, 1 FROM "user" u WHERE u.email = '${email}'
+    ON CONFLICT DO NOTHING;
+  `);
+
+// Publica una versión nueva de la política; `retirarPolitica` la quita al terminar el test.
+export const publicarPolitica = (version: number, texto: string) =>
+  runSql(`
+    INSERT INTO politica_privacidad ("version", "titulo", "texto")
+    VALUES (${version}, 'Política de privacidad', '${texto}');
+  `);
+
+export const retirarPolitica = (version: number) =>
+  runSql(`
+    DELETE FROM aceptacion_politica WHERE "version" = ${version};
+    DELETE FROM politica_privacidad WHERE "version" = ${version};
+  `);
+
 // El primer enlace del último correo que la cola mandó a esa dirección (sin Resend en e2e los
 // correos quedan en `email_outbox`).
 export const enlaceDelUltimoCorreo = (email: string) => {

@@ -1,6 +1,6 @@
 import { expect, test as base, type APIRequestContext, type Page } from "@playwright/test";
 
-import { enlaceDelUltimoCorreo, verificarCorreo } from "./db";
+import { aceptarPolitica, enlaceDelUltimoCorreo, verificarCorreo } from "./db";
 
 export type User = { name: string; email: string; password: string };
 
@@ -33,6 +33,7 @@ export const signUpViaApi = async (request: APIRequestContext, user: User) => {
   });
   expect(response.ok()).toBeTruthy();
   verificarCorreo(user.email);
+  aceptarPolitica(user.email);
 };
 
 // El registro por la pantalla termina en "Revisá tu correo"; el enlace del correo verifica la
@@ -46,8 +47,17 @@ export const registerViaUi = async (page: Page, user: User) => {
   await expect(page.getByText("Revisá tu correo")).toBeVisible();
 };
 
+export const aceptarPoliticaViaUi = async (page: Page) => {
+  await expect(page).toHaveURL(/\/politica-de-privacidad/);
+  await page.getByRole("button", { name: "Aceptar y continuar" }).click();
+  await expect(page).not.toHaveURL(/\/politica-de-privacidad/);
+};
+
+// Una cuenta nueva ve la política antes que cualquier pantalla: el enlace la verifica y la
+// acepta por la pantalla.
 export const verifyEmailViaLink = async (page: Page, user: User) => {
   await page.goto(enlaceDelUltimoCorreo(user.email));
+  await aceptarPoliticaViaUi(page);
   await expect(page).toHaveURL(/\/$/);
 };
 

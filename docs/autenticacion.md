@@ -39,6 +39,15 @@ El middleware `ownerOnly` (`packages/api/src/middleware.ts`) protege las escritu
 - **Cierre global**: el hook previo de `/sign-out` borra todas las sesiones de la cuenta (web y bearer); los demás dispositivos pierden acceso en su próxima request.
 - **Auditoría**: cada ingreso exitoso (correo o Google, en `databaseHooks.session.create.after`), cada fallo y cada bloqueo quedan en `AuditLog` (`entity: "Ingreso"`, ver `docs/modelo-de-datos.md`). Cerrar sesión no se audita.
 
+## Política de privacidad (PRI-1, PRI-2)
+
+- Toda cuenta, de cualquier perfil y sea por autorregistro o por alta de un administrador, debe aceptar la versión vigente de la política (la de número más alto en `PoliticaPrivacidad`) antes de usar la app. `GET /me` informa `politicaPendiente`.
+- El layout autenticado (`apps/web/app/(app)/layout.tsx`) lo lee: con la aceptación pendiente redirige toda pantalla interna a `/politica-de-privacidad?next=<ruta pedida>` y esa pantalla se muestra sin menú, con "Aceptar y continuar" (registra fecha, hora y versión y vuelve a `next` o al inicio) y "Cerrar sesión" (no registra nada).
+- Ya aceptada, se relee desde el ítem "Política de privacidad" del menú de usuario, con menú y la leyenda "Aceptaste esta versión el dd/mm/aaaa".
+- Una versión nueva vuelve a pedir la aceptación a todos; las aceptaciones anteriores se conservan. `POST /politica-de-privacidad/aceptaciones` responde 409 si la versión enviada no es la vigente: la pantalla avisa, muestra la nueva y no registra nada.
+- Texto y versión son datos (`docs/modelo-de-datos.md`): publicar una versión no cambia la pantalla ni el flujo. La API no bloquea el resto de las rutas: el bloqueo es de las pantallas.
+- Después de iniciar sesión (`LoginForm`, `ActivarCuentaForm`) se navega con una carga completa (`navigateAfterSignIn`): una navegación blanda cuyo destino el layout redirige a la política dejaba la pantalla en blanco.
+
 ## Sesión en la web
 
 - `proxy.ts` redirige a `/login?next=<ruta>` si no hay cookie de sesión (chequeo rápido con `getSessionCookie`), pero solo para las rutas internas conocidas (`protectedRoutes`: `/`, `/configuracion`, `/mi-perfil` y las pantallas de SiGA, `/clases`, `/novedades`, `/estado-institucional`, `/preferencias` y las secciones "Próximamente"): el proxy no sabe qué rutas existen de verdad, así que cualquier otra URL (incluida una que no exista) sigue de largo y la resuelve Next, que responde 404 con la pantalla neutra de `apps/web/app/not-found.tsx` en vez de pedir login primero. Esa lista es manual: toda ruta nueva de la app va también ahí, y si una se saca de la app hay que sacarla de la lista. `/login` y `/registro` redirigen a `/` cuando ya hay sesión y, sin sesión, vuelven a `next` después de entrar (solo rutas internas; el link entre ambas lo conserva). `/~offline` no redirige en ningún sentido.

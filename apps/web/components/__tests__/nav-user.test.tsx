@@ -38,6 +38,15 @@ describe("NavUser", () => {
     );
   });
 
+  it("ofrece releer la política de privacidad", async () => {
+    renderNavUser();
+    await userEvent.click(screen.getByTestId("user-menu-trigger"));
+    expect(await screen.findByRole("menuitem", { name: "Política de privacidad" })).toHaveAttribute(
+      "href",
+      "/politica-de-privacidad",
+    );
+  });
+
   it("cerrar sesión limpia la caché y va al login", async () => {
     const { queryClient } = renderNavUser();
     const clear = vi.spyOn(queryClient, "clear");

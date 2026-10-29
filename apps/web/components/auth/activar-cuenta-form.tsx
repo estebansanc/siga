@@ -20,10 +20,11 @@ import {
 import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { formValue } from "@/lib/form-data";
+import { navigateAfterSignIn } from "@/lib/navigation";
 
 export function EnlaceInvalido() {
   return (
@@ -46,7 +47,6 @@ export function EnlaceInvalido() {
 // RF-10: la cuenta que dio de alta un administrador define su contraseña con el enlace del
 // correo (24 horas, de un solo uso) y entra directo.
 export function ActivarCuentaForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token") ?? "";
   const email = params.get("email") ?? "";
@@ -71,8 +71,7 @@ export function ActivarCuentaForm() {
       return;
     }
     const signIn = await authClient.signIn.email({ email, password });
-    router.push(signIn.error ? "/login" : "/");
-    router.refresh();
+    navigateAfterSignIn(signIn.error ? "/login" : "/");
   };
 
   if (!token || invalidLink) return <EnlaceInvalido />;

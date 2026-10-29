@@ -23,3 +23,4 @@ export * from "./tiempo";
 export * from "./turnos";
 export * from "./usuarios";
 export * from "./bloqueo-cuenta";
+export * from "./politica-privacidad";

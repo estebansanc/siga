@@ -50,6 +50,7 @@ const meOf = (
   role: "owner",
   perfil,
   organizations,
+  politicaPendiente: false,
   lostOrganization: null,
 });
 

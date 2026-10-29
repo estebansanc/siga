@@ -120,6 +120,10 @@
             },
             "description": "Todas las organizaciones de la cuenta: la propia y las que la invitaron"
           },
+          "politicaPendiente": {
+            "type": "boolean",
+            "description": "La persona todavía no aceptó la versión vigente de la política de privacidad: debe hacerlo antes de usar el resto de la app (`/politica-de-privacidad`)."
+          },
           "lostOrganization": {
             "$ref": "#/components/schemas/LostOrganization"
           }
@@ -132,6 +136,7 @@
           "role",
           "perfil",
           "organizations",
+          "politicaPendiente",
           "lostOrganization"
         ]
       },
@@ -180,6 +185,36 @@
           "name"
         ],
         "description": "La organización activa dejó de tener membresía y la sesión volvió a la propia; `null` en el resto de los casos."
+      },
+      "PoliticaPrivacidad": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "texto": {
+            "type": "string"
+          },
+          "publicadaEn": {
+            "type": "string"
+          },
+          "aceptadaEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "version",
+          "titulo",
+          "texto",
+          "publicadaEn",
+          "aceptadaEn"
+        ]
       },
       "Settings": {
         "type": "object",
@@ -3224,6 +3259,187 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/politica-de-privacidad": {
+      "get": {
+        "tags": [
+          "Política de privacidad"
+        ],
+        "summary": "Versión vigente de la política de privacidad",
+        "description": "Título, número de versión y texto (párrafos separados por una línea en blanco). `aceptadaEn` es la fecha en que la persona aceptó esta versión, o `null` si todavía no.",
+        "responses": {
+          "200": {
+            "description": "Política vigente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoliticaPrivacidad"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/politica-de-privacidad/aceptaciones": {
+      "post": {
+        "tags": [
+          "Política de privacidad"
+        ],
+        "summary": "Aceptar la versión vigente de la política de privacidad",
+        "description": "Registra fecha y hora de la aceptación. 409 si `version` no es la vigente (se publicó una nueva): no se registra nada y hay que leer la vigente con `GET`. Aceptar dos veces la misma versión es idempotente.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "version"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Política aceptada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoliticaPrivacidad"
                 }
               }
             }
