@@ -65,7 +65,7 @@ beforeEach(() => {
 
 describe("PlanoAulas", () => {
   it("abre en el primer edificio y su piso más bajo, con cada aula y su estado", () => {
-    renderWithProviders(<PlanoAulas />);
+    renderWithProviders(<PlanoAulas perfil="DOCENTE" />);
     const celdas = screen.getAllByRole("button", { name: /^Aula/ });
     expect(celdas.map((celda) => celda.textContent)).toEqual([
       "Aula 1Ocupada",
@@ -76,7 +76,7 @@ describe("PlanoAulas", () => {
   });
 
   it("cambia de piso y de edificio", async () => {
-    renderWithProviders(<PlanoAulas />);
+    renderWithProviders(<PlanoAulas perfil="DOCENTE" />);
     await userEvent.click(screen.getByRole("button", { name: "1.º piso" }));
     expect(screen.getByRole("button", { name: /Aula 12.*Pendiente/ })).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Edificio B" }));
@@ -85,7 +85,7 @@ describe("PlanoAulas", () => {
   });
 
   it("el pop-up de una clase en curso muestra comisión, materia, docente, franja y asistencia", async () => {
-    renderWithProviders(<PlanoAulas />);
+    renderWithProviders(<PlanoAulas perfil="DOCENTE" />);
     await userEvent.click(screen.getByRole("button", { name: "1.º piso" }));
     await userEvent.click(screen.getByRole("button", { name: /Aula 12/ }));
     const dialog = screen.getByRole("dialog");
@@ -110,7 +110,7 @@ describe("PlanoAulas", () => {
       }),
       aula({ id: "a4", codigo: "Aula 4" }),
     ];
-    renderWithProviders(<PlanoAulas />);
+    renderWithProviders(<PlanoAulas perfil="DOCENTE" />);
     await userEvent.click(screen.getByRole("button", { name: /Aula 3/ }));
     expect(within(screen.getByRole("dialog")).getByText("Libre en este momento.")).toBeVisible();
     expect(
@@ -125,7 +125,7 @@ describe("PlanoAulas", () => {
     state.aulas = [
       aula({ estado: "EN_MANTENIMIENTO", estadoAula: "EN_MANTENIMIENTO", claseEnCurso: clase() }),
     ];
-    renderWithProviders(<PlanoAulas />);
+    renderWithProviders(<PlanoAulas perfil="DOCENTE" />);
     await userEvent.click(screen.getByRole("button", { name: /Aula 1/ }));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText("En mantenimiento")).toBeVisible();
@@ -133,10 +133,10 @@ describe("PlanoAulas", () => {
   });
 
   it("mantiene la elección cuando el piso queda sin aulas activas", async () => {
-    const { rerender } = renderWithProviders(<PlanoAulas />);
+    const { rerender } = renderWithProviders(<PlanoAulas perfil="DOCENTE" />);
     await userEvent.click(screen.getByRole("button", { name: "1.º piso" }));
     state.aulas = state.aulas?.filter((item) => item.piso !== "1.º piso");
-    rerender(<PlanoAulas />);
+    rerender(<PlanoAulas perfil="DOCENTE" />);
     expect(screen.getByText("No hay aulas activas en este piso")).toBeVisible();
     expect(screen.getByRole("button", { name: "1.º piso" })).toHaveAttribute(
       "aria-pressed",
@@ -145,12 +145,12 @@ describe("PlanoAulas", () => {
   });
 
   it("fija el piso inicial: si se vacía sin haberlo tocado no salta a otro", () => {
-    const { rerender } = renderWithProviders(<PlanoAulas />);
+    const { rerender } = renderWithProviders(<PlanoAulas perfil="DOCENTE" />);
     expect(screen.getByRole("button", { name: /Aula 1/ })).toBeVisible();
     state.aulas = state.aulas?.filter(
       (item) => item.piso !== "PB" || item.edificio !== "Edificio A",
     );
-    rerender(<PlanoAulas />);
+    rerender(<PlanoAulas perfil="DOCENTE" />);
     expect(screen.getByText("No hay aulas activas en este piso")).toBeVisible();
     expect(screen.getByRole("button", { name: "PB" })).toHaveAttribute("aria-pressed", "true");
   });
@@ -167,7 +167,7 @@ describe("PlanoAulas", () => {
         estado: "PENDIENTE",
       }),
     ];
-    renderWithProviders(<PlanoAulas />);
+    renderWithProviders(<PlanoAulas perfil="DOCENTE" />);
     await userEvent.click(screen.getByRole("button", { name: /Aula 1/ }));
     expect(within(screen.getByRole("dialog")).getByText("Demora de 15 min")).toBeVisible();
   });

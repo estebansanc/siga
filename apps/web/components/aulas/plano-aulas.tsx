@@ -1,7 +1,7 @@
 "use client";
 
 import type { PlanoAulaDto } from "@repo/api/client";
-import { compararPisos } from "@repo/domain";
+import { compararPisos, type Perfil } from "@repo/domain";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
@@ -90,7 +90,7 @@ function AulaCelda({ aula, onClick }: { aula: PlanoAulaDto; onClick: () => void 
 // Plano de aulas (RF-02, RF-07): grilla provisoria por código hasta tener los planos de cada
 // piso. Se actualiza por consulta periódica de 30 s. La elección inicial queda fijada con los
 // primeros datos: si el piso se vacía no salta a otro.
-export function PlanoAulas() {
+export function PlanoAulas({ perfil }: { perfil: Perfil }) {
   const plano = usePlanoAulas();
   const [seleccion, setSeleccion] = useState<{ edificio: string; piso: string }>();
   const [aulaId, setAulaId] = useState<string | null>(null);
@@ -173,7 +173,9 @@ export function PlanoAulas() {
           </>
         )}
       </CardContent>
-      {aulaAbierta ? <PlanoAulaDialog aula={aulaAbierta} onClose={() => setAulaId(null)} /> : null}
+      {aulaAbierta ? (
+        <PlanoAulaDialog aula={aulaAbierta} perfil={perfil} onClose={() => setAulaId(null)} />
+      ) : null}
     </Card>
   );
 }

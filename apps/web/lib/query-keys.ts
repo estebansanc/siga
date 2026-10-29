@@ -30,6 +30,8 @@ export const queryKeys = {
   aulasPlano: ["aulas", "plano"] as const,
   aula: (id: string) => ["aulas", id] as const,
   clasesDelTurno: (query: Record<string, string>) => ["clases-del-turno", query] as const,
+  clasesAsignables: (aulaId: string) => ["aulas", "clases-asignables", aulaId] as const,
+  aulasDestino: (claseId: string) => ["aulas-destino", claseId] as const,
   aulasDisponibles: (claseIds: string[]) => ["aulas-disponibles", claseIds] as const,
   clasesSolicitables: (fecha: string) => ["solicitudes-aula", "clases", fecha] as const,
   busquedaAulas: (pedido: object) => ["solicitudes-aula", "aulas", pedido] as const,

@@ -1,11 +1,12 @@
 "use client";
 
 import type { ClaseDto, PlanoAulaDto } from "@repo/api/client";
-import { tipoNovedadLabels } from "@repo/domain";
+import { tipoNovedadLabels, type Perfil } from "@repo/domain";
 import { Dialog, DialogDescription, DialogHeader, DialogTitle } from "@repo/ui/components/dialog";
 
 import { FormDialogContent } from "@/components/form-dialog-content";
 
+import { PlanoAcciones } from "./plano-acciones";
 import { PlanoEstadoBadge } from "./plano-estado-badge";
 
 function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
@@ -68,7 +69,15 @@ function ProximaClase({ aula }: { aula: PlanoAulaDto }) {
   );
 }
 
-export function PlanoAulaDialog({ aula, onClose }: { aula: PlanoAulaDto; onClose: () => void }) {
+export function PlanoAulaDialog({
+  aula,
+  perfil,
+  onClose,
+}: {
+  aula: PlanoAulaDto;
+  perfil: Perfil;
+  onClose: () => void;
+}) {
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <FormDialogContent size="xl">
@@ -84,6 +93,7 @@ export function PlanoAulaDialog({ aula, onClose }: { aula: PlanoAulaDto; onClose
           </div>
           {aula.claseEnCurso ? <ClaseEnCurso clase={aula.claseEnCurso} /> : null}
           {aula.claseEnCurso ? null : <ProximaClase aula={aula} />}
+          <PlanoAcciones aula={aula} perfil={perfil} />
         </div>
       </FormDialogContent>
     </Dialog>

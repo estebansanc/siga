@@ -85,13 +85,19 @@ export const useClasesSinAula = () =>
 
 // Resolver una solicitud o asignar un aula cambia la clase, su ocupación y puede publicar una
 // novedad: se refrescan todos esos listados.
-const useInvalidarResolucion = () => {
+export const useInvalidarResolucion = () => {
   const queryClient = useQueryClient();
   return () =>
     Promise.all(
-      ["solicitudes-aula", "clases", "clase", "aulas", "aulas-disponibles", "novedades"].map(
-        (key) => queryClient.invalidateQueries({ queryKey: [key] }),
-      ),
+      [
+        "solicitudes-aula",
+        "clases",
+        "clase",
+        "aulas",
+        "aulas-disponibles",
+        "aulas-destino",
+        "novedades",
+      ].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
     );
 };
 
