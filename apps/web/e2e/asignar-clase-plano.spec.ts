@@ -6,13 +6,16 @@ import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
 type Escenario = Awaited<ReturnType<typeof crearEscenarioDeAsignacion>>;
 
 let escenario: Escenario;
+let creado = false;
 
 test.beforeEach(async () => {
   escenario = await crearEscenarioDeAsignacion();
+  creado = true;
 });
 
 test.afterEach(async () => {
-  await eliminarEscenarioDeAsignacion(escenario);
+  if (creado) await eliminarEscenarioDeAsignacion(escenario);
+  creado = false;
 });
 
 const abrirPlano = async (page: Page, usuario: typeof seededUsers.bedel) => {

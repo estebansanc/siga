@@ -149,23 +149,31 @@ export const crearEscenarioDeAsignacion = async () => {
     crearAula(`Aula Libre ${marca}`, "PB"),
     crearAula(`Aula Destino ${marca}`, "1.º piso"),
   ]);
-  // Pasada la medianoche "hace 40 minutos" cae ayer: la clase sin aula debe ser de hoy.
+  // Pasada la medianoche "hace 40 minutos" cae ayer: la clase sin aula debe ser de hoy, y las
+  // dos clases no pueden compartir inicio (único por comisión).
   const hoy = fechaArgentina(new Date());
-  const crearClase = (minutosAtras: number, aulaId: string | null) => {
-    const inicio = new Date(Math.max(Date.now() - minutosAtras * 60_000, comienzoDelDia(hoy)));
-    return prisma.claseProgramada.create({
+  const crearClase = (inicio: Date, aulaId: string | null) =>
+    prisma.claseProgramada.create({
       data: {
         organizationId: comision.organizationId,
         comisionId: comision.id,
-        fecha: toDateColumn(hoy),
+        fecha: toDateColumn(fechaArgentina(inicio)),
         inicio,
         fin: new Date(Date.now() + 90 * 60_000),
         aulaId,
       },
     });
-  };
-  const enCurso = await crearClase(10 + Math.floor(Math.random() * 20), conClase.id);
-  const sinAula = await crearClase(31 + Math.floor(Math.random() * 20), null);
+  const haceMinutos = (minutos: number) => new Date(Date.now() - minutos * 60_000);
+  const enCurso = await crearClase(haceMinutos(10 + Math.floor(Math.random() * 20)), conClase.id);
+  const sinAula = await crearClase(
+    new Date(
+      Math.max(
+        haceMinutos(31 + Math.floor(Math.random() * 20)).getTime(),
+        comienzoDelDia(hoy) + 60_000,
+      ),
+    ),
+    null,
+  );
   return {
     edificio,
     conClase,
