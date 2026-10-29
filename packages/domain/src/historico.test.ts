@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   calcularIndicadoresAsistencia,
+  calcularIndicadoresIncidencias,
+  consultaIncidenciasSchema,
   consultaAsistenciasSchema,
   consultaNovedadesSchema,
   consultaUsoAulasSchema,
@@ -183,5 +185,52 @@ describe("uso de aulas", () => {
     expect(horasDeClase(new Date("2026-10-05T22:00:00Z"), new Date("2026-10-06T02:00:00Z"))).toBe(
       4,
     );
+  });
+});
+
+describe("consulta histórica de incidencias", () => {
+  const mensajesIncidencias = (input: unknown) => {
+    const resultado = consultaIncidenciasSchema.safeParse(input);
+    return resultado.success
+      ? []
+      : resultado.error.issues.map((issue) => [issue.path.join("."), issue.message]);
+  };
+
+  it("acepta el rango, el aula opcional y descarta los demás filtros", () => {
+    expect(
+      consultaIncidenciasSchema.parse({
+        desde: "2026-01-01",
+        hasta: "2026-01-31",
+        aulaId: "",
+        carreraId: "x",
+      }),
+    ).toEqual({ desde: "2026-01-01", hasta: "2026-01-31", aulaId: undefined, pagina: 1 });
+  });
+
+  it("valida el rango con los mensajes de Novedades", () => {
+    expect(mensajesIncidencias({})).toEqual([
+      ["desde", "Ingresá la fecha desde"],
+      ["hasta", "Ingresá la fecha hasta"],
+    ]);
+    expect(mensajesIncidencias({ desde: "2026-02-01", hasta: "2026-01-01" })).toEqual([
+      ["desde", "La fecha desde no puede ser posterior a la fecha hasta"],
+    ]);
+    expect(mensajesIncidencias({ desde: "2025-10-21", hasta: "2026-10-21" })).toEqual([]);
+    expect(mensajesIncidencias({ desde: "2025-10-21", hasta: "2026-10-22" })).toEqual([
+      ["hasta", "El rango de fechas no puede superar los 12 meses"],
+    ]);
+  });
+
+  it("cuenta el total y cada estado, con 0 si no hay", () => {
+    expect(calcularIndicadoresIncidencias([])).toEqual({
+      total: 0,
+      porEstado: { ABIERTA: 0, EN_CURSO: 0, RESUELTA: 0 },
+    });
+    expect(
+      calcularIndicadoresIncidencias([
+        { estado: "EN_CURSO", cantidad: 2 },
+        { estado: "RESUELTA", cantidad: 5 },
+      ]),
+    ).toEqual({ total: 7, porEstado: { ABIERTA: 0, EN_CURSO: 2, RESUELTA: 5 } });
   });
 });

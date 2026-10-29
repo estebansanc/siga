@@ -1471,6 +1471,163 @@
           "usuario"
         ]
       },
+      "ConsultaIncidenciasResultado": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "porEstado": {
+            "type": "object",
+            "properties": {
+              "ABIERTA": {
+                "type": "integer"
+              },
+              "EN_CURSO": {
+                "type": "integer"
+              },
+              "RESUELTA": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "ABIERTA",
+              "EN_CURSO",
+              "RESUELTA"
+            ]
+          },
+          "pagina": {
+            "type": "integer"
+          },
+          "tamanioPagina": {
+            "type": "integer"
+          },
+          "totalPaginas": {
+            "type": "integer"
+          },
+          "incidencias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidenciaHistorica"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "porEstado",
+          "pagina",
+          "tamanioPagina",
+          "totalPaginas",
+          "incidencias"
+        ]
+      },
+      "IncidenciaHistorica": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reportadaEn": {
+            "type": "string"
+          },
+          "aula": {
+            "type": "string"
+          },
+          "elemento": {
+            "type": "string",
+            "enum": [
+              "PROYECTOR",
+              "CLIMATIZACION",
+              "ILUMINACION",
+              "MOBILIARIO",
+              "CONECTIVIDAD",
+              "OTRO"
+            ]
+          },
+          "gravedad": {
+            "type": "string",
+            "enum": [
+              "LEVE",
+              "IMPIDE_USO"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ABIERTA",
+              "EN_CURSO",
+              "RESUELTA"
+            ]
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "reportadaPor": {
+            "type": "string"
+          },
+          "historial": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidenciaEstado"
+            },
+            "description": "Cada estado con fecha, hora, usuario y observaciones, del más antiguo al más nuevo"
+          }
+        },
+        "required": [
+          "id",
+          "reportadaEn",
+          "aula",
+          "elemento",
+          "gravedad",
+          "estado",
+          "descripcion",
+          "reportadaPor",
+          "historial"
+        ]
+      },
+      "IncidenciaEstado": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ABIERTA",
+              "EN_CURSO",
+              "RESUELTA"
+            ]
+          },
+          "observaciones": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "usuario": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nombre"
+            ]
+          }
+        },
+        "required": [
+          "estado",
+          "observaciones",
+          "createdAt",
+          "usuario"
+        ]
+      },
       "OpcionesHistorico": {
         "type": "object",
         "properties": {
@@ -2617,49 +2774,6 @@
               "historial"
             ]
           }
-        ]
-      },
-      "IncidenciaEstado": {
-        "type": "object",
-        "properties": {
-          "estado": {
-            "type": "string",
-            "enum": [
-              "ABIERTA",
-              "EN_CURSO",
-              "RESUELTA"
-            ]
-          },
-          "observaciones": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "usuario": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "nombre": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "nombre"
-            ]
-          }
-        },
-        "required": [
-          "estado",
-          "observaciones",
-          "createdAt",
-          "usuario"
         ]
       },
       "SesionQr": {
@@ -6238,6 +6352,123 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConsultaUsoAulasResultado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/historico/incidencias": {
+      "get": {
+        "tags": [
+          "Consultas históricas"
+        ],
+        "summary": "Incidencias de aulas reportadas en un rango de fechas, con indicadores por estado",
+        "description": "Autoridad académica y Bedel. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por la fecha del reporte; `aulaId` es opcional. Los indicadores cuentan todo el período filtrado por estado actual; el detalle pagina de a 20, la más reciente primero, e incluye el historial de estados de solo lectura.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "desde",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "hasta",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "aulaId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "pagina",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Indicadores y detalle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaIncidenciasResultado"
                 }
               }
             }

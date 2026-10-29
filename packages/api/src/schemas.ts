@@ -590,6 +590,39 @@ export const consultaNovedadesResultadoSchema = z
   .openapi("ConsultaNovedadesResultado");
 export type ConsultaNovedadesResultadoDto = z.infer<typeof consultaNovedadesResultadoSchema>;
 
+export const incidenciaHistoricaSchema = z
+  .object({
+    id: z.string(),
+    reportadaEn: z.string(),
+    aula: z.string(),
+    elemento: elementoIncidenciaSchema,
+    gravedad: gravedadIncidenciaSchema,
+    estado: estadoIncidenciaSchema,
+    descripcion: z.string(),
+    reportadaPor: z.string(),
+    historial: z.array(incidenciaEstadoSchema).openapi({
+      description: "Cada estado con fecha, hora, usuario y observaciones, del más antiguo al más nuevo",
+    }),
+  })
+  .openapi("IncidenciaHistorica");
+export type IncidenciaHistoricaDto = z.infer<typeof incidenciaHistoricaSchema>;
+
+export const consultaIncidenciasResultadoSchema = z
+  .object({
+    total: z.number().int(),
+    porEstado: z.object({
+      ABIERTA: z.number().int(),
+      EN_CURSO: z.number().int(),
+      RESUELTA: z.number().int(),
+    }),
+    pagina: z.number().int(),
+    tamanioPagina: z.number().int(),
+    totalPaginas: z.number().int(),
+    incidencias: z.array(incidenciaHistoricaSchema),
+  })
+  .openapi("ConsultaIncidenciasResultado");
+export type ConsultaIncidenciasResultadoDto = z.infer<typeof consultaIncidenciasResultadoSchema>;
+
 export const opcionesHistoricoSchema = z
   .object({
     docentes: z.array(usuarioResumenSchema),

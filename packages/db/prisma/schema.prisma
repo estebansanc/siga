@@ -819,6 +819,7 @@ model Incidencia {
 
   @@index([organizationId, estado, createdAt])
   @@index([aulaId, createdAt])
+  @@index([organizationId, createdAt])
   @@map("incidencia")
 }
 

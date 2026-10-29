@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { isoDate } from "./common";
 import { origenAsignacionAulaSchema, tipoNovedadSchema } from "./enums";
+import { estadoIncidenciaSchema, type EstadoIncidencia } from "./incidencias";
 import { diaSemanaDe, fechasEntre, sumarMeses } from "./tiempo";
 import type { Turnos } from "./turnos";
 
@@ -81,6 +82,25 @@ export const consultaUsoAulasSchema = z
   .superRefine(validarRango);
 export type ConsultaUsoAulas = z.infer<typeof consultaUsoAulasSchema>;
 export type ConsultaUsoAulasInput = z.input<typeof consultaUsoAulasSchema>;
+
+// RF-09 / CA-06 / EF-5: solo rango y aula; carrera, materia y docente no aplican a las incidencias.
+export const consultaIncidenciasSchema = z
+  .object({ desde: rangoYFiltros.desde, hasta: rangoYFiltros.hasta, aulaId: filtroOpcional, pagina: rangoYFiltros.pagina })
+  .superRefine(validarRango);
+export type ConsultaIncidencias = z.infer<typeof consultaIncidenciasSchema>;
+export type ConsultaIncidenciasInput = z.input<typeof consultaIncidenciasSchema>;
+
+export type IndicadoresIncidencias = { total: number; porEstado: Record<EstadoIncidencia, number> };
+
+export const calcularIndicadoresIncidencias = (
+  grupos: { estado: EstadoIncidencia; cantidad: number }[],
+): IndicadoresIncidencias => {
+  const porEstado = Object.fromEntries(
+    estadoIncidenciaSchema.options.map((estado) => [estado, 0]),
+  ) as Record<EstadoIncidencia, number>;
+  for (const { estado, cantidad } of grupos) porEstado[estado] += cantidad;
+  return { total: Object.values(porEstado).reduce((suma, cantidad) => suma + cantidad, 0), porEstado };
+};
 
 const minutosDe = (hora: string) => {
   const [horas, minutos] = hora.split(":").map(Number) as [number, number];

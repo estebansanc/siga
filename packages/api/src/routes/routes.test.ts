@@ -214,6 +214,7 @@ describe("contrato HTTP", () => {
       "/api/v1/novedades/{id}/finalizar",
       "/api/v1/historico/novedades",
       "/api/v1/historico/uso-aulas",
+      "/api/v1/historico/incidencias",
       "/api/v1/historico/opciones",
       "/api/v1/preferencias",
       "/api/v1/carreras",
@@ -310,6 +311,13 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
     ]);
     como(institution);
     expect((await call("/historico/uso-aulas?desde=2026-01-01&hasta=2026-01-31")).status).toBe(200);
+    como(estudiante);
+    expect((await call("/historico/incidencias?desde=2026-01-01&hasta=2026-01-31")).status).toBe(403);
+    como(institution);
+    const incidencias = await call("/historico/incidencias?desde=2024-01-01&hasta=2026-01-01");
+    expect(incidencias.status).toBe(422);
+    como(institution);
+    expect((await call("/historico/incidencias?desde=2026-01-01&hasta=2026-01-31")).status).toBe(200);
     como(docente);
     expect((await call("/preferencias")).status).toBe(403);
     como(docente);

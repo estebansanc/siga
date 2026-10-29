@@ -1,6 +1,7 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import {
   consultaAsistenciasSchema,
+  consultaIncidenciasSchema,
   consultaNovedadesSchema,
   consultaUsoAulasSchema,
 } from "@repo/domain";
@@ -8,6 +9,7 @@ import {
 import type { ApiEnv } from "../context";
 import {
   consultaAsistenciasResultadoSchema,
+  consultaIncidenciasResultadoSchema,
   consultaNovedadesResultadoSchema,
   consultaUsoAulasResultadoSchema,
   opcionesHistoricoSchema,
@@ -70,6 +72,23 @@ export const historicoRoutes = new OpenAPIHono<ApiEnv>()
     }),
     async (c) =>
       c.json(await historico.consultarUsoAulas(c.get("auth"), c.req.valid("query")), 200),
+  )
+  .openapi(
+    createRoute({
+      method: "get",
+      path: "/incidencias",
+      tags,
+      summary: "Incidencias de aulas reportadas en un rango de fechas, con indicadores por estado",
+      description:
+        "Autoridad académica y Bedel. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por la fecha del reporte; `aulaId` es opcional. Los indicadores cuentan todo el período filtrado por estado actual; el detalle pagina de a 20, la más reciente primero, e incluye el historial de estados de solo lectura.",
+      request: { query: consultaIncidenciasSchema },
+      responses: {
+        200: jsonResponse(consultaIncidenciasResultadoSchema, "Indicadores y detalle"),
+        ...commonErrors,
+      },
+    }),
+    async (c) =>
+      c.json(await historico.consultarIncidencias(c.get("auth"), c.req.valid("query")), 200),
   )
   .openapi(
     createRoute({

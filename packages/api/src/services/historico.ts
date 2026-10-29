@@ -2,6 +2,7 @@ import type { AuthContext } from "@repo/auth";
 import { fromDateColumn, prisma, toDateColumn, type Prisma } from "@repo/db";
 import {
   calcularIndicadoresAsistencia,
+  calcularIndicadoresIncidencias,
   horaArgentina,
   horasDeClase,
   horasDisponiblesEnRango,
@@ -10,6 +11,7 @@ import {
   tamanioPaginaHistorico,
   tipoNovedadSchema,
   type ConsultaAsistencias,
+  type ConsultaIncidencias,
   type ConsultaNovedades,
   type ConsultaUsoAulas,
   type TipoNovedad,
@@ -17,6 +19,7 @@ import {
 
 import type {
   ConsultaAsistenciasResultadoDto,
+  ConsultaIncidenciasResultadoDto,
   ConsultaNovedadesResultadoDto,
   ConsultaUsoAulasResultadoDto,
   OcupacionPorAulaDto,
@@ -394,6 +397,72 @@ export const consultarUsoAulas = async (
       horaFinClase: horaArgentina(asignacion.clase.fin),
       origen: asignacion.origen,
       usuario: asignacion.usuario?.name ?? sistema,
+    })),
+  };
+};
+
+const incidenciasDelPeriodo = (
+  organizationId: string,
+  consulta: ConsultaIncidencias,
+): Prisma.IncidenciaWhereInput => ({
+  organizationId,
+  aulaId: consulta.aulaId,
+  // El rango filtra por la fecha del reporte, días completos en hora argentina.
+  createdAt: { gte: rangoDelDia(consulta.desde).desde, lt: rangoDelDia(consulta.hasta).hasta },
+});
+
+const incidenciaHistoricaInclude = {
+  aula: { select: { codigo: true } },
+  reportadaPor: { select: { name: true } },
+  historial: {
+    orderBy: { createdAt: "asc" },
+    include: { user: { select: { id: true, name: true } } },
+  },
+} satisfies Prisma.IncidenciaInclude;
+
+// RF-09 / CA-06 / EF-5: indicadores por estado actual sobre todo el período filtrado y detalle
+// paginado con el historial de estados, la más reciente primero. Autoridad académica y Bedel.
+export const consultarIncidencias = async (
+  auth: AuthContext,
+  consulta: ConsultaIncidencias,
+): Promise<ConsultaIncidenciasResultadoDto> => {
+  await assertPerfil(auth, "AUTORIDAD", "BEDEL");
+  const where = incidenciasDelPeriodo(auth.organizationId, consulta);
+  const [grupos, incidencias] = await Promise.all([
+    prisma.incidencia.groupBy({ by: ["estado"], where, _count: { _all: true } }),
+    prisma.incidencia.findMany({
+      where,
+      include: incidenciaHistoricaInclude,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (consulta.pagina - 1) * tamanioPaginaHistorico,
+      take: tamanioPaginaHistorico,
+    }),
+  ]);
+  const { total, porEstado } = calcularIndicadoresIncidencias(
+    grupos.map(({ estado, _count }) => ({ estado, cantidad: _count._all })),
+  );
+
+  return {
+    total,
+    porEstado,
+    pagina: consulta.pagina,
+    tamanioPagina: tamanioPaginaHistorico,
+    totalPaginas: Math.ceil(total / tamanioPaginaHistorico),
+    incidencias: incidencias.map((incidencia) => ({
+      id: incidencia.id,
+      reportadaEn: incidencia.createdAt.toISOString(),
+      aula: incidencia.aula.codigo,
+      elemento: incidencia.elemento,
+      gravedad: incidencia.gravedad,
+      estado: incidencia.estado,
+      descripcion: incidencia.descripcion,
+      reportadaPor: incidencia.reportadaPor.name,
+      historial: incidencia.historial.map((cambio) => ({
+        estado: cambio.estado,
+        observaciones: cambio.observaciones,
+        createdAt: cambio.createdAt.toISOString(),
+        usuario: { id: cambio.user.id, nombre: cambio.user.name },
+      })),
     })),
   };
 };
