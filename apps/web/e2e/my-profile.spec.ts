@@ -31,7 +31,8 @@ test.describe("Mi perfil", () => {
     await page.getByLabel("DNI").fill(dni);
     await page.getByLabel("Legajo").fill("L-QA");
     const guardado = page.waitForResponse(
-      (response) => response.url().endsWith("/api/v1/me") && response.request().method() === "PATCH",
+      (response) =>
+        response.url().endsWith("/api/v1/me") && response.request().method() === "PATCH",
     );
     await page.getByRole("button", { name: "Guardar" }).click();
     expect((await guardado).ok()).toBe(true);
