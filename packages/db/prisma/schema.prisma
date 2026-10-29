@@ -30,6 +30,7 @@ model User {
   comisionesSeguidas       ComisionSeguida[]
   notificaciones           Notificacion[]
   novedadesPublicadas      Novedad[]                  @relation("NovedadPublicadaPor")
+  novedadesEditadas        NovedadEdicion[]           @relation("NovedadEdicionEditadaPor")
   novedadesFinalizadas     Novedad[]                  @relation("NovedadFinalizadaPor")
   avisosPublicados         Aviso[]                    @relation("AvisoPublicadoPor")
   estadosInstitucionales   EstadoInstitucional[]
@@ -454,6 +455,8 @@ model Aula {
   clases              ClaseProgramada[]
   novedadesNuevas     Novedad[]         @relation("NovedadAulaNueva")
   novedadesAnteriores NovedadClase[]    @relation("NovedadClaseAulaAnterior")
+  edicionesNuevas     NovedadEdicion[]  @relation("NovedadEdicionAulaNueva")
+  edicionesPrevias    NovedadEdicion[]  @relation("NovedadEdicionAulaPrevia")
   solicitudes         SolicitudAula[]
   sesionesQr          SesionQr[]
   incidencias         Incidencia[]
@@ -568,12 +571,38 @@ model Novedad {
   finalizadaPor       User?          @relation("NovedadFinalizadaPor", fields: [finalizadaPorId], references: [id], onDelete: SetNull)
   createdAt           DateTime       @default(now())
   clases              NovedadClase[]
+  ediciones           NovedadEdicion[]
   notificaciones      Notificacion[]
 
   @@index([organizationId, createdAt])
   @@index([comisionId, estado])
   @@index([publicadaPorId])
   @@map("novedad")
+}
+
+// Una edición de la novedad (DAT-3): los datos que quedaron vigentes y los que tenía antes, para
+// mostrar la publicación original y cada cambio sin borrar nada. Solo inserts.
+model NovedadEdicion {
+  id                    String   @id @default(cuid())
+  novedadId             String
+  novedad               Novedad  @relation(fields: [novedadId], references: [id], onDelete: Cascade)
+  editadaPorId          String
+  editadaPor            User     @relation("NovedadEdicionEditadaPor", fields: [editadaPorId], references: [id], onDelete: Cascade)
+  editadaPorBedelia     Boolean  @default(false)
+  minutosDemora         Int?
+  enlaceVirtual         String?
+  aulaNuevaId           String?
+  aulaNueva             Aula?    @relation("NovedadEdicionAulaNueva", fields: [aulaNuevaId], references: [id], onDelete: SetNull)
+  mensaje               String?
+  minutosDemoraPrevios  Int?
+  enlaceVirtualPrevio   String?
+  aulaPreviaId          String?
+  aulaPrevia            Aula?    @relation("NovedadEdicionAulaPrevia", fields: [aulaPreviaId], references: [id], onDelete: SetNull)
+  mensajePrevio         String?
+  createdAt             DateTime @default(now())
+
+  @@index([novedadId, createdAt])
+  @@map("novedad_edicion")
 }
 
 // `aulaAnteriorId` guarda el aula que tenía la clase antes de un Cambio de aula, para

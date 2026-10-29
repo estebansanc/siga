@@ -846,6 +846,72 @@
           },
           "createdAt": {
             "type": "string"
+          },
+          "publicacion": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "minutosDemora": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "enlaceVirtual": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "aulaNueva": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "codigo": {
+                    "type": "string"
+                  },
+                  "edificio": {
+                    "type": "string"
+                  },
+                  "piso": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "codigo",
+                  "edificio",
+                  "piso"
+                ]
+              },
+              "mensaje": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "minutosDemora",
+              "enlaceVirtual",
+              "aulaNueva",
+              "mensaje"
+            ],
+            "description": "Datos de la publicación original; null si la novedad no se editó"
+          },
+          "ediciones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EdicionNovedad"
+            },
+            "description": "Cada edición, de la más antigua a la más reciente; la publicación no se borra"
           }
         },
         "required": [
@@ -857,8 +923,78 @@
           "aulaNueva",
           "mensaje",
           "publicadaPorBedelia",
-          "createdAt"
+          "createdAt",
+          "publicacion",
+          "ediciones"
         ]
+      },
+      "EdicionNovedad": {
+        "type": "object",
+        "properties": {
+          "minutosDemora": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "enlaceVirtual": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "aulaNueva": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "codigo": {
+                "type": "string"
+              },
+              "edificio": {
+                "type": "string"
+              },
+              "piso": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "codigo",
+              "edificio",
+              "piso"
+            ]
+          },
+          "mensaje": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "editadaPorBedelia": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "minutosDemora",
+          "enlaceVirtual",
+          "aulaNueva",
+          "mensaje",
+          "id",
+          "createdAt",
+          "editadaPorBedelia"
+        ],
+        "description": "Datos que quedaron vigentes con la edición"
       },
       "Asistencia": {
         "type": [
@@ -1040,6 +1176,10 @@
               "null"
             ]
           },
+          "editable": {
+            "type": "boolean",
+            "description": "Activa y con al menos una clase que aún no terminó"
+          },
           "comision": {
             "type": "object",
             "properties": {
@@ -1111,6 +1251,7 @@
           "publicadaPorBedelia",
           "createdAt",
           "finalizadaEn",
+          "editable",
           "comision",
           "clases"
         ]
@@ -5930,6 +6071,130 @@
         "responses": {
           "201": {
             "description": "Novedad publicada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Novedad"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/novedades/{id}": {
+      "patch": {
+        "tags": [
+          "Novedades"
+        ],
+        "summary": "Editar una novedad activa conservando su historial",
+        "description": "Mismos permisos que finalizar. Edita el dato propio del tipo (minutos, enlace o aula nueva) y el mensaje, que puede vaciarse; tipo y clases no cambian. Cada edición queda en el historial de las clases y no envía correo. 409 si el aula nueva ya está asignada en esa franja; 422 si la novedad está finalizada, sus clases terminaron o se envía un dato ajeno al tipo.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "minutosDemora": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 1,
+                    "maximum": 240
+                  },
+                  "enlaceVirtual": {
+                    "type": "string"
+                  },
+                  "aulaNuevaId": {
+                    "type": "string"
+                  },
+                  "mensaje": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Novedad editada",
             "content": {
               "application/json": {
                 "schema": {

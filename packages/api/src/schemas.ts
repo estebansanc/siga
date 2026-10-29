@@ -212,6 +212,22 @@ export const comisionSchema = z
   .openapi("Comision");
 export type ComisionDto = z.infer<typeof comisionSchema>;
 
+const datosNovedadSchema = z.object({
+  minutosDemora: z.number().int().nullable(),
+  enlaceVirtual: z.string().nullable(),
+  aulaNueva: aulaResumenSchema.nullable(),
+  mensaje: z.string().nullable(),
+});
+
+export const edicionNovedadSchema = datosNovedadSchema
+  .extend({
+    id: z.string(),
+    createdAt: z.string(),
+    editadaPorBedelia: z.boolean(),
+  })
+  .openapi("EdicionNovedad", { description: "Datos que quedaron vigentes con la edición" });
+export type EdicionNovedadDto = z.infer<typeof edicionNovedadSchema>;
+
 export const claseNovedadSchema = z
   .object({
     id: z.string(),
@@ -223,6 +239,12 @@ export const claseNovedadSchema = z
     mensaje: z.string().nullable(),
     publicadaPorBedelia: z.boolean(),
     createdAt: z.string(),
+    publicacion: datosNovedadSchema.nullable().openapi({
+      description: "Datos de la publicación original; null si la novedad no se editó",
+    }),
+    ediciones: z.array(edicionNovedadSchema).openapi({
+      description: "Cada edición, de la más antigua a la más reciente; la publicación no se borra",
+    }),
   })
   .openapi("ClaseNovedad");
 export type ClaseNovedadDto = z.infer<typeof claseNovedadSchema>;
@@ -300,6 +322,9 @@ export const novedadSchema = z
     publicadaPorBedelia: z.boolean(),
     createdAt: z.string(),
     finalizadaEn: z.string().nullable(),
+    editable: z.boolean().openapi({
+      description: "Activa y con al menos una clase que aún no terminó",
+    }),
     comision: z.object({ id: z.string(), codigo: z.string(), materia: z.string() }),
     clases: z.array(
       z.object({

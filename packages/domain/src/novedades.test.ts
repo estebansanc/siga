@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { publicarNovedadSchema } from "./novedades";
+import { editarNovedadSchemaPara, publicarNovedadSchema } from "./novedades";
 
 const base = { claseIds: ["clase-1"] };
 
@@ -47,5 +47,24 @@ describe("publicarNovedadSchema", () => {
 
   it("limita el mensaje a 500 caracteres", () => {
     expect(pathsDe({ ...base, tipo: "AUSENCIA", mensaje: "a".repeat(501) })).toEqual(["mensaje"]);
+  });
+});
+
+describe("editarNovedadSchemaPara", () => {
+  it("exige el dato propio del tipo y acepta vaciar el mensaje", () => {
+    expect(editarNovedadSchemaPara("DEMORA").safeParse({ mensaje: "" }).success).toBe(false);
+    const demora = editarNovedadSchemaPara("DEMORA").parse({ minutosDemora: "25", mensaje: "" });
+    expect(demora).toMatchObject({ minutosDemora: 25, mensaje: null });
+    expect(editarNovedadSchemaPara("CAMBIO_AULA").safeParse({}).success).toBe(false);
+  });
+
+  it("rechaza un enlace inválido y los datos ajenos al tipo", () => {
+    expect(
+      editarNovedadSchemaPara("VIRTUAL").safeParse({ enlaceVirtual: "ftp://x" }).success,
+    ).toBe(false);
+    expect(
+      editarNovedadSchemaPara("AUSENCIA").safeParse({ minutosDemora: 5, mensaje: "x" }).success,
+    ).toBe(false);
+    expect(editarNovedadSchemaPara("SUSPENSION").safeParse({ mensaje: "x" }).success).toBe(true);
   });
 });

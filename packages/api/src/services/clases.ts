@@ -22,8 +22,18 @@ const aulaSelect = {
   piso: true,
 } satisfies Prisma.AulaSelect;
 
+const edicionInclude = {
+  aulaNueva: { select: aulaSelect },
+  aulaPrevia: { select: aulaSelect },
+} satisfies Prisma.NovedadEdicionInclude;
+
 const novedadInclude = {
-  novedad: { include: { aulaNueva: { select: aulaSelect } } },
+  novedad: {
+    include: {
+      aulaNueva: { select: aulaSelect },
+      ediciones: { include: edicionInclude, orderBy: { createdAt: "asc" } },
+    },
+  },
 } satisfies Prisma.NovedadClaseInclude;
 
 export const asistenciaInclude = {
@@ -50,6 +60,17 @@ export const claseInclude = {
 type ClaseConDatos = Prisma.ClaseProgramadaGetPayload<{ include: typeof claseInclude }>;
 type NovedadDeClase = ClaseConDatos["novedades"][number]["novedad"];
 
+const toPublicacionDto = (novedad: NovedadDeClase): ClaseNovedadDto["publicacion"] => {
+  const primera = novedad.ediciones[0];
+  if (!primera) return null;
+  return {
+    minutosDemora: primera.minutosDemoraPrevios,
+    enlaceVirtual: primera.enlaceVirtualPrevio,
+    aulaNueva: primera.aulaPrevia,
+    mensaje: primera.mensajePrevio,
+  };
+};
+
 export const toClaseNovedadDto = (novedad: NovedadDeClase): ClaseNovedadDto => ({
   id: novedad.id,
   tipo: novedad.tipo,
@@ -60,6 +81,16 @@ export const toClaseNovedadDto = (novedad: NovedadDeClase): ClaseNovedadDto => (
   mensaje: novedad.mensaje,
   publicadaPorBedelia: novedad.publicadaPorBedelia,
   createdAt: toIso(novedad.createdAt),
+  publicacion: toPublicacionDto(novedad),
+  ediciones: novedad.ediciones.map((edicion) => ({
+    id: edicion.id,
+    createdAt: toIso(edicion.createdAt),
+    editadaPorBedelia: edicion.editadaPorBedelia,
+    minutosDemora: edicion.minutosDemora,
+    enlaceVirtual: edicion.enlaceVirtual,
+    aulaNueva: edicion.aulaNueva,
+    mensaje: edicion.mensaje,
+  })),
 });
 
 export const toAsistenciaDto = (
