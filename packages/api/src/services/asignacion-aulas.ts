@@ -36,7 +36,10 @@ const claseConPendiente = "La clase tiene una solicitud pendiente: resolvela ant
 
 export type Resultado<T> = { valor: T; novedad: NovedadDto | null; correos: EmailOutbox[] };
 
-export const entregarResultado = async <T>({ valor, novedad, correos }: Resultado<T>, orgId: string) => {
+export const entregarResultado = async <T>(
+  { valor, novedad, correos }: Resultado<T>,
+  orgId: string,
+) => {
   if (novedad) await notificarNovedadPublicada(orgId, novedad);
   await entregarCorreosDeAula(correos);
   return valor;

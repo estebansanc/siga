@@ -88,4 +88,11 @@ export const reemplazarClaseSchema = z.object({
 });
 export type ReemplazarClase = z.infer<typeof reemplazarClaseSchema>;
 
+export const clasesAsignablesQuerySchema = z.object({
+  reemplazo: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
+});
+
 export const destinosAulaQuerySchema = z.object({ claseId: z.string().min(1) });

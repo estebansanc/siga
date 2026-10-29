@@ -175,7 +175,7 @@ function MoverClaseDialog({ aula, onClose }: DialogoProps) {
 
 function ReemplazarClaseDialog({ aula, onClose }: DialogoProps) {
   const claseActual = aula.claseEnCurso;
-  const asignables = useClasesAsignables(aula.id);
+  const asignables = useClasesAsignables(aula.id, true);
   const destinos = useAulasDestino(claseActual?.id ?? "");
   const reemplazar = useReemplazarClase(aula.id);
   const [claseId, setClaseId] = useState("");

@@ -39,6 +39,7 @@ test.describe("Asignar, mover y reemplazar desde el plano", () => {
     await asignar.getByLabel("Clase").selectOption(escenario.claseSinAulaId);
     await asignar.getByRole("button", { name: "Asignar", exact: true }).click();
     await expect(asignar).toBeHidden();
+    await page.keyboard.press("Escape");
     await expect(celda(page, escenario.libre.codigo)).toContainText("Pendiente");
 
     await celda(page, escenario.conClase.codigo).click();
@@ -50,6 +51,7 @@ test.describe("Asignar, mover y reemplazar desde el plano", () => {
     await mover.getByLabel("Aula de destino").selectOption(escenario.destino.id);
     await mover.getByRole("button", { name: "Mover", exact: true }).click();
     await expect(mover).toBeHidden();
+    await page.keyboard.press("Escape");
 
     await page.getByRole("button", { name: "PB", exact: true }).click();
     await expect(celda(page, escenario.conClase.codigo)).toContainText("Libre");
@@ -67,6 +69,7 @@ test.describe("Asignar, mover y reemplazar desde el plano", () => {
     await reemplazar.getByLabel("Aula para la clase actual").selectOption(escenario.destino.id);
     await reemplazar.getByRole("button", { name: "Reemplazar", exact: true }).click();
     await expect(reemplazar).toBeHidden();
+    await page.keyboard.press("Escape");
 
     await page.getByRole("button", { name: "1.º piso" }).click();
     await expect(celda(page, escenario.destino.codigo)).toContainText("Pendiente");

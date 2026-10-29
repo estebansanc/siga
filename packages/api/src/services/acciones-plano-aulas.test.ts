@@ -112,8 +112,8 @@ describe("clases asignables a un aula", () => {
     );
     await createClase(institution, fixture, "2026-10-15", "11:00", "13:00", null);
 
-    const enAulaLibre = await listarClasesAsignablesAlAula(bedel(), aulaLibreId, ahora);
-    const enAulaChica = await listarClasesAsignablesAlAula(bedel(), chica, ahora);
+    const enAulaLibre = await listarClasesAsignablesAlAula(bedel(), aulaLibreId, false, ahora);
+    const enAulaChica = await listarClasesAsignablesAlAula(bedel(), chica, false, ahora);
 
     expect(enAulaLibre.clases.map(({ id }) => id)).toEqual([sinAula.id]);
     expect(enAulaChica.clases.map(({ id }) => id)).toEqual([chocan.id]);
@@ -134,16 +134,41 @@ describe("clases asignables a un aula", () => {
     await createClase(institution, fixture, fecha, "14:00", "15:00", null);
 
     expect(
-      (await listarClasesAsignablesAlAula(bedel(), aulaLibreId, ahora)).clases.map((c) => c.id),
+      (await listarClasesAsignablesAlAula(bedel(), aulaLibreId, false, ahora)).clases.map(
+        (c) => c.id,
+      ),
     ).not.toContain(conPedido.id);
     await prisma.aula.update({ where: { id: aulaLibreId }, data: { estado: "EN_MANTENIMIENTO" } });
-    expect((await listarClasesAsignablesAlAula(bedel(), aulaLibreId, ahora)).clases).toEqual([]);
+    expect((await listarClasesAsignablesAlAula(bedel(), aulaLibreId, false, ahora)).clases).toEqual(
+      [],
+    );
   });
 
   it("rechaza al docente con 403", async () => {
-    await expect(listarClasesAsignablesAlAula(docente(), aulaLibreId, ahora)).rejects.toMatchObject(
-      { status: 403 },
+    await expect(
+      listarClasesAsignablesAlAula(docente(), aulaLibreId, false, ahora),
+    ).rejects.toMatchObject({ status: 403 });
+  });
+});
+
+describe("clases que pueden reemplazar a la clase en curso", () => {
+  it("la franja de la clase en curso no cuenta como ocupada al reemplazar", async () => {
+    await createClase(institution, fixture, fecha, "09:00", "11:00");
+    const otra = await otraComision("5K9");
+    const entrante = await createClase(
+      institution,
+      { comisionId: otra, aulaId: null },
+      fecha,
+      "10:00",
+      "12:00",
+      null,
     );
+
+    const asignando = await listarClasesAsignablesAlAula(bedel(), fixture.aulaId, false, ahora);
+    const reemplazando = await listarClasesAsignablesAlAula(bedel(), fixture.aulaId, true, ahora);
+
+    expect(asignando.clases).toEqual([]);
+    expect(reemplazando.clases.map(({ id }) => id)).toEqual([entrante.id]);
   });
 });
 

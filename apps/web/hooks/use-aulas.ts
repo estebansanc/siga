@@ -88,12 +88,15 @@ export const useReactivarAula = () => {
   });
 };
 
-export const useClasesAsignables = (aulaId: string) =>
+export const useClasesAsignables = (aulaId: string, reemplazo = false) =>
   useQuery({
-    queryKey: queryKeys.clasesAsignables(aulaId),
+    queryKey: queryKeys.clasesAsignables(aulaId, reemplazo),
     queryFn: () =>
       unwrap<ClasesSinAulaDto>(
-        api.aulas[":id"]["clases-asignables"].$get({ param: { id: aulaId } }),
+        api.aulas[":id"]["clases-asignables"].$get({
+          param: { id: aulaId },
+          query: { reemplazo: reemplazo ? "true" : "false" },
+        }),
       ),
     ...realtimeQueryOptions,
   });

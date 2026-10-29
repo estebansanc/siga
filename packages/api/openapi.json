@@ -11799,7 +11799,7 @@
           "Aulas"
         ],
         "summary": "Clases de hoy sin aula que se pueden asignar al aula (Bedel y Autoridad)",
-        "description": "Clases presenciales de hoy sin aula, que admiten asignación, sin solicitud pendiente, con los estudiantes de su comisión dentro de la capacidad y la franja libre en el aula. Vacío si el aula no está Disponible.",
+        "description": "Clases presenciales de hoy sin aula, que admiten asignación, sin solicitud pendiente, con los estudiantes de su comisión dentro de la capacidad y la franja libre en el aula. Con `reemplazo=true` la clase en curso del aula no cuenta como ocupación (se va a otra aula). Vacío si el aula no está Disponible.",
         "parameters": [
           {
             "schema": {
@@ -11808,6 +11808,19 @@
             "required": true,
             "name": "id",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "default": "false"
+            },
+            "required": false,
+            "name": "reemplazo",
+            "in": "query"
           }
         ],
         "responses": {

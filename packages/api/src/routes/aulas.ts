@@ -1,6 +1,7 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import {
   actualizarAulaSchema,
+  clasesAsignablesQuerySchema,
   crearAulaSchema,
   destinosAulaQuerySchema,
   reemplazarClaseSchema,
@@ -85,14 +86,18 @@ export const aulaRoutes = new OpenAPIHono<ApiEnv>()
       tags,
       summary: "Clases de hoy sin aula que se pueden asignar al aula (Bedel y Autoridad)",
       description:
-        "Clases presenciales de hoy sin aula, que admiten asignación, sin solicitud pendiente, con los estudiantes de su comisión dentro de la capacidad y la franja libre en el aula. Vacío si el aula no está Disponible.",
-      request: { params: idParamSchema },
+        "Clases presenciales de hoy sin aula, que admiten asignación, sin solicitud pendiente, con los estudiantes de su comisión dentro de la capacidad y la franja libre en el aula. Con `reemplazo=true` la clase en curso del aula no cuenta como ocupación (se va a otra aula). Vacío si el aula no está Disponible.",
+      request: { params: idParamSchema, query: clasesAsignablesQuerySchema },
       middleware: [perfilOnly("BEDEL", "AUTORIDAD")] as const,
       responses: { 200: jsonResponse(clasesSinAulaSchema, "Clases asignables"), ...commonErrors },
     }),
     async (c) =>
       c.json(
-        await acciones.listarClasesAsignablesAlAula(c.get("auth"), c.req.valid("param").id),
+        await acciones.listarClasesAsignablesAlAula(
+          c.get("auth"),
+          c.req.valid("param").id,
+          c.req.valid("query").reemplazo,
+        ),
         200,
       ),
   )

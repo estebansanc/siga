@@ -52,10 +52,12 @@ const buscarAula = async (organizationId: string, aulaId: string) => {
 };
 
 // Asignar: clases de hoy sin aula que admiten asignación, caben en el aula y encuentran
-// libre su franja. Un aula que no está Disponible no ofrece ninguna.
+// libre su franja. Un aula que no está Disponible no ofrece ninguna. Al reemplazar, la clase en
+// curso del aula se va: su franja no cuenta como ocupada.
 export const listarClasesAsignablesAlAula = async (
   auth: AuthContext,
   aulaId: string,
+  reemplazo = false,
   ahora = new Date(),
 ): Promise<ClasesSinAulaDto> => {
   await assertPerfil(auth, "BEDEL", "AUTORIDAD");
@@ -83,7 +85,9 @@ export const listarClasesAsignablesAlAula = async (
         aulaId,
         estado: { notIn: [...estadosSinSolicitud] },
         fin: { gt: ahora },
-        inicio: { lt: rangoDelDia(sumarDias(hoy, 1)).desde },
+        inicio: reemplazo
+          ? { gt: ahora, lt: rangoDelDia(sumarDias(hoy, 1)).desde }
+          : { lt: rangoDelDia(sumarDias(hoy, 1)).desde },
       },
       select: { inicio: true, fin: true },
     }),
