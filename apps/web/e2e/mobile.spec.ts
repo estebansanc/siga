@@ -199,7 +199,7 @@ test.describe("Móvil", () => {
   });
 
   test.describe("Ayuda a 360 px", () => {
-    test.use({ viewport: { width: 360, height: 740 } });
+    test.use({ viewport: { width: 360, height: 740 }, hasTouch: true });
 
     test("Ayuda está en el menú, no scrollea a lo ancho y cada pestaña se abre con un toque", async ({
       page,
