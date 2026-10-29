@@ -108,6 +108,72 @@ test.describe("Usuarios", () => {
     await sesionDocente.close();
   });
 
+  test("el docente corrige su perfil y pide la baja; el bedel la ve, la resuelve y reactiva la cuenta", async ({
+    page,
+    browser,
+    baseURL,
+  }) => {
+    const sufijo = Date.now().toString(36);
+    const docente = {
+      nombre: `Docente Baja ${sufijo}`,
+      correo: `baja-${sufijo}@example.com`,
+      dni: dniAleatorio(),
+      password: "docente-e2e-1",
+    };
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/usuarios");
+    const alta = await completarAlta(page, docente);
+    await alta.getByLabel("Perfil").selectOption("DOCENTE");
+    await alta.getByRole("button", { name: "Guardar" }).click();
+    await expect(page.getByText("Usuario creado")).toBeVisible();
+
+    const sesionDocente = await browser.newContext({ baseURL });
+    const paginaDocente = await sesionDocente.newPage();
+    await paginaDocente.goto(enlaceDelUltimoCorreo(docente.correo));
+    await paginaDocente.getByLabel("Contraseña").fill(docente.password);
+    await paginaDocente.getByRole("button", { name: /Definir contraseña/ }).click();
+    await aceptarPoliticaViaUi(paginaDocente);
+
+    await paginaDocente.goto("/mi-perfil");
+    await paginaDocente.getByLabel("Apellido y nombre").fill(`${docente.nombre} Editado`);
+    await paginaDocente.getByLabel("Legajo").fill("L-BAJA");
+    await paginaDocente.getByRole("button", { name: "Guardar" }).click();
+    await expect(paginaDocente.getByText("Perfil actualizado")).toBeVisible();
+
+    await paginaDocente.getByRole("button", { name: "Solicitar baja de mi cuenta" }).click();
+    await paginaDocente.getByLabel("Motivo (opcional)").fill("Dejo la institución");
+    await paginaDocente.getByRole("button", { name: "Solicitar baja", exact: true }).click();
+    await expect(paginaDocente.getByText(/Baja solicitada el \d{2}\/\d{2}\/\d{4}/)).toBeVisible();
+    await expect(
+      paginaDocente.getByRole("button", { name: "Solicitar baja de mi cuenta" }),
+    ).toHaveCount(0);
+    await paginaDocente.goto("/");
+    await expect(paginaDocente.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
+
+    await page.reload();
+    await page.getByLabel("Filtrar por solicitud de baja").selectOption("Baja solicitada");
+    const filaBaja = fila(page, docente.correo);
+    await expect(filaBaja).toContainText(`${docente.nombre} Editado`);
+    await expect(filaBaja).toContainText("Dejo la institución");
+
+    await accionDeFila(page, `${docente.nombre} Editado`, "Desactivar");
+    await page.getByRole("alertdialog").getByRole("button", { name: "Desactivar" }).click();
+    await expect(fila(page, docente.correo)).toHaveCount(0);
+    await page.getByLabel("Filtrar por solicitud de baja").selectOption("Todas las cuentas");
+    await expect(fila(page, docente.correo)).toContainText("Desactivado");
+    await expect(fila(page, docente.correo)).not.toContainText("Baja solicitada");
+    await paginaDocente.goto("/novedades");
+    await expect(paginaDocente.getByText("Tu cuenta está desactivada")).toBeVisible();
+
+    await accionDeFila(page, `${docente.nombre} Editado`, "Reactivar");
+    await expect(fila(page, docente.correo)).not.toContainText("Desactivado");
+    await paginaDocente.goto("/mi-perfil");
+    await expect(
+      paginaDocente.getByRole("button", { name: "Solicitar baja de mi cuenta" }),
+    ).toBeVisible();
+    await sesionDocente.close();
+  });
+
   test("en su propia cuenta el bedel no puede desactivarse ni cambiar su perfil", async ({
     page,
   }) => {

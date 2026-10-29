@@ -48,3 +48,7 @@ export const isoAInputArgentino = (iso: string) => {
   const instante = new Date(iso);
   return `${fechaArgentina(instante)}T${horaArgentina(instante)}`;
 };
+
+// dd/mm/aaaa del día argentino en que ocurrió el instante.
+export const formatInstanteCorto = (instante: string) =>
+  formatFechaCorta(fechaArgentina(new Date(instante)));

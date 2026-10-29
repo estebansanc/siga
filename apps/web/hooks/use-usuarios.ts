@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
-export type FiltroUsuarios = { q?: string; perfil?: string };
+export type FiltroUsuarios = { q?: string; perfil?: string; bajaSolicitada?: string };
 
 const compactar = (filtro: FiltroUsuarios) =>
   Object.fromEntries(Object.entries(filtro).filter(([, value]) => value)) as FiltroUsuarios;

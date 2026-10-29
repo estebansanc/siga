@@ -1,7 +1,7 @@
 "use client";
 
 import type { MeDto } from "@repo/api/client";
-import type { UpdateProfileInput } from "@repo/domain";
+import type { SolicitarBajaInput, UpdateProfileInput } from "@repo/domain";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, unwrap } from "@/lib/api-client";
@@ -27,5 +27,14 @@ export const useUpdateProfile = () => {
       // El listado de miembros muestra el nombre de cada cuenta.
       void queryClient.invalidateQueries({ queryKey: queryKeys.members });
     },
+  });
+};
+
+export const useSolicitarBaja = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SolicitarBajaInput) =>
+      unwrap<MeDto>(api.me["solicitud-de-baja"].$post({ json: input })),
+    onSuccess: (me) => queryClient.setQueryData(queryKeys.me, me),
   });
 };

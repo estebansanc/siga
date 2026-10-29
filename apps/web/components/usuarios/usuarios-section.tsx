@@ -48,6 +48,7 @@ import {
   useReenviarActivacion,
   useUsuarios,
 } from "@/hooks/use-usuarios";
+import { formatInstanteCorto } from "@/lib/dates";
 import { showRequestError } from "@/lib/form-errors";
 
 import { UsuarioFormDialog } from "./usuario-form-dialog";
@@ -123,6 +124,15 @@ function FilaUsuario({
           <Badge variant={estadoVariants[usuario.estado]}>
             {estadoUsuarioLabels[usuario.estado]}
           </Badge>
+          {usuario.bajaSolicitada ? (
+            <div className="flex flex-col items-start gap-0.5">
+              <Badge variant="destructive">Baja solicitada</Badge>
+              <span className="text-muted-foreground text-xs">
+                {formatInstanteCorto(usuario.bajaSolicitada.solicitadaEn)}
+                {usuario.bajaSolicitada.motivo ? ` · ${usuario.bajaSolicitada.motivo}` : ""}
+              </span>
+            </div>
+          ) : null}
         </div>
       </TableCell>
       <TableCell className="w-10">
@@ -135,8 +145,9 @@ function FilaUsuario({
 export function UsuariosSection() {
   const [busqueda, setBusqueda] = useState("");
   const [perfil, setPerfil] = useState("");
+  const [bajaSolicitada, setBajaSolicitada] = useState("");
   const q = useDeferredValue(busqueda.trim());
-  const usuarios = useUsuarios({ q, perfil });
+  const usuarios = useUsuarios({ q, perfil, bajaSolicitada });
   const dialogo = useDialogoEntidad<UsuarioDto>();
   const desactivar = useDesactivarUsuario();
   const reactivar = useReactivarUsuario();
@@ -190,6 +201,15 @@ export function UsuariosSection() {
                 {perfilLabels[opcion]}
               </NativeSelectOption>
             ))}
+          </NativeSelect>
+          <NativeSelect
+            aria-label="Filtrar por solicitud de baja"
+            className="w-full sm:w-52"
+            value={bajaSolicitada}
+            onChange={(event) => setBajaSolicitada(event.target.value)}
+          >
+            <NativeSelectOption value="">Todas las cuentas</NativeSelectOption>
+            <NativeSelectOption value="true">Baja solicitada</NativeSelectOption>
           </NativeSelect>
         </div>
         {!usuarios.data ? (

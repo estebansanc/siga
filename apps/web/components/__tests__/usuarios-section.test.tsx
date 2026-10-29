@@ -50,6 +50,7 @@ const usuario = (cambios: Partial<UsuarioDto>): UsuarioDto => ({
   estado: "ACTIVO",
   comisiones: [],
   esPropio: false,
+  bajaSolicitada: null,
   ...cambios,
 });
 
@@ -110,7 +111,29 @@ describe("UsuariosSection", () => {
     renderWithProviders(<UsuariosSection />);
     await userEvent.type(screen.getByLabelText("Buscar usuarios"), "pablo");
     await userEvent.selectOptions(screen.getByLabelText("Filtrar por perfil"), "DOCENTE");
-    await waitFor(() => expect(state.filtros.at(-1)).toEqual({ q: "pablo", perfil: "DOCENTE" }));
+    await waitFor(() =>
+      expect(state.filtros.at(-1)).toEqual({ q: "pablo", perfil: "DOCENTE", bajaSolicitada: "" }),
+    );
+  });
+
+  it("marca la baja solicitada con fecha y motivo y filtra esas cuentas", async () => {
+    state.usuarios = [
+      usuario({
+        id: "b",
+        nombre: "Bruno Baja",
+        bajaSolicitada: { solicitadaEn: "2026-10-28T15:00:00.000Z", motivo: "Dejo la institución" },
+      }),
+    ];
+    renderWithProviders(<UsuariosSection />);
+    const fila = filaDe("Bruno Baja");
+    expect(within(fila).getByText("Baja solicitada")).toBeInTheDocument();
+    expect(within(fila).getByText(/28\/10\/2026 · Dejo la institución/)).toBeInTheDocument();
+
+    await userEvent.selectOptions(
+      screen.getByLabelText("Filtrar por solicitud de baja"),
+      "Baja solicitada",
+    );
+    await waitFor(() => expect(state.filtros.at(-1)).toMatchObject({ bajaSolicitada: "true" }));
   });
 
   it("sin resultados explica qué probar", () => {
