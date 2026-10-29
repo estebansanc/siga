@@ -90,7 +90,7 @@ test.describe("Consultas históricas", () => {
         .filter({ hasText: fecha.split("-").reverse().join("/") });
       await clase.getByRole("button", { name: "Asignar aula" }).click();
       const dialog = page.getByRole("dialog", { name: "Asignar aula" });
-      await dialog.getByLabel("Aula").selectOption({ label: aulaCodigo });
+      await dialog.getByLabel("Aula").selectOption({ value: aulaId });
       await dialog.getByRole("button", { name: "Asignar" }).click();
       await expect(page.getByText("Aula asignada")).toBeVisible();
 
