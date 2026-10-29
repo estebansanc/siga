@@ -31,7 +31,7 @@ test.describe("Mi perfil", () => {
     await page.getByLabel("DNI").fill(dni);
     await page.getByLabel("Legajo").fill("L-QA");
     await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Perfil actualizado")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Guardar" })).toBeDisabled();
 
     await page.reload();
     await expect(page.getByLabel("DNI")).toHaveValue(dni);
