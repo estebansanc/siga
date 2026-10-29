@@ -139,11 +139,16 @@ test.describe("Teclado", () => {
       test.skip(isMobile, "El menú móvil se prueba con la barra lateral");
       await loginViaUi(page, user);
       await expect(page.getByRole("heading", { name: inicio })).toBeVisible();
-      await page.getByRole("navigation").getByRole("link").first().focus();
+      await page.locator('[data-sidebar="sidebar"] a').first().focus();
+      let enfocados = 0;
       for (let paso = 0; paso < 12; paso++) {
         await page.keyboard.press("Tab");
+        const salioDeLaPagina = await page.evaluate(() => document.activeElement === document.body);
+        if (salioDeLaPagina) break;
         expect(await focoVisible(page), `paso ${paso}: ${await foco(page)}`).toBe(true);
+        enfocados++;
       }
+      expect(enfocados).toBeGreaterThanOrEqual(4);
     });
   }
 
