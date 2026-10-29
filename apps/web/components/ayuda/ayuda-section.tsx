@@ -1,5 +1,6 @@
 "use client";
 
+import type { MemberRole, Perfil } from "@repo/domain";
 import {
   Accordion,
   AccordionContent,
@@ -7,7 +8,6 @@ import {
   AccordionTrigger,
 } from "@repo/ui/components/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui/components/tabs";
-import type { MemberRole, Perfil } from "@repo/domain";
 
 import { ayudaPorPerfil, manualFor, type SeccionManual, type TareaGuia } from "@/lib/ayuda";
 
