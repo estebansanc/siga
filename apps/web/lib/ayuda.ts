@@ -1,0 +1,476 @@
+import type { MemberRole, Perfil } from "@repo/domain";
+
+export type TareaGuia = { titulo: string; pasos: string[] };
+
+export type SeccionManual = {
+  titulo: string;
+  paraQueSirve: string;
+  comoSeLlega: string;
+  pasos: string[];
+  mensajes: string[];
+};
+
+export type AyudaDelPerfil = { guia: TareaGuia[]; manual: SeccionManual[] };
+
+export const maximoPalabrasGuia = 700;
+
+const menu = (titulo: string) => `Menú lateral, "${titulo}".`;
+
+const misClasesEstudiante: SeccionManual = {
+  titulo: "Mis clases",
+  paraQueSirve:
+    "Muestra las clases de hoy de las comisiones que seguís, con su estado y novedades.",
+  comoSeLlega: menu("Mis clases"),
+  pasos: [
+    'Si todavía no seguís comisiones, tocá "Elegir comisiones" y marcalas.',
+    "Cada tarjeta indica materia, horario, aula y estado.",
+    "Tocá una clase para ver su detalle y sus novedades.",
+  ],
+  mensajes: [
+    "Pendiente, Demorada N min, Docente presente, Virtual, Ausente, Suspendida y Finalizada son los estados de una clase.",
+  ],
+};
+
+const misClasesDocente: SeccionManual = {
+  titulo: "Mis clases",
+  paraQueSirve: "Muestra tus clases de hoy con su estado y las novedades que publicaste.",
+  comoSeLlega: menu("Mis clases"),
+  pasos: [
+    "Revisá la lista de clases de hoy: materia, comisión, horario y aula.",
+    "Tocá una clase para ver su detalle.",
+  ],
+  mensajes: ["Sin clases hoy: no tenés clases asignadas para este día."],
+};
+
+const buscar: SeccionManual = {
+  titulo: "Buscar",
+  paraQueSirve:
+    "Encuentra clases de cualquier fecha por carrera, año, materia, comisión o docente.",
+  comoSeLlega: menu("Buscar"),
+  pasos: [
+    'Elegí la fecha en "Fecha de las clases" y completá los filtros que necesites.',
+    "Tocá una clase del resultado para ver su estado y novedades.",
+  ],
+  mensajes: ["Sin resultados: ninguna clase coincide con los filtros elegidos."],
+};
+
+const avisosLectura: SeccionManual = {
+  titulo: "Avisos",
+  paraQueSirve: "Lista los avisos institucionales dirigidos a vos.",
+  comoSeLlega: menu("Avisos"),
+  pasos: ["Leé los avisos vigentes; los urgentes también se señalan en el encabezado."],
+  mensajes: ["Aviso urgente: requiere tu atención de inmediato."],
+};
+
+const avisosGestion: SeccionManual = {
+  titulo: "Avisos",
+  paraQueSirve: "Publica avisos institucionales y consulta los vigentes y el historial.",
+  comoSeLlega: menu("Avisos"),
+  pasos: [
+    'Tocá "Nuevo aviso", completá título, cuerpo, prioridad, destinatarios y vigencia.',
+    'Tocá "Publicar"; el "Resultado de envíos" muestra cuántos correos salieron.',
+    'Las pestañas "Vigentes" y "Publicados" muestran lo ya enviado.',
+  ],
+  mensajes: ["Aviso publicado: el aviso ya está visible para sus destinatarios."],
+};
+
+const preferencias: SeccionManual = {
+  titulo: "Preferencias",
+  paraQueSirve: "Define las comisiones que seguís y si recibís novedades por correo.",
+  comoSeLlega: menu("Preferencias"),
+  pasos: [
+    "Marcá o desmarcá las comisiones que cursás.",
+    'Activá o desactivá "Enviar por correo" y guardá.',
+  ],
+  mensajes: ["Preferencias guardadas: los cambios ya rigen."],
+};
+
+const asistencia: SeccionManual = {
+  titulo: "Asistencia",
+  paraQueSirve: "Registra tu presencia en la clase escaneando el QR de bedelía.",
+  comoSeLlega: menu("Asistencia"),
+  pasos: [
+    "Permití el uso de la cámara y apuntala al QR que muestra bedelía.",
+    'Esperá la confirmación "Asistencia registrada".',
+  ],
+  mensajes: [
+    'Si falla la lectura, tocá "Volver a escanear".',
+    "Si denegaste la cámara, habilitala desde los permisos del navegador.",
+  ],
+};
+
+const novedadesDocente: SeccionManual = {
+  titulo: "Novedades",
+  paraQueSirve:
+    "Publica, edita y finaliza novedades de tus clases, como una demora o un cambio de aula.",
+  comoSeLlega: menu("Novedades"),
+  pasos: [
+    'Tocá "Publicar novedad" y elegí la clase.',
+    'Completá el "Tipo de novedad" y sus datos; tocá "Publicar".',
+    'En "Acciones de la novedad" podés editarla o elegir "Finalizar novedad".',
+  ],
+  mensajes: ["Las novedades finalizadas dejan de mostrarse como activas."],
+};
+
+const novedadesBedel: SeccionManual = {
+  ...novedadesDocente,
+  titulo: "Novedades",
+  paraQueSirve: "Publica, edita y finaliza novedades de cualquier clase del día.",
+};
+
+const aulasDocente: SeccionManual = {
+  titulo: "Aulas",
+  paraQueSirve: "Permite solicitar un aula y seguir tus solicitudes.",
+  comoSeLlega: menu("Aulas"),
+  pasos: [
+    'Entrá a "Solicitar aula", completá fecha, turno y necesidades, y enviá.',
+    'En "Mis solicitudes" seguís su estado.',
+  ],
+  mensajes: ["Aprobada, Rechazada o Asignada indican la respuesta de bedelía."],
+};
+
+const aulasBedel: SeccionManual = {
+  titulo: "Aulas",
+  paraQueSirve: "Administra las aulas del campus.",
+  comoSeLlega: menu("Aulas"),
+  pasos: [
+    'Tocá "Nueva aula" para dar de alta un aula.',
+    "Abrí un aula para ver su detalle, editarla o darla de baja.",
+  ],
+  mensajes: ["Un aula dada de baja deja de poder asignarse."],
+};
+
+const estado: SeccionManual = {
+  titulo: "Estado institucional",
+  paraQueSirve: "Muestra si la institución está abierta, cerrada o abierta con novedades.",
+  comoSeLlega: menu("Estado institucional"),
+  pasos: [
+    "Revisá el estado actual y su historial.",
+    'Si sos Bedel, elegí el "Nuevo estado", indicá el motivo y tocá "Cambiar estado".',
+  ],
+  mensajes: ["Al cerrar la institución se pide confirmación y se ofrece generar un aviso."],
+};
+
+const clasesBedel: SeccionManual = {
+  titulo: "Clases",
+  paraQueSirve: "Lista las clases del día para controlar su estado.",
+  comoSeLlega: menu("Clases"),
+  pasos: [
+    'Revisá cada clase y tocá "Detalle" para ver más.',
+    'Para registrar presencia manual, usá "Registrar asistencia".',
+  ],
+  mensajes: ["Los estados son los mismos que ve el estudiante."],
+};
+
+const clasesAutoridad: SeccionManual = {
+  titulo: "Clases de hoy",
+  paraQueSirve: "Muestra el panorama de las clases del día.",
+  comoSeLlega: menu("Clases de hoy"),
+  pasos: ["Revisá las clases y sus estados.", "Tocá una clase para ver su detalle."],
+  mensajes: ["Sin clases hoy: no hay clases programadas."],
+};
+
+const plano: SeccionManual = {
+  titulo: "Plano de aulas",
+  paraQueSirve: "Muestra el estado de cada aula en tiempo real.",
+  comoSeLlega: menu("Plano de aulas"),
+  pasos: ["Elegí el edificio.", "Tocá un aula para ver su clase actual y la asistencia."],
+  mensajes: ["Ocupada, Pendiente y Fuera de servicio describen el aula."],
+};
+
+const qr: SeccionManual = {
+  titulo: "QR de asistencia",
+  paraQueSirve: "Genera el QR que los docentes escanean para registrar su asistencia.",
+  comoSeLlega: menu("QR de asistencia"),
+  pasos: [
+    "Elegí el turno y el aula.",
+    'Tocá "Generar QR"; se renueva solo.',
+    'Usá "Pantalla completa" para proyectarlo.',
+  ],
+  mensajes: ["El turno terminado deja de mostrar el QR."],
+};
+
+const solicitudes: SeccionManual = {
+  titulo: "Solicitudes",
+  paraQueSirve: "Resuelve las solicitudes de aula de los docentes.",
+  comoSeLlega: menu("Solicitudes"),
+  pasos: [
+    "Elegí una solicitud pendiente.",
+    'Tocá "Aprobar" y asigná el aula, o "Rechazar" e indicá el motivo.',
+  ],
+  mensajes: ["El aula ya está asignada en esa franja: elegí otra."],
+};
+
+const incidencias: SeccionManual = {
+  titulo: "Incidencias",
+  paraQueSirve: "Registra y resuelve problemas de infraestructura de las aulas.",
+  comoSeLlega: menu("Incidencias"),
+  pasos: [
+    'Tocá "Nueva incidencia" y completá aula, elemento afectado y descripción.',
+    'Para cerrar una, tocá "Resolver".',
+  ],
+  mensajes: ["Una incidencia que impide el uso puede dejar el aula fuera de servicio."],
+};
+
+const historico: SeccionManual = {
+  titulo: "Consultas históricas",
+  paraQueSirve: "Consulta asistencia docente, uso de aulas e incidencias de un período.",
+  comoSeLlega: menu("Consultas históricas"),
+  pasos: [
+    "Elegí el tipo de consulta en las pestañas.",
+    'Fijá "Desde" y "Hasta" y tocá "Consultar".',
+  ],
+  mensajes: ["Sin registros para el período: no hay datos en ese rango."],
+};
+
+const usuarios: SeccionManual = {
+  titulo: "Usuarios",
+  paraQueSirve: "Administra las cuentas de la institución.",
+  comoSeLlega: menu("Usuarios"),
+  pasos: [
+    "Buscá o filtrá la lista.",
+    "Agregá un usuario, desactivalo o reactivalo, o reenviá su enlace.",
+  ],
+  mensajes: ["Tu propia cuenta no puede desactivarse."],
+};
+
+const datosAcademicos: SeccionManual = {
+  titulo: "Datos académicos",
+  paraQueSirve: "Mantiene carreras, materias, comisiones y horarios.",
+  comoSeLlega: menu("Datos académicos"),
+  pasos: ["Elegí la pestaña del dato.", "Creá, editá o dá de baja un registro."],
+  mensajes: ["Los cambios se ven enseguida en las clases."],
+};
+
+const configuracion: SeccionManual = {
+  titulo: "Configuración",
+  paraQueSirve: "Administra la organización: nombre, miembros y versión.",
+  comoSeLlega: menu("Configuración"),
+  pasos: ["Editá el nombre de la organización y guardá.", "Quitá miembros desde el listado."],
+  mensajes: ["Solo el Administrador de la organización ve esta sección."],
+};
+
+const miPerfil: SeccionManual = {
+  titulo: "Mi perfil",
+  paraQueSirve: "Corregí tus datos o solicitá la baja de tu cuenta.",
+  comoSeLlega: 'Tocá tu nombre al pie del menú lateral y elegí "Mi perfil".',
+  pasos: ['Editá tus datos y tocá "Guardar".'],
+  mensajes: ["Los cambios se reflejan en todas tus organizaciones."],
+};
+
+const cambiarOrganizacion: SeccionManual = {
+  titulo: "Cambiar de organización",
+  paraQueSirve: "Tu sesión queda fija en la institución con la que ingresaste.",
+  comoSeLlega: 'Tocá tu nombre al pie del menú lateral y elegí "Cerrar sesión".',
+  pasos: ["Ingresá de nuevo con la cuenta de la otra organización."],
+  mensajes: ["La ayuda se actualiza con el perfil de la nueva organización."],
+};
+
+const cerrarSesion: SeccionManual = {
+  titulo: "Cerrar sesión",
+  paraQueSirve: "Termina tu sesión en este dispositivo.",
+  comoSeLlega: 'Tocá tu nombre al pie del menú lateral y elegí "Cerrar sesión".',
+  pasos: ["Confirmá con un toque; volvés a la pantalla de ingreso."],
+  mensajes: ["Tu sesión se cierra solo en este dispositivo."],
+};
+
+const ayuda: SeccionManual = {
+  titulo: "Ayuda",
+  paraQueSirve: "Reúne esta guía rápida y el manual de tu perfil.",
+  comoSeLlega: menu("Ayuda"),
+  pasos: ['Elegí "Guía rápida" o "Manual de usuario".'],
+  mensajes: ["Solo ves la ayuda del perfil activo."],
+};
+
+const comunes = [miPerfil, cambiarOrganizacion, cerrarSesion];
+
+export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
+  ESTUDIANTE: {
+    guia: [
+      {
+        titulo: "Elegir las comisiones que seguís",
+        pasos: [
+          'Entrá a "Mis clases" y tocá "Elegir comisiones".',
+          "Marcá las comisiones que cursás y guardá.",
+        ],
+      },
+      {
+        titulo: "Ver tus clases del día con estado y novedades",
+        pasos: [
+          'En "Mis clases" cada tarjeta muestra horario, aula y estado.',
+          "Tocá una clase para leer sus novedades, como una demora o un cambio de aula.",
+        ],
+      },
+      {
+        titulo: "Buscar una clase",
+        pasos: [
+          'Entrá a "Buscar" y elegí la fecha en "Fecha de las clases".',
+          "Filtrá por carrera, materia o comisión y abrí la clase.",
+        ],
+      },
+      {
+        titulo: "Leer los avisos",
+        pasos: [
+          'Entrá a "Avisos" y leé los vigentes.',
+          "Los avisos urgentes también se señalan en el encabezado.",
+        ],
+      },
+    ],
+    manual: [misClasesEstudiante, buscar, avisosLectura, preferencias],
+  },
+  DOCENTE: {
+    guia: [
+      {
+        titulo: "Ver tus clases del día",
+        pasos: ['Entrá a "Mis clases".', "Revisá materia, horario, aula y estado de cada clase."],
+      },
+      {
+        titulo: "Registrar tu asistencia con QR",
+        pasos: [
+          'Entrá a "Asistencia" y permití el uso de la cámara.',
+          "Apuntá al QR que muestra bedelía en el aula.",
+          'Esperá "Asistencia registrada". Si falla, tocá "Volver a escanear".',
+        ],
+      },
+      {
+        titulo: "Publicar una novedad",
+        pasos: [
+          'Entrá a "Novedades" y tocá "Publicar novedad".',
+          'Elegí la clase y el "Tipo de novedad", por ejemplo Demora.',
+          'Completá los datos y tocá "Publicar".',
+        ],
+      },
+      {
+        titulo: "Editar o finalizar una novedad",
+        pasos: [
+          'En "Novedades" abrí "Acciones de la novedad".',
+          'Elegí editarla o "Finalizar novedad" cuando ya no aplique.',
+        ],
+      },
+      {
+        titulo: "Consultar aulas",
+        pasos: [
+          'Entrá a "Aulas" para solicitar un aula con "Solicitar aula".',
+          'En "Mis solicitudes" seguís su estado.',
+        ],
+      },
+    ],
+    manual: [misClasesDocente, asistencia, novedadesDocente, avisosLectura, aulasDocente, buscar],
+  },
+  BEDEL: {
+    guia: [
+      {
+        titulo: "Registrar la apertura o el cierre de la institución",
+        pasos: [
+          'Entrá a "Estado institucional".',
+          'Elegí el "Nuevo estado", escribí el motivo y tocá "Cambiar estado".',
+          "Al cerrar, confirmá; se ofrece generar un aviso.",
+        ],
+      },
+      {
+        titulo: "Consultar las clases del día",
+        pasos: ['Entrá a "Clases".', 'Tocá "Detalle" en la clase que quieras revisar.'],
+      },
+      {
+        titulo: "Publicar una novedad",
+        pasos: [
+          'Entrá a "Novedades" y tocá "Publicar novedad".',
+          'Elegí la clase, el tipo y completá los datos; tocá "Publicar".',
+        ],
+      },
+      {
+        titulo: "Generar el QR de asistencia",
+        pasos: [
+          'Entrá a "QR de asistencia", elegí turno y aula.',
+          'Tocá "Generar QR" y proyectalo con "Pantalla completa".',
+        ],
+      },
+      {
+        titulo: "Resolver una solicitud de aula",
+        pasos: [
+          'Entrá a "Solicitudes" y abrí una pendiente.',
+          'Tocá "Aprobar" y asigná el aula, o "Rechazar" con el motivo.',
+        ],
+      },
+      {
+        titulo: "Registrar una incidencia",
+        pasos: [
+          'Entrá a "Incidencias" y tocá "Nueva incidencia".',
+          'Elegí aula y elemento afectado, describilo y tocá "Reportar".',
+        ],
+      },
+      {
+        titulo: "Publicar un aviso",
+        pasos: [
+          'Entrá a "Avisos" y tocá "Nuevo aviso".',
+          'Completá título, cuerpo, destinatarios y vigencia; tocá "Publicar".',
+        ],
+      },
+    ],
+    manual: [
+      estado,
+      clasesBedel,
+      novedadesBedel,
+      aulasBedel,
+      plano,
+      qr,
+      solicitudes,
+      incidencias,
+      historico,
+      avisosGestion,
+      usuarios,
+      datosAcademicos,
+    ],
+  },
+  AUTORIDAD: {
+    guia: [
+      {
+        titulo: "Ver las clases de hoy",
+        pasos: [
+          'Entrá a "Clases de hoy".',
+          "Revisá el estado de cada clase y tocá una para ver su detalle.",
+        ],
+      },
+      {
+        titulo: "Consultar los históricos",
+        pasos: [
+          'Entrá a "Consultas históricas" y elegí la pestaña del tipo de consulta.',
+          'Fijá "Desde" y "Hasta" y tocá "Consultar".',
+        ],
+      },
+      {
+        titulo: "Publicar un aviso",
+        pasos: ['Entrá a "Avisos" y tocá "Nuevo aviso".', 'Completá los datos y tocá "Publicar".'],
+      },
+      {
+        titulo: "Consultar el estado institucional",
+        pasos: [
+          'Entrá a "Estado institucional" o tocá el indicador del encabezado.',
+          "Leé el estado actual y su historial.",
+        ],
+      },
+    ],
+    manual: [
+      clasesAutoridad,
+      historico,
+      avisosGestion,
+      buscar,
+      plano,
+      { ...estado, pasos: ["Revisá el estado actual y su historial."] },
+      usuarios,
+      datosAcademicos,
+    ],
+  },
+};
+
+export const manualFor = (perfil: Perfil, role: MemberRole): SeccionManual[] => {
+  const { manual } = ayudaPorPerfil[perfil];
+  return [...manual, ...(role === "owner" ? [configuracion] : []), ayuda, ...comunes];
+};
+
+export const contarPalabras = (guia: TareaGuia[]) =>
+  guia
+    .flatMap((tarea) => [tarea.titulo, ...tarea.pasos])
+    .join(" ")
+    .split(/\s+/)
+    .filter(Boolean).length;

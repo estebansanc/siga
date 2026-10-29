@@ -4,6 +4,7 @@ import {
   BookOpenIcon,
   CalendarDaysIcon,
   CircleDotIcon,
+  CircleHelpIcon,
   DatabaseIcon,
   DoorOpenIcon,
   HistoryIcon,
@@ -41,7 +42,8 @@ export type NavigationHref =
   | "/usuarios"
   | "/datos-academicos"
   | "/historico"
-  | "/configuracion";
+  | "/configuracion"
+  | "/ayuda";
 
 const misClases: NavigationItem = { title: "Mis clases", href: "/", icon: CalendarDaysIcon };
 const buscar: NavigationItem = { title: "Buscar", href: "/clases", icon: SearchIcon };
@@ -70,6 +72,8 @@ const configuracion: NavigationItem = {
   href: "/configuracion",
   icon: Settings2Icon,
 };
+
+const ayuda: NavigationItem = { title: "Ayuda", href: "/ayuda", icon: CircleHelpIcon };
 
 // El menú de cada perfil sigue los mockups (M2–M8, D1–D8); las secciones que todavía no
 // entraron muestran "Próximamente".
@@ -115,8 +119,12 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
 };
 
 // Configuración sigue siendo del Administrador de la organización, cualquiera sea su perfil.
-export const navigationFor = (perfil: Perfil, role: MemberRole): NavigationItem[] =>
-  role === "owner" ? [...navigationByPerfil[perfil], configuracion] : navigationByPerfil[perfil];
+// Ayuda siempre es la última entrada.
+export const navigationFor = (perfil: Perfil, role: MemberRole): NavigationItem[] => [
+  ...navigationByPerfil[perfil],
+  ...(role === "owner" ? [configuracion] : []),
+  ayuda,
+];
 
 export const brandIcon = LayoutGridIcon;
 export const sectionIcon = BookOpenIcon;
