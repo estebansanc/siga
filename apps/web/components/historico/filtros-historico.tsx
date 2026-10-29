@@ -122,70 +122,70 @@ export function FiltrosForm({
         {children}
         {soloAula ? null : (
           <>
-        <Field>
-          <FieldLabel htmlFor="historico-carrera">Carrera</FieldLabel>
-          <NativeSelect
-            id="historico-carrera"
-            className="w-full"
-            value={filtros.carreraId}
-            onChange={(event) => onCambiar("carreraId", event.target.value)}
-          >
-            <NativeSelectOption value="">Todas</NativeSelectOption>
-            {carreras.data?.map((carrera) => (
-              <NativeSelectOption key={carrera.id} value={carrera.id}>
-                {carrera.nombre}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="historico-materia">Materia</FieldLabel>
-          <NativeSelect
-            id="historico-materia"
-            className="w-full"
-            value={filtros.materiaId}
-            onChange={(event) => onCambiar("materiaId", event.target.value)}
-          >
-            <NativeSelectOption value="">Todas</NativeSelectOption>
-            {materias.data?.map((materia) => (
-              <NativeSelectOption key={materia.id} value={materia.id}>
-                {materia.nombre}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="historico-comision">Comisión</FieldLabel>
-          <NativeSelect
-            id="historico-comision"
-            className="w-full"
-            value={filtros.comisionId}
-            onChange={(event) => onCambiar("comisionId", event.target.value)}
-          >
-            <NativeSelectOption value="">Todas</NativeSelectOption>
-            {comisiones.data?.map((comision) => (
-              <NativeSelectOption key={comision.id} value={comision.id}>
-                {comision.codigo} · {comision.materia.nombre}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="historico-docente">Docente</FieldLabel>
-          <NativeSelect
-            id="historico-docente"
-            className="w-full"
-            value={filtros.docenteId}
-            onChange={(event) => onCambiar("docenteId", event.target.value)}
-          >
-            <NativeSelectOption value="">Todos</NativeSelectOption>
-            {opciones.data?.docentes.map((docente) => (
-              <NativeSelectOption key={docente.id} value={docente.id}>
-                {docente.nombre}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
+            <Field>
+              <FieldLabel htmlFor="historico-carrera">Carrera</FieldLabel>
+              <NativeSelect
+                id="historico-carrera"
+                className="w-full"
+                value={filtros.carreraId}
+                onChange={(event) => onCambiar("carreraId", event.target.value)}
+              >
+                <NativeSelectOption value="">Todas</NativeSelectOption>
+                {carreras.data?.map((carrera) => (
+                  <NativeSelectOption key={carrera.id} value={carrera.id}>
+                    {carrera.nombre}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="historico-materia">Materia</FieldLabel>
+              <NativeSelect
+                id="historico-materia"
+                className="w-full"
+                value={filtros.materiaId}
+                onChange={(event) => onCambiar("materiaId", event.target.value)}
+              >
+                <NativeSelectOption value="">Todas</NativeSelectOption>
+                {materias.data?.map((materia) => (
+                  <NativeSelectOption key={materia.id} value={materia.id}>
+                    {materia.nombre}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="historico-comision">Comisión</FieldLabel>
+              <NativeSelect
+                id="historico-comision"
+                className="w-full"
+                value={filtros.comisionId}
+                onChange={(event) => onCambiar("comisionId", event.target.value)}
+              >
+                <NativeSelectOption value="">Todas</NativeSelectOption>
+                {comisiones.data?.map((comision) => (
+                  <NativeSelectOption key={comision.id} value={comision.id}>
+                    {comision.codigo} · {comision.materia.nombre}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="historico-docente">Docente</FieldLabel>
+              <NativeSelect
+                id="historico-docente"
+                className="w-full"
+                value={filtros.docenteId}
+                onChange={(event) => onCambiar("docenteId", event.target.value)}
+              >
+                <NativeSelectOption value="">Todos</NativeSelectOption>
+                {opciones.data?.docentes.map((docente) => (
+                  <NativeSelectOption key={docente.id} value={docente.id}>
+                    {docente.nombre}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
           </>
         )}
         <Field>

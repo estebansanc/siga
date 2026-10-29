@@ -85,7 +85,12 @@ export type ConsultaUsoAulasInput = z.input<typeof consultaUsoAulasSchema>;
 
 // RF-09 / CA-06 / EF-5: solo rango y aula; carrera, materia y docente no aplican a las incidencias.
 export const consultaIncidenciasSchema = z
-  .object({ desde: rangoYFiltros.desde, hasta: rangoYFiltros.hasta, aulaId: filtroOpcional, pagina: rangoYFiltros.pagina })
+  .object({
+    desde: rangoYFiltros.desde,
+    hasta: rangoYFiltros.hasta,
+    aulaId: filtroOpcional,
+    pagina: rangoYFiltros.pagina,
+  })
   .superRefine(validarRango);
 export type ConsultaIncidencias = z.infer<typeof consultaIncidenciasSchema>;
 export type ConsultaIncidenciasInput = z.input<typeof consultaIncidenciasSchema>;
@@ -99,7 +104,10 @@ export const calcularIndicadoresIncidencias = (
     estadoIncidenciaSchema.options.map((estado) => [estado, 0]),
   ) as Record<EstadoIncidencia, number>;
   for (const { estado, cantidad } of grupos) porEstado[estado] += cantidad;
-  return { total: Object.values(porEstado).reduce((suma, cantidad) => suma + cantidad, 0), porEstado };
+  return {
+    total: Object.values(porEstado).reduce((suma, cantidad) => suma + cantidad, 0),
+    porEstado,
+  };
 };
 
 const minutosDe = (hora: string) => {

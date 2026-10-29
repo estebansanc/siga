@@ -4,7 +4,7 @@ import type {
   ConsultaUsoAulasResultadoDto,
 } from "@repo/api/client";
 import type { ConsultaAsistencias, ConsultaIncidencias, ConsultaUsoAulas } from "@repo/domain";
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -337,6 +337,8 @@ describe("Incidencias", () => {
   const abrirIncidencias = async (perfil: "AUTORIDAD" | "BEDEL" = "BEDEL") => {
     renderWithProviders(<ConsultasHistoricas perfil={perfil} />);
     await userEvent.click(screen.getByRole("tab", { name: "Incidencias" }));
+    await screen.findByText(/Incidencias de aulas reportadas en el período/);
+    await waitFor(() => expect(screen.getAllByRole("tabpanel")).toHaveLength(1));
   };
 
   it("la Autoridad y el Bedel lo eligen entre los tipos de consulta", async () => {
@@ -364,9 +366,7 @@ describe("Incidencias", () => {
 
   it("cada fila muestra fecha y hora, aula, elemento, gravedad, estado y quién reportó", async () => {
     await abrirIncidencias();
-    const [, fila] = within(screen.getByRole("table", { name: "Incidencias" })).getAllByRole(
-      "row",
-    );
+    const [, fila] = within(screen.getByRole("table", { name: "Incidencias" })).getAllByRole("row");
     expect(fila).toHaveTextContent("14/10/2026 12:30");
     expect(fila).toHaveTextContent("Aula 12");
     expect(fila).toHaveTextContent("Proyector");

@@ -601,7 +601,8 @@ export const incidenciaHistoricaSchema = z
     descripcion: z.string(),
     reportadaPor: z.string(),
     historial: z.array(incidenciaEstadoSchema).openapi({
-      description: "Cada estado con fecha, hora, usuario y observaciones, del más antiguo al más nuevo",
+      description:
+        "Cada estado con fecha, hora, usuario y observaciones, del más antiguo al más nuevo",
     }),
   })
   .openapi("IncidenciaHistorica");

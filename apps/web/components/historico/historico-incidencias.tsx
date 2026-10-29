@@ -1,9 +1,6 @@
 "use client";
 
-import type {
-  ConsultaIncidenciasResultadoDto,
-  IncidenciaHistoricaDto,
-} from "@repo/api/client";
+import type { ConsultaIncidenciasResultadoDto, IncidenciaHistoricaDto } from "@repo/api/client";
 import {
   consultaIncidenciasSchema,
   elementoIncidenciaLabels,
@@ -103,9 +100,7 @@ function HistorialDialog({
                   <ItemDescription>
                     {formatFechaHora(cambio.createdAt)} · {cambio.usuario.nombre}
                   </ItemDescription>
-                  {cambio.observaciones ? (
-                    <p className="text-sm">{cambio.observaciones}</p>
-                  ) : null}
+                  {cambio.observaciones ? <p className="text-sm">{cambio.observaciones}</p> : null}
                 </ItemContent>
               </Item>
             ))}
