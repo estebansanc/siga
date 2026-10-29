@@ -152,7 +152,7 @@ test.describe("Consultas históricas", () => {
     await page.getByRole("button", { name: "Consultar" }).click();
 
     await expect(page.getByLabel("Indicadores")).toContainText("Total1");
-    await expect(page.getByLabel("Indicadores")).toContainText("En cursos1");
+    await expect(page.getByLabel("Indicadores")).toContainText("En curso1");
     const fila = page.getByRole("table", { name: "Incidencias" }).getByRole("row").nth(1);
     await expect(fila).toContainText(codigo);
     await expect(fila).toContainText("Proyector");
@@ -175,6 +175,7 @@ test.describe("Consultas históricas", () => {
     await loginViaUi(page, seededUsers.autoridad);
     await page.goto("/historico");
     await page.getByRole("tab", { name: "Incidencias" }).click();
+    await page.getByLabel("Aula", { exact: true }).selectOption({ index: 1 });
     await page.getByLabel("Desde").fill("2020-01-01");
     await page.getByLabel("Hasta").fill("2020-01-31");
     await page.getByRole("button", { name: "Consultar" }).click();

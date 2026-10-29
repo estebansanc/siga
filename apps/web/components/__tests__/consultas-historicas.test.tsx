@@ -352,7 +352,7 @@ describe("Incidencias", () => {
     const indicadores = screen.getByLabelText("Indicadores");
     expect(indicadores).toHaveTextContent("Total25");
     expect(indicadores).toHaveTextContent("Abiertas10");
-    expect(indicadores).toHaveTextContent("En cursos5");
+    expect(indicadores).toHaveTextContent("En curso5");
     expect(indicadores).toHaveTextContent("Resueltas10");
   });
 

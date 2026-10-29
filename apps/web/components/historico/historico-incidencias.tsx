@@ -4,9 +4,9 @@ import type { ConsultaIncidenciasResultadoDto, IncidenciaHistoricaDto } from "@r
 import {
   consultaIncidenciasSchema,
   elementoIncidenciaLabels,
-  estadoIncidenciaLabels,
   estadoIncidenciaSchema,
   type ConsultaIncidencias,
+  type EstadoIncidencia,
 } from "@repo/domain";
 import { Button } from "@repo/ui/components/button";
 import {
@@ -44,6 +44,12 @@ import {
   useFiltrosHistoricos,
 } from "./filtros-historico";
 
+const rotulosIndicador: Record<EstadoIncidencia, string> = {
+  ABIERTA: "Abiertas",
+  EN_CURSO: "En curso",
+  RESUELTA: "Resueltas",
+};
+
 function Indicadores({
   total,
   porEstado,
@@ -59,7 +65,7 @@ function Indicadores({
       {estadoIncidenciaSchema.options.map((estado) => (
         <Card key={estado} size="sm">
           <CardContent>
-            <dt className="text-muted-foreground text-xs">{estadoIncidenciaLabels[estado]}s</dt>
+            <dt className="text-muted-foreground text-xs">{rotulosIndicador[estado]}</dt>
             <dd className="text-2xl font-semibold">{porEstado[estado]}</dd>
           </CardContent>
         </Card>
