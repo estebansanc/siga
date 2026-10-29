@@ -78,8 +78,16 @@ const desactivado = usuario({
 const filaDe = (texto: string) =>
   screen.getAllByRole("row").find((fila) => fila.textContent?.includes(texto)) as HTMLElement;
 
-const abrirAcciones = async (nombre: string) =>
-  userEvent.click(screen.getByRole("button", { name: `Acciones de ${nombre}` }));
+const abrirAcciones = async (nombre: string) => {
+  await userEvent.click(screen.getByRole("button", { name: `Acciones de ${nombre}` }));
+};
+
+// El menú de base-ui anima al abrir y deja `pointer-events: none` hasta terminar; en jsdom la
+// animación no termina de forma fiable, así que se omite esa verificación en el clic.
+const elegirAccion = async (nombre: string) => {
+  const item = await screen.findByRole("menuitem", { name: nombre });
+  await userEvent.setup({ pointerEventsCheck: 0 }).click(item);
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -144,16 +152,17 @@ describe("UsuariosSection", () => {
     await waitFor(() => expect(mutations.reactivar).toHaveBeenCalledWith("d"));
   });
 
-  it("reenvía el enlace solo a las cuentas pendientes", async () => {
+  it("no ofrece reenviar el enlace a las cuentas que no están pendientes", async () => {
     renderWithProviders(<UsuariosSection />);
     await abrirAcciones("Dora Desactivada");
+    await screen.findByRole("menuitem", { name: "Reactivar" });
     expect(screen.queryByRole("menuitem", { name: /Reenviar/ })).not.toBeInTheDocument();
-    await userEvent.keyboard("{Escape}");
+  });
 
+  it("reenvía el enlace a las cuentas pendientes", async () => {
+    renderWithProviders(<UsuariosSection />);
     await abrirAcciones("Pablo Pendiente");
-    await userEvent.click(
-      await screen.findByRole("menuitem", { name: "Reenviar enlace de activación" }),
-    );
+    await elegirAccion("Reenviar enlace de activación");
     await waitFor(() => expect(mutations.reenviar).toHaveBeenCalledWith("p"));
   });
 
