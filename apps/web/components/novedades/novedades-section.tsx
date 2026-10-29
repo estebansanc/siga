@@ -43,6 +43,7 @@ import { useFinalizarNovedad, useNovedades } from "@/hooks/use-novedades";
 import { formatFechaCorta, formatFechaHora } from "@/lib/dates";
 import { showRequestError } from "@/lib/form-errors";
 
+import { EditarNovedadDialog } from "./editar-novedad-dialog";
 import { PublicarNovedadDialog } from "./publicar-novedad-dialog";
 
 const finalizable = (novedad: NovedadDto) =>
@@ -55,7 +56,17 @@ const describirDetalle = (novedad: NovedadDto) => {
   return null;
 };
 
-function NovedadItem({ novedad, onFinalizar }: { novedad: NovedadDto; onFinalizar: () => void }) {
+function NovedadItem({
+  novedad,
+  puedeGestionar,
+  onEditar,
+  onFinalizar,
+}: {
+  novedad: NovedadDto;
+  puedeGestionar: boolean;
+  onEditar: () => void;
+  onFinalizar: () => void;
+}) {
   const detalle = describirDetalle(novedad);
   const clases = novedad.clases
     .map((clase) => `${formatFechaCorta(clase.fecha)} ${clase.horaInicio}`)
@@ -79,7 +90,7 @@ function NovedadItem({ novedad, onFinalizar }: { novedad: NovedadDto; onFinaliza
           {novedad.publicadaPorBedelia ? " (bedelía)" : null}
         </ItemDescription>
       </ItemContent>
-      {finalizable(novedad) ? (
+      {puedeGestionar && (novedad.editable || finalizable(novedad)) ? (
         <ItemActions>
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -94,7 +105,12 @@ function NovedadItem({ novedad, onFinalizar }: { novedad: NovedadDto; onFinaliza
               <MoreHorizontalIcon />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={onFinalizar}>Finalizar novedad</DropdownMenuItem>
+              {novedad.editable ? (
+                <DropdownMenuItem onClick={onEditar}>Editar novedad</DropdownMenuItem>
+              ) : null}
+              {finalizable(novedad) ? (
+                <DropdownMenuItem onClick={onFinalizar}>Finalizar novedad</DropdownMenuItem>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         </ItemActions>
@@ -109,6 +125,7 @@ export function NovedadesSection({ puedePublicar }: { puedePublicar: boolean }) 
   const novedades = useNovedades();
   const finalizar = useFinalizarNovedad();
   const [publicando, setPublicando] = useState(false);
+  const [editando, setEditando] = useState<NovedadDto | null>(null);
   const [finalizando, setFinalizando] = useState<NovedadDto | null>(null);
 
   const confirmarFinalizar = async () => {
@@ -162,6 +179,8 @@ export function NovedadesSection({ puedePublicar }: { puedePublicar: boolean }) 
               <NovedadItem
                 key={novedad.id}
                 novedad={novedad}
+                puedeGestionar={puedePublicar}
+                onEditar={() => setEditando(novedad)}
                 onFinalizar={() => setFinalizando(novedad)}
               />
             ))}
@@ -170,6 +189,13 @@ export function NovedadesSection({ puedePublicar }: { puedePublicar: boolean }) 
       </CardContent>
       {publicando ? (
         <PublicarNovedadDialog open onOpenChange={(open) => !open && setPublicando(false)} />
+      ) : null}
+      {editando ? (
+        <EditarNovedadDialog
+          novedad={editando}
+          open
+          onOpenChange={(open) => !open && setEditando(null)}
+        />
       ) : null}
       {finalizando ? (
         <ConfirmDialog

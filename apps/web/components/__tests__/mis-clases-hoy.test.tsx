@@ -58,6 +58,8 @@ const clase: ClaseDto = {
       mensaje: "Arranco 19:15, empiecen con la lectura del TP 4.",
       publicadaPorBedelia: false,
       createdAt: "2026-10-14T21:00:00.000Z",
+      publicacion: null,
+      ediciones: [],
     },
   ],
 };
