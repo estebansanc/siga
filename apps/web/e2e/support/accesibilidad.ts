@@ -103,7 +103,7 @@ export const medirContraste = (page: Page): Promise<Hallazgo[]> =>
 export const medirZonasTactiles = (page: Page): Promise<Hallazgo[]> =>
   page.evaluate(`(() => {
     ${describeInPage}
-    const selector = "button, a[href], [role=menuitem], [role=tab], [role=checkbox], [role=switch], [role=combobox], input:not([type=hidden]), select, summary";
+    const selector = "button, a[href], [role=menuitem], [role=tab], [role=checkbox], [role=radio], [role=switch], [role=combobox], input:not([type=hidden]), select, summary";
     const out = [];
     for (const el of document.querySelectorAll(selector)) {
       const r = el.getBoundingClientRect();

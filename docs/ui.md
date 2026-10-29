@@ -124,11 +124,11 @@ Teclado en Safari: en macOS, Tab por defecto salta los links y llega solo a camp
 
 | Navegador | Dispositivo | Perfil | Resultado |
 | --- | --- | --- | --- |
-| Chrome | Escritorio (dos últimas versiones) | Estudiante | Verificado: e2e `desktop` (contraste en ambos temas, teclado, 360 px y el flujo del perfil en `flujo-principal` y `settings`) |
-| Chrome | Escritorio (dos últimas versiones) | Docente | Verificado: e2e `desktop` (contraste en ambos temas, teclado, 360 px y el flujo del perfil en `flujo-principal` y `settings`) |
-| Chrome | Escritorio (dos últimas versiones) | Bedel | Verificado: e2e `desktop` (contraste en ambos temas, teclado, 360 px y el flujo del perfil en `flujo-principal` y `settings`) |
-| Chrome | Escritorio (dos últimas versiones) | Autoridad | Verificado: e2e `desktop` (contraste en ambos temas, teclado, 360 px y el flujo del perfil en `flujo-principal` y `settings`); Autoridad: Clases de hoy en `flujo-principal` |
-| Chrome | Escritorio (dos últimas versiones) | Administrador | Verificado: e2e `desktop` (contraste en ambos temas, teclado, 360 px y el flujo del perfil en `flujo-principal` y `settings`) |
+| Chrome | Escritorio (dos últimas versiones) | Estudiante | Verificado en e2e `desktop`: contraste en ambos temas, foco visible con Tab por el menú, 360 px y entrada al inicio del perfil; flujo: guardar comisiones en Preferencias y verlas en Mis clases de hoy (`flujo-principal`) |
+| Chrome | Escritorio (dos últimas versiones) | Docente | Verificado en e2e `desktop`: contraste en ambos temas, foco visible con Tab por el menú, 360 px y entrada al inicio del perfil; flujo: publicar una novedad y verla en Novedades (`flujo-principal`) |
+| Chrome | Escritorio (dos últimas versiones) | Bedel | Verificado en e2e `desktop`: contraste en ambos temas, foco visible con Tab por el menú, 360 px y entrada al inicio del perfil; flujos: registrar un estado visible en el historial y publicar una novedad (`flujo-principal`), Escape en Publicar novedad y en Novedades de Configuración, y login solo con teclado |
+| Chrome | Escritorio (dos últimas versiones) | Autoridad | Verificado en e2e `desktop`: contraste en ambos temas, foco visible con Tab por el menú, 360 px y entrada al inicio del perfil; el flujo de Clases de hoy no tiene e2e propio: solo se verifica que entra al inicio |
+| Chrome | Escritorio (dos últimas versiones) | Administrador | Verificado en e2e `desktop`: contraste en ambos temas, foco visible con Tab por el menú, 360 px y entrada al inicio del perfil; flujo: abrir el "?" de Configuración y cerrarlo con Escape (`settings` y `accesibilidad`) |
 | Firefox | Escritorio (dos últimas versiones) | Estudiante | Parcial: pasan `flujo-principal` y `settings` en Firefox (corrida local del review); falta el recorrido manual en staging |
 | Firefox | Escritorio (dos últimas versiones) | Docente | Parcial: pasan `flujo-principal` y `settings` en Firefox (corrida local del review); falta el recorrido manual en staging |
 | Firefox | Escritorio (dos últimas versiones) | Bedel | Parcial: pasan `flujo-principal` y `settings` en Firefox (corrida local del review); falta el recorrido manual en staging |

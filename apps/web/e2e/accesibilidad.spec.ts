@@ -131,18 +131,21 @@ test.describe("Teclado", () => {
     await expect(page).toHaveURL(/\/estado-institucional/);
   });
 
-  test("el bedel recorre el menú con Tab y cada elemento enfocado muestra el foco", async ({
-    page,
-    isMobile,
-  }) => {
-    test.skip(isMobile, "El menú móvil se prueba con la barra lateral");
-    await loginViaUi(page, seededUsers.bedel);
-    await page.getByRole("link", { name: "Estado institucional" }).first().focus();
-    for (let paso = 0; paso < 12; paso++) {
-      await page.keyboard.press("Tab");
-      expect(await focoVisible(page), `paso ${paso}: ${await foco(page)}`).toBe(true);
-    }
-  });
+  for (const [perfil, { user, inicio }] of Object.entries(perfiles)) {
+    test(`${perfil}: entra a su inicio y recorre el menú con Tab mostrando el foco`, async ({
+      page,
+      isMobile,
+    }) => {
+      test.skip(isMobile, "El menú móvil se prueba con la barra lateral");
+      await loginViaUi(page, user);
+      await expect(page.getByRole("heading", { name: inicio })).toBeVisible();
+      await page.getByRole("navigation").getByRole("link").first().focus();
+      for (let paso = 0; paso < 12; paso++) {
+        await page.keyboard.press("Tab");
+        expect(await focoVisible(page), `paso ${paso}: ${await foco(page)}`).toBe(true);
+      }
+    });
+  }
 
   test("Escape cierra Publicar novedad y devuelve el foco al botón que lo abrió", async ({
     page,
