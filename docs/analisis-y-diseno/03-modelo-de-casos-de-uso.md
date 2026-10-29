@@ -162,13 +162,13 @@ Reglas comunes a todos los casos de uso, que no se repiten en cada uno:
 - **Precondiciones**: sesión abierta.
 - **Flujo principal**:
   1. El usuario abre Mi perfil y ve sus datos: apellido, nombre, DNI, correo, legajo, perfil.
-  2. Corrige los datos editables (apellido, nombre, legajo) y guarda.
+  2. Corrige los datos editables (apellido y nombre, DNI, legajo) y guarda.
   3. El sistema valida y confirma.
 - **Extensiones**:
   - 2a. Cambio de contraseña: pide la actual y la nueva; aplica la política; cierra las demás sesiones.
-  - 2b. Solicitar baja de la cuenta: el usuario confirma; el sistema registra la solicitud, desactiva la cuenta y conserva el historial según la política de privacidad.
-  - 2c. DNI, correo o perfil: no son editables por el propio usuario; se indica a quién pedir el cambio.
-- **Postcondiciones**: datos actualizados; baja registrada si la pidió.
+  - 2b. Solicitar baja de la cuenta: el usuario confirma con un motivo opcional (hasta 500 caracteres); el sistema registra fecha y motivo, la cuenta sigue activa y Mi perfil muestra "Baja solicitada el dd/mm/aaaa". Bedel o Autoridad ven la marca en Usuarios (con filtro) y la resuelven desactivando la cuenta (baja lógica que conserva el historial según la política de privacidad); reactivarla no reabre la solicitud.
+  - 2c. Correo o perfil: no son editables por el propio usuario; se indica "Para cambiar el correo o el perfil, pedíselo a Bedelía". El DNI se valida como en el alta (7 u 8 dígitos, único).
+- **Postcondiciones**: datos actualizados; solicitud de baja registrada y auditada si la pidió.
 
 ## Módulo Novedades
 
