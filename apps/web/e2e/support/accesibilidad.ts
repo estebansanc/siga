@@ -148,6 +148,7 @@ export const medirFoco = async (page: Page, pasos = 25): Promise<Hallazgo[]> => 
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   for (let paso = 0; paso < pasos; paso++) {
     await page.keyboard.press("Tab");
+    await page.waitForTimeout(300);
     hallazgos.push(
       ...(await page.evaluate<Hallazgo[]>(`(() => {
         ${describeInPage}
@@ -158,7 +159,8 @@ export const medirFoco = async (page: Page, pasos = 25): Promise<Hallazgo[]> => 
         const fondo = fondoDe(el.parentElement ?? el);
         const contorno = s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0 ? rgba(s.outlineColor) : null;
         const borde = parseFloat(s.borderTopWidth) > 0 ? rgba(s.borderTopColor) : null;
-        const mejor = Math.max(...[contorno, borde].filter(Boolean).map((c) => ratio(over(c, fondo), fondo)), 0);
+        const anillos = [...s.boxShadow.matchAll(/[a-z]+\\([^)]*\\)/g)].map((m) => rgba(m[0]));
+        const mejor = Math.max(...[contorno, borde, ...anillos].filter(Boolean).map((c) => ratio(over(c, fondo), fondo)), 0);
         return mejor < 3 ? [{ selector: describir(el), detalle: "foco " + mejor.toFixed(2) + ":1 (mínimo 3)" }] : [];
       })()`)),
     );

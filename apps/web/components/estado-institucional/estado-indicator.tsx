@@ -55,7 +55,7 @@ export function EstadoIndicator() {
   return (
     <Link
       href="/estado-institucional"
-      className="flex min-w-0 items-center gap-2 rounded-full hover:opacity-80 pointer-coarse:min-h-11"
+      className="focus-visible:ring-ring pointer-coarse:min-h-11 flex min-w-0 items-center gap-2 rounded-full outline-none hover:opacity-80 focus-visible:ring-2"
       aria-label={`${estadoInstitucionPresentacion[estado.data.estado].label}, actualizado ${formatHora(estado.data.desde)}`}
     >
       <EstadoInstitucionBadge estado={estado.data} />
