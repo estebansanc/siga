@@ -65,7 +65,7 @@ describe("EditarNovedadDialog", () => {
     await user.clear(screen.getByLabelText(/Mensaje para los estudiantes/));
     await user.click(screen.getByRole("button", { name: "Guardar" }));
     await waitFor(() => expect(editar).toHaveBeenCalledTimes(1));
-    expect(editar.mock.calls[0]![0]).toEqual({ minutosDemora: 25, mensaje: null });
+    expect(editar.mock.calls[0][0]).toEqual({ minutosDemora: 25, mensaje: null });
   });
 
   it("un enlace inválido muestra el error y no guarda", async () => {
