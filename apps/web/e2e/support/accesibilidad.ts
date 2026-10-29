@@ -149,7 +149,7 @@ export const medirFoco = async (page: Page, pasos = 25): Promise<Hallazgo[]> => 
   for (let paso = 0; paso < pasos; paso++) {
     await page.keyboard.press("Tab");
     hallazgos.push(
-      ...(await page.evaluate(`(() => {
+      ...(await page.evaluate<Hallazgo[]>(`(() => {
         ${describeInPage}
         ${utilidadesDeColor}
         const el = document.activeElement;
