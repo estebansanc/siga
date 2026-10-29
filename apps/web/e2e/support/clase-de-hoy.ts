@@ -130,6 +130,8 @@ export const eliminarClaseSinAula = async (claseId: string, aulaId: string) => {
   await prisma.aula.delete({ where: { id: aulaId } });
 };
 
+const comienzoDelDia = (fecha: string) => instanteArgentino(fecha, "00:00").getTime();
+
 // Un edificio propio con tres aulas: una con una clase de 5K2 en curso, una libre y una de
 // destino en otro piso, más una clase de 5K2 de hoy sin aula, también en curso. Sirve para
 // asignar, mover y reemplazar desde el plano sin depender del seed.
@@ -147,15 +149,17 @@ export const crearEscenarioDeAsignacion = async () => {
     crearAula(`Aula Libre ${marca}`, "PB"),
     crearAula(`Aula Destino ${marca}`, "1.º piso"),
   ]);
+  // Pasada la medianoche "hace 40 minutos" cae ayer: la clase sin aula debe ser de hoy.
+  const hoy = fechaArgentina(new Date());
   const crearClase = (minutosAtras: number, aulaId: string | null) => {
-    const inicio = new Date(Date.now() - minutosAtras * 60_000);
+    const inicio = new Date(Math.max(Date.now() - minutosAtras * 60_000, comienzoDelDia(hoy)));
     return prisma.claseProgramada.create({
       data: {
         organizationId: comision.organizationId,
         comisionId: comision.id,
-        fecha: toDateColumn(fechaArgentina(inicio)),
+        fecha: toDateColumn(hoy),
         inicio,
-        fin: new Date(inicio.getTime() + 120 * 60_000),
+        fin: new Date(Date.now() + 90 * 60_000),
         aulaId,
       },
     });
