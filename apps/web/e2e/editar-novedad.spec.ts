@@ -23,7 +23,8 @@ test.describe("Editar una novedad", () => {
   }) => {
     test.setTimeout(150_000);
     const fecha = segundaClaseDeProyectoFinal();
-    const mensajeNuevo = `Ahora 19:25 (${Date.now().toString(36)})`;
+    const marca = Date.now().toString(36);
+    const mensajeNuevo = `Ahora 19:25 (${marca})`;
 
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/novedades");
@@ -33,6 +34,7 @@ test.describe("Editar una novedad", () => {
     await publicar.getByRole("checkbox", { name: /Proyecto Final · 5K2/ }).check();
     await publicar.getByRole("button", { name: "Demora" }).click();
     await publicar.getByLabel("Minutos estimados de demora").fill("10");
+    await publicar.getByLabel(/Mensaje para los estudiantes/).fill(`Arranco 19:10 (${marca})`);
     await publicar.getByRole("button", { name: "Publicar" }).click();
     await expect(page.getByText("Novedad publicada")).toBeVisible();
 
@@ -47,7 +49,7 @@ test.describe("Editar una novedad", () => {
       .filter({ hasText: "5K2" });
     await expect(clase).toContainText("Demorada 10 min");
 
-    const novedad = page.locator('[data-slot="item"]').filter({ hasText: "Demora" }).first();
+    const novedad = page.locator('[data-slot="item"]').filter({ hasText: marca });
     await novedad.getByRole("button", { name: /Acciones de la novedad/ }).click();
     await page.getByRole("menuitem", { name: "Editar novedad" }).click();
     const editar = page.getByRole("dialog", { name: /Editar novedad/ });
@@ -73,7 +75,7 @@ test.describe("Editar una novedad", () => {
     await page.getByRole("menuitem", { name: "Finalizar novedad" }).click();
     await page.getByRole("button", { name: "Finalizar" }).click();
     await expect(page.getByText("Novedad finalizada")).toBeVisible();
-    await novedad.getByRole("button", { name: /Acciones de la novedad/ }).click();
-    await expect(page.getByRole("menuitem", { name: "Editar novedad" })).toHaveCount(0);
+    await expect(novedad).toContainText("Finalizada");
+    await expect(novedad.getByRole("button", { name: /Acciones de la novedad/ })).toHaveCount(0);
   });
 });
