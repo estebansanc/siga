@@ -1,7 +1,7 @@
 "use client";
 
 import type { AulaDto, NovedadDto } from "@repo/api/client";
-import type { PublicarNovedad } from "@repo/domain";
+import type { EditarNovedadInput, PublicarNovedad } from "@repo/domain";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, unwrap } from "@/lib/api-client";
@@ -28,6 +28,15 @@ export const usePublicarNovedad = () => {
   return useMutation({
     mutationFn: (input: PublicarNovedad) =>
       unwrap<NovedadDto>(api.novedades.$post({ json: input })),
+    onSuccess: () => invalidarClasesYNovedades(queryClient),
+  });
+};
+
+export const useEditarNovedad = (id: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: EditarNovedadInput) =>
+      unwrap<NovedadDto>(api.novedades[":id"].$patch({ param: { id }, json: input })),
     onSuccess: () => invalidarClasesYNovedades(queryClient),
   });
 };

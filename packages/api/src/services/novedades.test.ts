@@ -15,8 +15,8 @@ import {
   type TestOrganization,
 } from "../test/db";
 
-import { listarClases } from "./clases";
-import { finalizarNovedad, listarNovedades, publicarNovedad } from "./novedades";
+import { listarClases, obtenerClase } from "./clases";
+import { editarNovedad, finalizarNovedad, listarNovedades, publicarNovedad } from "./novedades";
 
 let institution: TestOrganization;
 let fixture: AcademicFixture;
@@ -234,5 +234,192 @@ describe("finalizar y listar novedades", () => {
     await expect(listarNovedades(authOf(institution, estudiante), {})).rejects.toMatchObject({
       status: 403,
     });
+  });
+});
+
+describe("editar novedades", () => {
+  const publicarDemora = async (claseId: string, minutosDemora = 10) =>
+    publicarNovedad(authOf(institution, institution), {
+      claseIds: [claseId],
+      tipo: "DEMORA",
+      minutosDemora,
+      mensaje: "Original",
+    });
+
+  it("el bedel edita una Demora: actualiza listado y detalle, conserva la publicación y no envía correo", async () => {
+    const clase = await createClase(institution, fixture, manana());
+    const bedel = authOf(institution, institution);
+    const novedad = await publicarDemora(clase.id);
+    const correosAntes = await prisma.emailOutbox.count();
+
+    const editada = await editarNovedad(bedel, novedad.id, { minutosDemora: 25, mensaje: "Nuevo" });
+    expect(editada).toMatchObject({ minutosDemora: 25, mensaje: "Nuevo", editable: true });
+    expect(await prisma.emailOutbox.count()).toBe(correosAntes);
+    expect(await estadoDe(clase.id)).toBe("DEMORADA");
+
+    const detalle = (await obtenerClase(authOf(institution, fixture.docente), clase.id))
+      .novedades[0]!;
+    expect(detalle).toMatchObject({
+      minutosDemora: 25,
+      publicacion: { minutosDemora: 10, mensaje: "Original" },
+      ediciones: [expect.objectContaining({ minutosDemora: 25, editadaPorBedelia: true })],
+    });
+  });
+
+  it("vaciar el mensaje es válido; guardar sin cambios no genera evento", async () => {
+    const clase = await createClase(institution, fixture, manana());
+    const bedel = authOf(institution, institution);
+    const novedad = await publicarDemora(clase.id);
+    await editarNovedad(bedel, novedad.id, { minutosDemora: 10, mensaje: "Original" });
+    expect(await prisma.novedadEdicion.count()).toBe(0);
+    const editada = await editarNovedad(bedel, novedad.id, { minutosDemora: 10, mensaje: "" });
+    expect(editada.mensaje).toBeNull();
+    expect(await prisma.novedadEdicion.count()).toBe(1);
+  });
+
+  it("valida por tipo: enlace inválido, dato faltante y campo ajeno se rechazan sin guardar", async () => {
+    const [a, b] = await Promise.all([
+      createClase(institution, fixture, manana(), "08:00", "10:00"),
+      createClase(institution, fixture, manana(), "10:00", "12:00"),
+    ]);
+    const bedel = authOf(institution, institution);
+    const virtual = await publicarNovedad(bedel, {
+      claseIds: [a.id],
+      tipo: "VIRTUAL",
+      enlaceVirtual: "https://meet.google.com/x",
+    });
+    const ausencia = await publicarNovedad(bedel, { claseIds: [b.id], tipo: "AUSENCIA" });
+    await expect(
+      editarNovedad(bedel, virtual.id, { enlaceVirtual: "no-es-un-enlace" }),
+    ).rejects.toMatchObject({ status: 422 });
+    await expect(editarNovedad(bedel, virtual.id, { mensaje: "x" })).rejects.toMatchObject({
+      status: 422,
+      message: "Ingresá el enlace de la clase virtual",
+    });
+    await expect(
+      editarNovedad(bedel, ausencia.id, { minutosDemora: 5, mensaje: "x" }),
+    ).rejects.toMatchObject({ status: 422 });
+    expect(await prisma.novedadEdicion.count()).toBe(0);
+    const editada = await editarNovedad(bedel, ausencia.id, { mensaje: "Enfermo" });
+    expect(editada.mensaje).toBe("Enfermo");
+    expect(await estadoDe(b.id)).toBe("AUSENTE");
+  });
+
+  it("el docente edita las de su comisión aunque las publicara bedelía; otro docente y la autoridad no", async () => {
+    const clase = await createClase(institution, fixture, manana());
+    const novedad = await publicarDemora(clase.id);
+    const docente = authOf(institution, fixture.docente);
+    const editada = await editarNovedad(docente, novedad.id, { minutosDemora: 30 });
+    expect(editada.minutosDemora).toBe(30);
+    expect(await prisma.novedadEdicion.findFirstOrThrow()).toMatchObject({
+      editadaPorBedelia: false,
+    });
+
+    const otro = await createUserWithPerfil(institution, "DOCENTE");
+    await expect(
+      editarNovedad(authOf(institution, otro), novedad.id, { minutosDemora: 5 }),
+    ).rejects.toMatchObject({ status: 403 });
+    const autoridad = await createUserWithPerfil(institution, "AUTORIDAD");
+    await expect(
+      editarNovedad(authOf(institution, autoridad), novedad.id, { minutosDemora: 5 }),
+    ).rejects.toMatchObject({ status: 403 });
+  });
+
+  it("no se edita una novedad finalizada ni una cuyas clases ya terminaron", async () => {
+    const [primera, segunda] = await Promise.all([
+      createClase(institution, fixture, manana(), "08:00", "10:00"),
+      createClase(institution, fixture, manana(), "10:00", "12:00"),
+    ]);
+    const bedel = authOf(institution, institution);
+    const finalizada = await publicarDemora(primera.id);
+    await finalizarNovedad(bedel, finalizada.id);
+    await expect(editarNovedad(bedel, finalizada.id, { minutosDemora: 5 })).rejects.toMatchObject({
+      status: 422,
+      message: "La novedad ya está finalizada",
+    });
+
+    const terminada = await publicarDemora(segunda.id);
+    expect(terminada.editable).toBe(true);
+    await prisma.claseProgramada.update({
+      where: { id: segunda.id },
+      data: {
+        inicio: new Date(Date.now() - 2 * 3600_000),
+        fin: new Date(Date.now() - 3600_000),
+      },
+    });
+    await expect(editarNovedad(bedel, terminada.id, { minutosDemora: 5 })).rejects.toMatchObject({
+      status: 422,
+    });
+    expect((await listarNovedades(bedel, {})).find(({ id }) => id === terminada.id)?.editable).toBe(
+      false,
+    );
+  });
+
+  it("Cambio de aula: mueve la clase, libera la anterior, rechaza una ocupada y finalizar vuelve al aula previa a la novedad", async () => {
+    const clase = await createClase(institution, fixture, manana());
+    const bedel = authOf(institution, institution);
+    const novedad = await publicarNovedad(bedel, {
+      claseIds: [clase.id],
+      tipo: "CAMBIO_AULA",
+      aulaNuevaId: fixture.otraAulaId,
+    });
+    const tercera = await prisma.aula.create({
+      data: {
+        organizationId: institution.organizationId,
+        codigo: "Aula 99",
+        edificio: "Central",
+        piso: "PB",
+        capacidad: 30,
+      },
+    });
+    const ocupante = await createClase(
+      institution,
+      fixture,
+      manana(),
+      "20:00",
+      "21:00",
+      tercera.id,
+    );
+
+    await expect(
+      editarNovedad(bedel, novedad.id, { aulaNuevaId: tercera.id }),
+    ).rejects.toMatchObject({ status: 409, message: "El aula ya está asignada en esa franja" });
+    expect(
+      (await prisma.claseProgramada.findUniqueOrThrow({ where: { id: clase.id } })).aulaId,
+    ).toBe(fixture.otraAulaId);
+
+    await prisma.claseProgramada.delete({ where: { id: ocupante.id } });
+    const editada = await editarNovedad(bedel, novedad.id, { aulaNuevaId: tercera.id });
+    expect(editada.aulaNueva?.id).toBe(tercera.id);
+    expect(
+      (await prisma.claseProgramada.findUniqueOrThrow({ where: { id: clase.id } })).aulaId,
+    ).toBe(tercera.id);
+    expect(
+      await prisma.asignacionAula.count({ where: { claseId: clase.id, aulaId: tercera.id } }),
+    ).toBe(1);
+
+    await finalizarNovedad(bedel, novedad.id);
+    expect(
+      (await prisma.claseProgramada.findUniqueOrThrow({ where: { id: clase.id } })).aulaId,
+    ).toBe(fixture.aulaId);
+  });
+
+  it("una novedad de varias clases se edita una vez para todas", async () => {
+    const [a, b] = await Promise.all([
+      createClase(institution, fixture, manana(), "08:00", "10:00"),
+      createClase(institution, fixture, sumarDias(manana(), 1), "08:00", "10:00"),
+    ]);
+    const bedel = authOf(institution, institution);
+    const novedad = await publicarNovedad(bedel, {
+      claseIds: [a.id, b.id],
+      tipo: "CAMBIO_AULA",
+      aulaNuevaId: fixture.otraAulaId,
+    });
+    await editarNovedad(bedel, novedad.id, { aulaNuevaId: fixture.otraAulaId, mensaje: "Hola" });
+    expect(await prisma.novedadEdicion.count()).toBe(1);
+    for (const clase of [a, b]) {
+      const detalle = (await obtenerClase(bedel, clase.id)).novedades[0]!;
+      expect(detalle.mensaje).toBe("Hola");
+    }
   });
 });

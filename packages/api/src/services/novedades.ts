@@ -6,6 +6,8 @@ import {
   estadoClasePorNovedad,
   horaArgentina,
   tipoNovedadLabels,
+  editarNovedadSchemaPara,
+  type EditarNovedadInput,
   type EstadoClase,
   type ListarNovedadesQuery,
   type PublicarNovedad,
@@ -32,7 +34,14 @@ const novedadInclude = {
 
 type NovedadConDatos = Prisma.NovedadGetPayload<{ include: typeof novedadInclude }>;
 
-const toNovedadDto = (novedad: NovedadConDatos): NovedadDto => ({
+type ClaseConFin = { estado: EstadoClase; fin: Date };
+
+// Una clase terminó cuando su franja pasó; las Ausentes y Suspendidas no pasan a Finalizada
+// por horario, por eso se mira también el fin.
+const claseTerminada = (clase: ClaseConFin, ahora: Date) =>
+  clase.estado === "FINALIZADA" || clase.fin < ahora;
+
+const toNovedadDto = (novedad: NovedadConDatos, ahora = new Date()): NovedadDto => ({
   id: novedad.id,
   tipo: novedad.tipo,
   estado: novedad.estado,
@@ -44,6 +53,8 @@ const toNovedadDto = (novedad: NovedadConDatos): NovedadDto => ({
   publicadaPorBedelia: novedad.publicadaPorBedelia,
   createdAt: toIso(novedad.createdAt),
   finalizadaEn: toIsoOrNull(novedad.finalizadaEn),
+  editable:
+    novedad.estado === "ACTIVA" && novedad.clases.some(({ clase }) => !claseTerminada(clase, ahora)),
   comision: {
     id: novedad.comision.id,
     codigo: novedad.comision.codigo,
@@ -305,6 +316,97 @@ export const finalizarNovedad = async (
   });
 };
 
+// RF-05: edita el dato propio del tipo y el mensaje de una novedad activa; tipo y clases no
+// cambian. Las clases que ya terminaron quedan como están. Cada edición guarda los datos
+// nuevos y los previos para conservar el historial (DAT-3) y no envía correo.
+export const editarNovedad = async (
+  auth: AuthContext,
+  novedadId: string,
+  input: EditarNovedadInput,
+): Promise<NovedadDto> => {
+  await assertPerfil(auth, "DOCENTE", "BEDEL");
+  await finalizarClasesVencidas(auth.organizationId);
+  const novedad = await prisma.novedad.findFirst({
+    where: { id: novedadId, organizationId: auth.organizationId },
+    include: { ...novedadInclude, comision: { include: { docentes: true, materia: true } } },
+  });
+  if (!novedad) throw notFound("Novedad");
+  await assertDocenteDeLaComision(auth, novedad.comision);
+  if (novedad.estado === "FINALIZADA") throw unprocessable("La novedad ya está finalizada");
+  const ahora = new Date();
+  const clasesVigentes = novedad.clases
+    .map(({ clase }) => clase)
+    .filter((clase) => !claseTerminada(clase, ahora));
+  if (clasesVigentes.length === 0) {
+    throw unprocessable("No se puede editar: todas las clases de la novedad ya terminaron");
+  }
+  const datos = editarNovedadSchemaPara(novedad.tipo).safeParse(input);
+  if (!datos.success) throw unprocessable(datos.error.issues[0]!.message);
+  const nuevos = {
+    minutosDemora: datos.data.minutosDemora ?? null,
+    enlaceVirtual: datos.data.enlaceVirtual ?? null,
+    aulaNuevaId: datos.data.aulaNuevaId ?? null,
+    mensaje: datos.data.mensaje ?? null,
+  };
+  const sinCambios =
+    nuevos.minutosDemora === novedad.minutosDemora &&
+    nuevos.enlaceVirtual === novedad.enlaceVirtual &&
+    nuevos.aulaNuevaId === novedad.aulaNuevaId &&
+    nuevos.mensaje === novedad.mensaje;
+  if (sinCambios) return toNovedadDto(novedad, ahora);
+  if (nuevos.aulaNuevaId) await buscarAulaDisponible(auth.organizationId, nuevos.aulaNuevaId);
+
+  return prisma.$transaction(async (tx) => {
+    if (nuevos.aulaNuevaId && nuevos.aulaNuevaId !== novedad.aulaNuevaId) {
+      await mudarClasesAAula(tx, auth, nuevos.aulaNuevaId, clasesVigentes);
+    }
+    await tx.novedadEdicion.create({
+      data: {
+        novedadId: novedad.id,
+        editadaPorId: auth.userId,
+        editadaPorBedelia: esBedel(auth),
+        ...nuevos,
+        minutosDemoraPrevios: novedad.minutosDemora,
+        enlaceVirtualPrevio: novedad.enlaceVirtual,
+        aulaPreviaId: novedad.aulaNuevaId,
+        mensajePrevio: novedad.mensaje,
+      },
+    });
+    const editada = await tx.novedad.update({
+      where: { id: novedad.id },
+      data: nuevos,
+      include: novedadInclude,
+    });
+    return toNovedadDto(editada, ahora);
+  });
+};
+
+const mudarClasesAAula = async (
+  tx: DbTransaction,
+  auth: AuthContext,
+  aulaId: string,
+  clases: { id: string; inicio: Date; fin: Date; aulaId: string | null }[],
+) => {
+  await assertAulaLibre(tx, aulaId, clases);
+  const movidas = clases.filter((clase) => clase.aulaId !== aulaId);
+  const claseIds = movidas.map(({ id }) => id);
+  await tx.claseProgramada.updateMany({ where: { id: { in: claseIds } }, data: { aulaId } });
+  await registrarAsignacionesAula(
+    tx,
+    movidas.map((clase) => ({
+      organizationId: auth.organizationId,
+      claseId: clase.id,
+      aulaId,
+      origen: "CAMBIO_AULA" as const,
+      usuarioId: auth.userId,
+    })),
+  );
+  await registrarCambioMasivo(tx, auth.organizationId, "ClaseProgramada", "novedad_editada", {
+    claseIds,
+    aulaId,
+  });
+};
+
 // El docente ve las de sus comisiones; bedel y autoridad, todas.
 export const listarNovedades = async (
   auth: AuthContext,
@@ -323,5 +425,5 @@ export const listarNovedades = async (
     orderBy: { createdAt: "desc" },
     take: 100,
   });
-  return novedades.map(toNovedadDto);
+  return novedades.map((novedad) => toNovedadDto(novedad));
 };

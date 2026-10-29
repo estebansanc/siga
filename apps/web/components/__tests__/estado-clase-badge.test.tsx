@@ -14,6 +14,8 @@ const demora: ClaseDto["novedades"][number] = {
   mensaje: null,
   publicadaPorBedelia: false,
   createdAt: "2026-10-14T22:00:00.000Z",
+  publicacion: null,
+  ediciones: [],
 };
 
 describe("EstadoClaseBadge", () => {

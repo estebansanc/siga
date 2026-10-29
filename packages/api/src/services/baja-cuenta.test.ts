@@ -1,5 +1,5 @@
 import { prisma, runWithAuditActor } from "@repo/db";
-import { fechaArgentina } from "@repo/domain";
+import { fechaArgentina, sumarDias } from "@repo/domain";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -168,7 +168,7 @@ describe("resolver la baja desde Usuarios", () => {
   it("conserva a la cuenta desactivada como autora de lo que publicó en Novedades", async () => {
     const fixture = await seedAcademicFixture(institution);
     const autora = authOf(institution, fixture.docente);
-    const clase = await createClase(institution, fixture, fechaArgentina(new Date()));
+    const clase = await createClase(institution, fixture, sumarDias(fechaArgentina(new Date()), 1));
     await runWithAuditActor(
       { userId: fixture.docente.userId, organizationId: institution.organizationId },
       () => publicarNovedad(autora, { claseIds: [clase.id], tipo: "DEMORA", minutosDemora: 10 }),

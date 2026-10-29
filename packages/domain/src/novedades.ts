@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 import { idSchema, optionalText } from "./common";
-import { estadoNovedadSchema, tipoNovedadSchema } from "./enums";
+import {
+  estadoNovedadSchema,
+  tipoNovedadLabels,
+  tipoNovedadSchema,
+  type TipoNovedad,
+} from "./enums";
 
 const textoOpcional = <T extends z.ZodType<string, string>>(schema: T) =>
   z
@@ -63,3 +68,51 @@ export const listarNovedadesQuerySchema = z.object({
   estado: estadoNovedadSchema.optional(),
 });
 export type ListarNovedadesQuery = z.infer<typeof listarNovedadesQuerySchema>;
+
+const camposDeEdicion = ["minutosDemora", "enlaceVirtual", "aulaNuevaId"] as const;
+type CampoDeEdicion = (typeof camposDeEdicion)[number];
+
+// Tipo y clases no se editan: de cada tipo se edita su dato propio y el mensaje, que puede
+// quedar vacío (novedades.md). Ausencia y Suspensión solo editan el mensaje.
+export const campoEditablePorTipo: Record<TipoNovedad, CampoDeEdicion | null> = {
+  DEMORA: "minutosDemora",
+  VIRTUAL: "enlaceVirtual",
+  CAMBIO_AULA: "aulaNuevaId",
+  AUSENCIA: null,
+  SUSPENSION: null,
+};
+
+const mensajesDatoFaltante: Record<CampoDeEdicion, string> = {
+  minutosDemora: "Indicá los minutos de demora",
+  enlaceVirtual: "Ingresá el enlace de la clase virtual",
+  aulaNuevaId: "Elegí el aula nueva",
+};
+
+const editarNovedadBaseSchema = z.object({
+  minutosDemora: publicarNovedadSchema.shape.minutosDemora,
+  enlaceVirtual: publicarNovedadSchema.shape.enlaceVirtual,
+  aulaNuevaId: publicarNovedadSchema.shape.aulaNuevaId,
+  mensaje: optionalText(500),
+});
+
+export const editarNovedadSchema = editarNovedadBaseSchema;
+export type EditarNovedadInput = z.input<typeof editarNovedadSchema>;
+
+export const editarNovedadSchemaPara = (tipo: TipoNovedad) =>
+  editarNovedadBaseSchema.superRefine((value, ctx) => {
+    const propio = campoEditablePorTipo[tipo];
+    for (const campo of camposDeEdicion) {
+      if (campo === propio) {
+        if (value[campo] === undefined) {
+          ctx.addIssue({ code: "custom", path: [campo], message: mensajesDatoFaltante[campo] });
+        }
+      } else if (value[campo] !== undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: [campo],
+          message: `Ese dato no se edita en una novedad de ${tipoNovedadLabels[tipo]}`,
+        });
+      }
+    }
+  });
+export type EditarNovedad = z.infer<ReturnType<typeof editarNovedadSchemaPara>>;

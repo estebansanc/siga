@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { listarNovedadesQuerySchema, publicarNovedadSchema } from "@repo/domain";
+import { editarNovedadSchema, listarNovedadesQuerySchema, publicarNovedadSchema } from "@repo/domain";
 
 import type { ApiEnv } from "../context";
 import { perfilOnly } from "../middleware";
@@ -37,6 +37,28 @@ export const novedadRoutes = new OpenAPIHono<ApiEnv>()
       responses: { 201: jsonResponse(novedadSchema, "Novedad publicada"), ...commonErrors },
     }),
     async (c) => c.json(await novedades.publicarNovedad(c.get("auth"), c.req.valid("json")), 201),
+  )
+  .openapi(
+    createRoute({
+      method: "patch",
+      path: "/{id}",
+      tags,
+      summary: "Editar una novedad activa conservando su historial",
+      description:
+        "Mismos permisos que finalizar. Edita el dato propio del tipo (minutos, enlace o aula nueva) y el mensaje, que puede vaciarse; tipo y clases no cambian. Cada edición queda en el historial de las clases y no envía correo. 409 si el aula nueva ya está asignada en esa franja; 422 si la novedad está finalizada, sus clases terminaron o se envía un dato ajeno al tipo.",
+      request: { params: idParamSchema, body: jsonBody(editarNovedadSchema) },
+      middleware: [perfilOnly("DOCENTE", "BEDEL")] as const,
+      responses: { 200: jsonResponse(novedadSchema, "Novedad editada"), ...commonErrors },
+    }),
+    async (c) =>
+      c.json(
+        await novedades.editarNovedad(
+          c.get("auth"),
+          c.req.valid("param").id,
+          c.req.valid("json"),
+        ),
+        200,
+      ),
   )
   .openapi(
     createRoute({

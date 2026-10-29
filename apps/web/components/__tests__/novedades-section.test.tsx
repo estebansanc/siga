@@ -1,0 +1,93 @@
+import type { NovedadDto } from "@repo/api/client";
+import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { NovedadesSection } from "@/components/novedades/novedades-section";
+import { renderWithProviders } from "@/test/render";
+
+const state = vi.hoisted(() => ({ novedades: [] as NovedadDto[] }));
+vi.mock("@/hooks/use-novedades", () => ({
+  useNovedades: () => ({ data: state.novedades }),
+  useFinalizarNovedad: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+vi.mock("@/components/novedades/publicar-novedad-dialog", () => ({
+  PublicarNovedadDialog: () => null,
+}));
+vi.mock("@/components/novedades/editar-novedad-dialog", () => ({
+  EditarNovedadDialog: ({ novedad }: { novedad: NovedadDto }) => <p>Editando {novedad.id}</p>,
+}));
+
+const novedad: NovedadDto = {
+  id: "n1",
+  tipo: "DEMORA",
+  estado: "ACTIVA",
+  minutosDemora: 10,
+  enlaceVirtual: null,
+  aulaNueva: null,
+  mensaje: null,
+  publicadaPor: { id: "u1", nombre: "Bedelía" },
+  publicadaPorBedelia: true,
+  createdAt: "2026-10-14T21:00:00.000Z",
+  finalizadaEn: null,
+  editable: true,
+  comision: { id: "c1", codigo: "5K2", materia: "Proyecto Final" },
+  clases: [
+    {
+      id: "clase-1",
+      fecha: "2026-10-15",
+      horaInicio: "19:00",
+      horaFin: "23:00",
+      estado: "DEMORADA",
+    },
+  ],
+};
+
+const abrirMenu = async (user: ReturnType<typeof userEvent.setup>) =>
+  user.click(screen.getByRole("button", { name: /Acciones de la novedad/ }));
+
+beforeEach(() => {
+  state.novedades = [novedad];
+});
+
+describe("NovedadesSection", () => {
+  it("ofrece Editar novedad en una activa a quien gestiona y abre el formulario", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    renderWithProviders(<NovedadesSection puedePublicar />);
+    await abrirMenu(user);
+    await user.click(await screen.findByRole("menuitem", { name: "Editar novedad" }));
+    expect(screen.getByText("Editando n1")).toBeInTheDocument();
+  });
+
+  it("la autoridad no ve acciones sobre las novedades", () => {
+    renderWithProviders(<NovedadesSection puedePublicar={false} />);
+    expect(
+      screen.queryByRole("button", { name: /Acciones de la novedad/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("una novedad finalizada o sin clases vigentes no ofrece Editar novedad", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    state.novedades = [{ ...novedad, estado: "FINALIZADA", editable: false }];
+    const { unmount } = renderWithProviders(<NovedadesSection puedePublicar />);
+    expect(
+      screen.queryByRole("button", { name: /Acciones de la novedad/ }),
+    ).not.toBeInTheDocument();
+    unmount();
+
+    state.novedades = [{ ...novedad, editable: false }];
+    renderWithProviders(<NovedadesSection puedePublicar />);
+    await abrirMenu(user);
+    expect(await screen.findByRole("menuitem", { name: "Finalizar novedad" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Editar novedad" })).not.toBeInTheDocument();
+  });
+
+  it("Ausencia editable ofrece Editar y no Finalizar", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    state.novedades = [{ ...novedad, tipo: "AUSENCIA", minutosDemora: null }];
+    renderWithProviders(<NovedadesSection puedePublicar />);
+    await abrirMenu(user);
+    expect(await screen.findByRole("menuitem", { name: "Editar novedad" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Finalizar novedad" })).not.toBeInTheDocument();
+  });
+});
