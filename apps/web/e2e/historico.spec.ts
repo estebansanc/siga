@@ -1,5 +1,5 @@
 import { crearClaseSinAulaProxima, eliminarClaseSinAula } from "./support/clase-de-hoy";
-import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
+import { expect, expectNoHorizontalPageScroll, loginViaUi, seededUsers, test } from "./support/fixtures";
 
 const fechaArgentina = (instante: Date) =>
   new Date(instante.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -116,6 +116,59 @@ test.describe("Consultas históricas", () => {
   }) => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/historico");
+    await page.getByLabel("Desde").fill("2020-01-01");
+    await page.getByLabel("Hasta").fill("2020-01-31");
+    await page.getByRole("button", { name: "Consultar" }).click();
+    await expect(page.getByText("Sin registros para el período")).toBeVisible();
+  });
+
+  test("el Bedel reporta una incidencia, la pasa a En curso y la ve en el histórico", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    const codigo = `Aula Hist ${Date.now().toString(36)}`;
+    const aula = await page.request.post("/api/v1/aulas", {
+      data: { codigo, edificio: "Edificio C", piso: "PB", capacidad: 30 },
+    });
+    const { id: aulaId } = (await aula.json()) as { id: string };
+    const incidencia = await page.request.post("/api/v1/incidencias", {
+      data: { aulaId, elemento: "PROYECTOR", descripcion: "No enciende", gravedad: "LEVE" },
+    });
+    const { id } = (await incidencia.json()) as { id: string };
+    await page.request.post(`/api/v1/incidencias/${id}/estado`, {
+      data: { estado: "EN_CURSO", observaciones: "Técnico avisado" },
+    });
+
+    await page.goto("/historico");
+    await page.getByRole("tab", { name: "Incidencias" }).click();
+    await expect(page.getByRole("tab", { name: "Novedades" })).toHaveCount(0);
+    await page.getByLabel("Aula", { exact: true }).selectOption({ value: aulaId });
+    await page.getByRole("button", { name: "Consultar" }).click();
+
+    await expect(page.getByLabel("Indicadores")).toContainText("Total1");
+    await expect(page.getByLabel("Indicadores")).toContainText("En cursos1");
+    const fila = page.getByRole("table", { name: "Incidencias" }).getByRole("row").nth(1);
+    await expect(fila).toContainText(codigo);
+    await expect(fila).toContainText("Proyector");
+    await expect(fila).toContainText("Leve");
+    await expect(fila).toContainText("En curso");
+    await expect(fila).toContainText(seededUsers.bedel.name);
+    await expectNoHorizontalPageScroll(page);
+
+    await fila.getByRole("button", { name: "Ver historial" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("No enciende");
+    await expect(dialog).toContainText("Técnico avisado");
+    await expect(dialog).toContainText(seededUsers.bedel.name);
+    await expect(dialog.getByRole("button", { name: /Resolver|Pasar a/ })).toHaveCount(0);
+  });
+
+  test("Incidencias de un aula sin incidencias dice Sin registros para el período", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.autoridad);
+    await page.goto("/historico");
+    await page.getByRole("tab", { name: "Incidencias" }).click();
     await page.getByLabel("Desde").fill("2020-01-01");
     await page.getByLabel("Hasta").fill("2020-01-31");
     await page.getByRole("button", { name: "Consultar" }).click();

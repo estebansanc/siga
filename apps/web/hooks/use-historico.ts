@@ -2,6 +2,7 @@
 
 import type {
   ConsultaAsistenciasResultadoDto,
+  ConsultaIncidenciasResultadoDto,
   ConsultaNovedadesResultadoDto,
   ConsultaUsoAulasResultadoDto,
   OpcionesHistoricoDto,
@@ -9,6 +10,8 @@ import type {
 import type {
   ConsultaAsistencias,
   ConsultaAsistenciasInput,
+  ConsultaIncidencias,
+  ConsultaIncidenciasInput,
   ConsultaNovedades,
   ConsultaNovedadesInput,
   ConsultaUsoAulas,
@@ -19,7 +22,9 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
-const comoQuery = (consulta: ConsultaNovedades | ConsultaAsistencias | ConsultaUsoAulas) =>
+const comoQuery = (
+  consulta: ConsultaNovedades | ConsultaAsistencias | ConsultaUsoAulas | ConsultaIncidencias,
+) =>
   Object.fromEntries(
     Object.entries(consulta)
       .filter(([, valor]) => valor !== undefined && valor !== "")
@@ -54,6 +59,17 @@ export const useConsultaUsoAulas = (consulta: ConsultaUsoAulas | null) =>
     queryFn: () =>
       unwrap<ConsultaUsoAulasResultadoDto>(
         api.historico["uso-aulas"].$get({ query: comoQuery(consulta!) as ConsultaUsoAulasInput }),
+      ),
+    enabled: consulta !== null,
+    placeholderData: keepPreviousData,
+  });
+
+export const useConsultaIncidencias = (consulta: ConsultaIncidencias | null) =>
+  useQuery({
+    queryKey: queryKeys.historicoIncidencias(consulta ? comoQuery(consulta) : {}),
+    queryFn: () =>
+      unwrap<ConsultaIncidenciasResultadoDto>(
+        api.historico.incidencias.$get({ query: comoQuery(consulta!) as ConsultaIncidenciasInput }),
       ),
     enabled: consulta !== null,
     placeholderData: keepPreviousData,

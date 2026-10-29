@@ -75,12 +75,14 @@ export function FiltrosForm({
   errores,
   onCambiar,
   onConsultar,
+  soloAula = false,
 }: {
   children?: ReactNode;
   filtros: Filtros;
   errores: ErroresFiltros;
   onCambiar: (campo: keyof Filtros, valor: string) => void;
   onConsultar: () => void;
+  soloAula?: boolean;
 }) {
   const carreras = useCarreras();
   const materias = useMaterias({ carreraId: filtros.carreraId });
@@ -118,6 +120,8 @@ export function FiltrosForm({
           <FieldError>{errores.hasta}</FieldError>
         </Field>
         {children}
+        {soloAula ? null : (
+          <>
         <Field>
           <FieldLabel htmlFor="historico-carrera">Carrera</FieldLabel>
           <NativeSelect
@@ -182,6 +186,8 @@ export function FiltrosForm({
             ))}
           </NativeSelect>
         </Field>
+          </>
+        )}
         <Field>
           <FieldLabel htmlFor="historico-aula">Aula</FieldLabel>
           <NativeSelect

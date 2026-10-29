@@ -1,8 +1,9 @@
 import type {
   ConsultaAsistenciasResultadoDto,
+  ConsultaIncidenciasResultadoDto,
   ConsultaUsoAulasResultadoDto,
 } from "@repo/api/client";
-import type { ConsultaAsistencias, ConsultaUsoAulas } from "@repo/domain";
+import type { ConsultaAsistencias, ConsultaIncidencias, ConsultaUsoAulas } from "@repo/domain";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -15,6 +16,8 @@ const state = vi.hoisted(() => ({
   consultas: [] as (object | null)[],
   usoAulas: undefined as ConsultaUsoAulasResultadoDto | undefined,
   consultasUsoAulas: [] as (ConsultaUsoAulas | null)[],
+  incidencias: undefined as ConsultaIncidenciasResultadoDto | undefined,
+  consultasIncidencias: [] as (ConsultaIncidencias | null)[],
 }));
 
 vi.mock("@/hooks/use-historico", () => ({
@@ -26,6 +29,10 @@ vi.mock("@/hooks/use-historico", () => ({
   useConsultaUsoAulas: (consulta: ConsultaUsoAulas | null) => {
     state.consultasUsoAulas.push(consulta);
     return { data: consulta ? state.usoAulas : undefined };
+  },
+  useConsultaIncidencias: (consulta: ConsultaIncidencias | null) => {
+    state.consultasIncidencias.push(consulta);
+    return { data: consulta ? state.incidencias : undefined };
   },
   useOpcionesHistorico: () => ({
     data: {
@@ -144,6 +151,40 @@ const usoAulasConDatos: ConsultaUsoAulasResultadoDto = {
   ],
 };
 
+const incidenciasConDatos: ConsultaIncidenciasResultadoDto = {
+  total: 25,
+  porEstado: { ABIERTA: 10, EN_CURSO: 5, RESUELTA: 10 },
+  pagina: 1,
+  tamanioPagina: 20,
+  totalPaginas: 2,
+  incidencias: [
+    {
+      id: "i1",
+      reportadaEn: "2026-10-14T15:30:00.000Z",
+      aula: "Aula 12",
+      elemento: "PROYECTOR",
+      gravedad: "LEVE",
+      estado: "EN_CURSO",
+      descripcion: "No enciende",
+      reportadaPor: "Rosa Benítez",
+      historial: [
+        {
+          estado: "ABIERTA",
+          observaciones: null,
+          createdAt: "2026-10-14T15:30:00.000Z",
+          usuario: { id: "u1", nombre: "Rosa Benítez" },
+        },
+        {
+          estado: "EN_CURSO",
+          observaciones: "Técnico avisado",
+          createdAt: "2026-10-14T16:45:00.000Z",
+          usuario: { id: "u1", nombre: "Rosa Benítez" },
+        },
+      ],
+    },
+  ],
+};
+
 const ultimaConsulta = () => state.consultas.at(-1) as ConsultaAsistencias;
 
 beforeEach(() => {
@@ -151,6 +192,8 @@ beforeEach(() => {
   state.consultas = [];
   state.usoAulas = usoAulasConDatos;
   state.consultasUsoAulas = [];
+  state.incidencias = incidenciasConDatos;
+  state.consultasIncidencias = [];
 });
 
 describe("ConsultasHistoricas", () => {
@@ -287,5 +330,91 @@ describe("Uso de aulas", () => {
     });
     await userEvent.click(screen.getByRole("button", { name: "Página siguiente" }));
     expect(state.consultasUsoAulas.at(-1)).toMatchObject({ origen: "CAMBIO_AULA", pagina: 2 });
+  });
+});
+
+describe("Incidencias", () => {
+  const abrirIncidencias = async (perfil: "AUTORIDAD" | "BEDEL" = "BEDEL") => {
+    renderWithProviders(<ConsultasHistoricas perfil={perfil} />);
+    await userEvent.click(screen.getByRole("tab", { name: "Incidencias" }));
+  };
+
+  it("la Autoridad y el Bedel lo eligen entre los tipos de consulta", async () => {
+    await abrirIncidencias("AUTORIDAD");
+    expect(screen.getByLabelText("Indicadores")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Tipo de novedad")).not.toBeInTheDocument();
+  });
+
+  it("muestra el total y los tres estados del período", async () => {
+    await abrirIncidencias();
+    const indicadores = screen.getByLabelText("Indicadores");
+    expect(indicadores).toHaveTextContent("Total25");
+    expect(indicadores).toHaveTextContent("Abiertas10");
+    expect(indicadores).toHaveTextContent("En cursos5");
+    expect(indicadores).toHaveTextContent("Resueltas10");
+  });
+
+  it("solo ofrece el filtro por aula", async () => {
+    await abrirIncidencias();
+    expect(screen.getByLabelText("Aula")).toBeInTheDocument();
+    for (const filtro of ["Carrera", "Materia", "Comisión", "Docente"]) {
+      expect(screen.queryByLabelText(filtro)).not.toBeInTheDocument();
+    }
+  });
+
+  it("cada fila muestra fecha y hora, aula, elemento, gravedad, estado y quién reportó", async () => {
+    await abrirIncidencias();
+    const [, fila] = within(screen.getByRole("table", { name: "Incidencias" })).getAllByRole(
+      "row",
+    );
+    expect(fila).toHaveTextContent("14/10/2026 12:30");
+    expect(fila).toHaveTextContent("Aula 12");
+    expect(fila).toHaveTextContent("Proyector");
+    expect(fila).toHaveTextContent("Leve");
+    expect(fila).toHaveTextContent("En curso");
+    expect(fila).toHaveTextContent("Rosa Benítez");
+  });
+
+  it("Ver historial muestra la descripción y los estados sin acciones", async () => {
+    await abrirIncidencias();
+    await userEvent.click(screen.getByRole("button", { name: /Ver historial/ }));
+    const dialog = screen.getByRole("dialog", { name: "Aula 12 · Proyector" });
+    expect(dialog).toHaveTextContent("No enciende");
+    expect(dialog).toHaveTextContent("Técnico avisado");
+    expect(dialog).toHaveTextContent("Rosa Benítez");
+    expect(within(dialog).queryByRole("button", { name: /Pasar a|Resolver/ })).toBeNull();
+  });
+
+  it("sin datos dice Sin registros para el período", async () => {
+    state.incidencias = {
+      ...incidenciasConDatos,
+      total: 0,
+      porEstado: { ABIERTA: 0, EN_CURSO: 0, RESUELTA: 0 },
+      incidencias: [],
+    };
+    await abrirIncidencias();
+    expect(screen.getByText("Sin registros para el período")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
+  it("un rango invertido muestra el error y no consulta", async () => {
+    await abrirIncidencias();
+    const inicial = state.consultasIncidencias.at(-1);
+    await userEvent.clear(screen.getByLabelText("Desde"));
+    await userEvent.type(screen.getByLabelText("Desde"), "2999-01-01");
+    await userEvent.click(screen.getByRole("button", { name: "Consultar" }));
+    expect(
+      screen.getByText("La fecha desde no puede ser posterior a la fecha hasta"),
+    ).toBeVisible();
+    expect(state.consultasIncidencias.at(-1)).toBe(inicial);
+  });
+
+  it("envía el aula elegida y pagina", async () => {
+    await abrirIncidencias();
+    await userEvent.selectOptions(screen.getByLabelText("Aula"), "a1");
+    await userEvent.click(screen.getByRole("button", { name: "Consultar" }));
+    expect(state.consultasIncidencias.at(-1)).toMatchObject({ aulaId: "a1", pagina: 1 });
+    await userEvent.click(screen.getByRole("button", { name: "Página siguiente" }));
+    expect(state.consultasIncidencias.at(-1)).toMatchObject({ aulaId: "a1", pagina: 2 });
   });
 });
