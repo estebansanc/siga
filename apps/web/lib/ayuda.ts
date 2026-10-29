@@ -27,7 +27,7 @@ const misClasesEstudiante: SeccionManual = {
     "Tocá una clase para ver su detalle y sus novedades.",
   ],
   mensajes: [
-    "Pendiente, Demorada N min, Docente presente, Virtual, Ausente, Suspendida y Finalizada son los estados de una clase.",
+    "Programada, Demorada N min, Docente presente, Virtual, Ausente, Suspendida y Finalizada son los estados de una clase.",
   ],
 };
 
@@ -57,8 +57,10 @@ const avisosLectura: SeccionManual = {
   titulo: "Avisos",
   paraQueSirve: "Lista los avisos institucionales dirigidos a vos.",
   comoSeLlega: menu("Avisos"),
-  pasos: ["Leé los avisos vigentes; los urgentes también se señalan en el encabezado."],
-  mensajes: ["Aviso urgente: requiere tu atención de inmediato."],
+  pasos: [
+    'Leé los avisos en "Vigentes"; los vencidos están en "Historial". Los urgentes también se señalan en el encabezado.',
+  ],
+  mensajes: ["No hay avisos vigentes: no tenés avisos para leer por ahora."],
 };
 
 const avisosGestion: SeccionManual = {
@@ -66,11 +68,11 @@ const avisosGestion: SeccionManual = {
   paraQueSirve: "Publica avisos institucionales y consulta los vigentes y el historial.",
   comoSeLlega: menu("Avisos"),
   pasos: [
-    'Tocá "Nuevo aviso", completá título, cuerpo, prioridad, destinatarios y vigencia.',
-    'Tocá "Publicar"; el "Resultado de envíos" muestra cuántos correos salieron.',
-    'Las pestañas "Vigentes" y "Publicados" muestran lo ya enviado.',
+    'Tocá "Nuevo aviso" y completá "Título", "Cuerpo", "Prioridad", los destinatarios ("Todos" o por perfil), "Desde" y "Hasta".',
+    'Activá "Enviar por correo" si querés avisar también por mail y tocá "Publicar".',
+    'Las pestañas "Vigentes", "Historial" y "Publicados" listan los avisos; en "Publicados" se abre el "Resultado de envíos".',
   ],
-  mensajes: ["Aviso publicado: el aviso ya está visible para sus destinatarios."],
+  mensajes: ["No hay avisos vigentes: todavía no hay avisos para mostrar."],
 };
 
 const preferencias: SeccionManual = {
@@ -80,7 +82,8 @@ const preferencias: SeccionManual = {
   pasos: [
     'En "Agregar comisión" elegí carrera, año y materia, y tocá "Agregar" en la comisión.',
     'Para dejar de seguir una comisión, tocá "Quitar".',
-    'Activá "Recibir novedades por correo" o "Recibir avisos institucionales por correo" y tocá "Guardar".',
+    'Activá "Recibir novedades por correo" o "Recibir avisos institucionales por correo".',
+    'Tocá "Guardar": recién ahí se aplican las comisiones agregadas o quitadas y los correos.',
   ],
   mensajes: [
     'La comisión agregada pasa a decir "Agregada". Por defecto los correos están desactivados.',
@@ -107,11 +110,15 @@ const novedadesDocente: SeccionManual = {
     "Publica, edita y finaliza novedades de tus clases, como una demora o un cambio de aula.",
   comoSeLlega: menu("Novedades"),
   pasos: [
-    'Tocá "Publicar novedad" y elegí la clase.',
-    'Completá el "Tipo de novedad" y sus datos; tocá "Publicar".',
-    'En "Acciones de la novedad" podés editarla o elegir "Finalizar novedad".',
+    'Tocá "Publicar novedad" y seguí "1. Clases afectadas", "2. Tipo de novedad" y "3. Detalle".',
+    'Tocá "Publicar".',
+    'En "Acciones de la novedad" elegí "Editar novedad": se cambia solo el dato propio del tipo y el "Mensaje para los estudiantes"; guardá con "Guardar".',
+    'Para cerrarla, elegí "Finalizar novedad" en el mismo menú.',
   ],
-  mensajes: ["Las novedades finalizadas dejan de mostrarse como activas."],
+  mensajes: [
+    "El tipo y las clases no se modifican al editar. La publicación original queda en el historial.",
+    "Las novedades finalizadas dejan de mostrarse como activas.",
+  ],
 };
 
 const novedadesBedel: SeccionManual = {
@@ -122,13 +129,16 @@ const novedadesBedel: SeccionManual = {
 
 const aulasDocente: SeccionManual = {
   titulo: "Aulas",
-  paraQueSirve: "Permite solicitar un aula y seguir tus solicitudes.",
+  paraQueSirve: "Permite solicitar un aula para una clase y seguir tus solicitudes.",
   comoSeLlega: menu("Aulas"),
   pasos: [
-    'Entrá a "Solicitar aula", completá fecha, turno y necesidades, y enviá.',
+    'Entrá a "Solicitar aula" y completá "Fecha", "Clase", "Cantidad de alumnos" y "Recursos".',
+    'Tocá "Buscar aulas", elegí una con "Elegir" y confirmá con "Confirmar solicitud".',
     'En "Mis solicitudes" seguís su estado.',
   ],
-  mensajes: ["Aprobada, Rechazada o Asignada indican la respuesta de bedelía."],
+  mensajes: [
+    "Pendiente: bedelía todavía no respondió. Asignada: el aula se asignó enseguida. Aprobada: bedelía aceptó la solicitud. Rechazada: se muestra el motivo.",
+  ],
 };
 
 const aulasBedel: SeccionManual = {
@@ -137,9 +147,10 @@ const aulasBedel: SeccionManual = {
   comoSeLlega: menu("Aulas"),
   pasos: [
     'Tocá "Nueva aula" para dar de alta un aula.',
-    "Abrí un aula para ver su detalle, editarla o darla de baja.",
+    'En el menú de cada aula elegí "Editar" o "Dar de baja".',
+    'Con "Dadas de baja" ves las aulas dadas de baja.',
   ],
-  mensajes: ["Un aula dada de baja deja de poder asignarse."],
+  mensajes: ["Sin aulas activas: todavía no hay aulas cargadas."],
 };
 
 const estado: SeccionManual = {
@@ -148,7 +159,7 @@ const estado: SeccionManual = {
   comoSeLlega: menu("Estado institucional"),
   pasos: [
     "Revisá el estado actual y su historial.",
-    'Si sos Bedel, elegí el "Nuevo estado", indicá el motivo y tocá "Cambiar estado".',
+    'El Bedel elige el "Nuevo estado", indica el "Motivo" y toca "Cambiar estado".',
   ],
   mensajes: ["Al cerrar la institución se pide confirmación y se ofrece generar un aviso."],
 };
@@ -177,7 +188,7 @@ const plano: SeccionManual = {
   paraQueSirve: "Muestra el estado de cada aula en tiempo real.",
   comoSeLlega: menu("Plano de aulas"),
   pasos: ["Elegí el edificio.", "Tocá un aula para ver su clase actual y la asistencia."],
-  mensajes: ["Libre, Ocupada, Pendiente y Fuera de servicio describen el aula."],
+  mensajes: ["Libre, Pendiente, Ocupada, Fuera de servicio y En mantenimiento describen el aula."],
 };
 
 const qr: SeccionManual = {
@@ -209,18 +220,20 @@ const incidencias: SeccionManual = {
   paraQueSirve: "Registra y resuelve problemas de infraestructura de las aulas.",
   comoSeLlega: menu("Incidencias"),
   pasos: [
-    'Tocá "Nueva incidencia" y completá aula, elemento afectado y descripción.',
-    'Para cerrar una, tocá "Resolver".',
+    'Tocá "Nueva incidencia" y completá aula, elemento afectado y descripción; confirmá con "Reportar".',
+    'Abrí la incidencia con "Detalle": una incidencia abierta se avanza con "Pasar a En curso".',
+    'Cuando ya está en curso, el mismo botón pasa a ser "Resolver".',
   ],
   mensajes: ["Una incidencia que impide el uso puede dejar el aula fuera de servicio."],
 };
 
 const historico: SeccionManual = {
   titulo: "Consultas históricas",
-  paraQueSirve: "Consulta asistencia docente, uso de aulas e incidencias de un período.",
+  paraQueSirve:
+    "Consulta asistencia docente, uso de aulas, incidencias y, para la Autoridad, novedades de un período.",
   comoSeLlega: menu("Consultas históricas"),
   pasos: [
-    "Elegí el tipo de consulta en las pestañas.",
+    'Elegí el tipo de consulta en las pestañas "Asistencia docente", "Uso de aulas", "Incidencias" o "Novedades" (esta última solo para la Autoridad).',
     'Fijá "Desde" y "Hasta" y tocá "Consultar".',
   ],
   mensajes: ["Sin registros para el período: no hay datos en ese rango."],
@@ -232,7 +245,8 @@ const usuarios: SeccionManual = {
   comoSeLlega: menu("Usuarios"),
   pasos: [
     "Buscá o filtrá la lista.",
-    "Agregá un usuario, desactivalo o reactivalo, o reenviá su enlace.",
+    'Tocá "Nuevo usuario" para dar de alta una cuenta.',
+    'En "Acciones de" cada usuario elegí "Reenviar enlace de activación", "Reactivar" o "Desactivar".',
   ],
   mensajes: ["Tu propia cuenta no puede desactivarse."],
 };
@@ -241,7 +255,10 @@ const datosAcademicos: SeccionManual = {
   titulo: "Datos académicos",
   paraQueSirve: "Mantiene carreras, materias, comisiones y horarios.",
   comoSeLlega: menu("Datos académicos"),
-  pasos: ["Elegí la pestaña del dato.", "Creá, editá o da de baja un registro."],
+  pasos: [
+    'Elegí la pestaña: "Carreras", "Materias", "Períodos", "Comisiones", "Horarios" o "Días no laborables".',
+    'Creá un registro con el botón "Nueva ..." de la pestaña o editá uno existente.',
+  ],
   mensajes: ["Los cambios se ven enseguida en las clases."],
 };
 
@@ -299,7 +316,8 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
         titulo: "Elegir las comisiones que seguís",
         pasos: [
           'Entrá a "Mis clases" y tocá "Elegir comisiones".',
-          "Marcá las comisiones que cursás y guardá.",
+          'En "Agregar comisión" elegí carrera, año y materia, y tocá "Agregar" en cada comisión.',
+          'Tocá "Guardar" para aplicar los cambios.',
         ],
       },
       {
@@ -312,7 +330,7 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
       {
         titulo: "Buscar una clase",
         pasos: [
-          'Entrá a "Buscar" y elegí la fecha en "Fecha de las clases".',
+          'Entrá a "Buscar" y elegí la fecha en "Fecha".',
           "Filtrá por carrera, materia o comisión y abrí la clase.",
         ],
       },
@@ -344,15 +362,15 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
         titulo: "Publicar una novedad",
         pasos: [
           'Entrá a "Novedades" y tocá "Publicar novedad".',
-          'Elegí la clase y el "Tipo de novedad", por ejemplo Demora.',
-          'Completá los datos y tocá "Publicar".',
+          'Seguí "1. Clases afectadas", "2. Tipo de novedad" (por ejemplo Demora) y "3. Detalle".',
+          'Tocá "Publicar".',
         ],
       },
       {
         titulo: "Editar o finalizar una novedad",
         pasos: [
           'En "Novedades" abrí "Acciones de la novedad".',
-          'Elegí editarla o "Finalizar novedad" cuando ya no aplique.',
+          'Elegí "Editar novedad", corregí el dato y tocá "Guardar", o elegí "Finalizar novedad" cuando ya no aplique.',
         ],
       },
       {
@@ -386,7 +404,8 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
         titulo: "Publicar una novedad",
         pasos: [
           'Entrá a "Novedades" y tocá "Publicar novedad".',
-          'Elegí la clase, el tipo y completá los datos; tocá "Publicar".',
+          'Seguí "1. Clases afectadas", "2. Tipo de novedad" y "3. Detalle".',
+          'Tocá "Publicar".',
         ],
       },
       {
