@@ -93,6 +93,26 @@
           "userEmail": {
             "type": "string"
           },
+          "dni": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "legajo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bajaSolicitadaEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Cuándo pidió la baja de su cuenta; `null` si no hay una solicitud pendiente de resolver."
+          },
           "organizationId": {
             "type": "string"
           },
@@ -132,6 +152,9 @@
           "userId",
           "userName",
           "userEmail",
+          "dni",
+          "legajo",
+          "bajaSolicitadaEn",
           "organizationId",
           "role",
           "perfil",
@@ -413,6 +436,29 @@
           "esPropio": {
             "type": "boolean",
             "description": "Es la cuenta de quien consulta"
+          },
+          "bajaSolicitada": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "solicitadaEn": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "motivo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "solicitadaEn",
+              "motivo"
+            ],
+            "description": "Pedido de baja de la cuenta pendiente de resolver"
           }
         },
         "required": [
@@ -424,7 +470,8 @@
           "perfil",
           "estado",
           "comisiones",
-          "esPropio"
+          "esPropio",
+          "bajaSolicitada"
         ]
       },
       "DominiosPermitidos": {
@@ -3080,6 +3127,7 @@
           "Sesión"
         ],
         "summary": "Actualizar el perfil del usuario",
+        "description": "Apellido y nombre, DNI y legajo, con las validaciones del alta. 409 con el campo `dni` si lo tiene otra cuenta. El correo y el perfil los cambia Bedelía.",
         "requestBody": {
           "required": true,
           "content": {
@@ -3091,6 +3139,17 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 120
+                  },
+                  "dni": {
+                    "type": "string",
+                    "pattern": "^\\d{7,8}$"
+                  },
+                  "legajo": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 20
                   }
                 },
                 "required": [
@@ -3103,6 +3162,106 @@
         "responses": {
           "200": {
             "description": "Perfil actualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/solicitud-de-baja": {
+      "post": {
+        "tags": [
+          "Sesión"
+        ],
+        "summary": "Solicitar la baja de mi cuenta",
+        "description": "Registra fecha y motivo (opcional, hasta 500 caracteres); la cuenta sigue activa hasta que Bedel o Autoridad la desactiven. 409 si ya hay una solicitud pendiente.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "motivo": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Solicitud registrada",
             "content": {
               "application/json": {
                 "schema": {
@@ -3829,6 +3988,17 @@
             },
             "required": false,
             "name": "perfil",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            },
+            "required": false,
+            "name": "bajaSolicitada",
             "in": "query"
           }
         ],

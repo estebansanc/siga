@@ -313,6 +313,9 @@ model UserProfile {
   activo                      Boolean      @default(true)
   notificarNovedadesPorCorreo Boolean      @default(false)
   notificarAvisosPorCorreo    Boolean      @default(false)
+  bajaSolicitadaAt            DateTime?
+  bajaMotivo                  String?
+  bajaResueltaAt              DateTime?
   createdAt                   DateTime     @default(now())
   updatedAt                   DateTime     @updatedAt
 

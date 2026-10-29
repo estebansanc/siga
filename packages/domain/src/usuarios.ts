@@ -49,6 +49,7 @@ export type ActualizarUsuario = z.infer<typeof actualizarUsuarioSchema>;
 export const usuariosQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   perfil: perfilSchema.optional(),
+  bajaSolicitada: z.enum(["true"]).optional(),
 });
 export type UsuariosQuery = z.infer<typeof usuariosQuerySchema>;
 

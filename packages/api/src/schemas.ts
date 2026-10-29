@@ -58,6 +58,12 @@ export const meSchema = z
     userId: z.string(),
     userName: z.string(),
     userEmail: z.string(),
+    dni: z.string().nullable(),
+    legajo: z.string().nullable(),
+    bajaSolicitadaEn: z.iso.datetime().nullable().openapi({
+      description:
+        "Cuándo pidió la baja de su cuenta; `null` si no hay una solicitud pendiente de resolver.",
+    }),
     organizationId: z.string(),
     role: memberRoleSchema,
     perfil: z.enum(perfilSchema.options).openapi({
@@ -720,6 +726,10 @@ export const usuarioSchema = z
       .array(z.object({ id: z.string(), codigo: z.string(), materia: z.string() }))
       .openapi({ description: "Comisiones que dicta (solo Docente)" }),
     esPropio: z.boolean().openapi({ description: "Es la cuenta de quien consulta" }),
+    bajaSolicitada: z
+      .object({ solicitadaEn: z.iso.datetime(), motivo: z.string().nullable() })
+      .nullable()
+      .openapi({ description: "Pedido de baja de la cuenta pendiente de resolver" }),
   })
   .openapi("Usuario");
 export type UsuarioDto = z.infer<typeof usuarioSchema>;

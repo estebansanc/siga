@@ -1,11 +1,13 @@
 import type { AuthContext } from "@repo/auth";
 import { prisma } from "@repo/db";
-import type { UpdateProfileInput } from "@repo/domain";
+import type { SolicitarBajaInput, UpdateProfileInput } from "@repo/domain";
 
+import { conflict } from "../errors";
 import type { MeDto } from "../schemas";
 
 import { listOrganizationsOf } from "./memberships";
 import { tieneAceptacionPendiente } from "./politica-privacidad";
+import { assertDatosLibres } from "./usuarios";
 
 // "Quién soy": la sesión ya resuelve rol y organización activa (`AuthContext`); esto agrega la
 // lista de organizaciones de la cuenta y el nombre leído de la base, así un cambio hecho
@@ -14,12 +16,22 @@ import { tieneAceptacionPendiente } from "./politica-privacidad";
 export const getMe = async (auth: AuthContext): Promise<MeDto> => {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: auth.userId },
-    select: { name: true, email: true },
+    select: {
+      name: true,
+      email: true,
+      profile: {
+        select: { dni: true, legajo: true, bajaSolicitadaAt: true, bajaResueltaAt: true },
+      },
+    },
   });
+  const bajaPendiente = user.profile?.bajaSolicitadaAt && !user.profile.bajaResueltaAt;
   return {
     userId: auth.userId,
     userName: user.name,
     userEmail: user.email,
+    dni: user.profile?.dni ?? null,
+    legajo: user.profile?.legajo ?? null,
+    bajaSolicitadaEn: bajaPendiente ? user.profile!.bajaSolicitadaAt!.toISOString() : null,
     organizationId: auth.organizationId,
     role: auth.role,
     perfil: auth.perfil,
@@ -29,7 +41,33 @@ export const getMe = async (auth: AuthContext): Promise<MeDto> => {
   };
 };
 
+const profileOf = (userId: string) =>
+  prisma.userProfile.findUniqueOrThrow({
+    where: { userId },
+    select: { organizationId: true, dni: true, bajaSolicitadaAt: true, bajaResueltaAt: true },
+  });
+
 export const updateProfile = async (auth: AuthContext, input: UpdateProfileInput) => {
+  const profile = await profileOf(auth.userId);
+  if (input.dni && input.dni !== profile.dni) {
+    await assertDatosLibres(profile.organizationId, { dni: input.dni }, auth.userId);
+  }
   await prisma.user.update({ where: { id: auth.userId }, data: { name: input.name } });
+  await prisma.userProfile.update({
+    where: { userId: auth.userId },
+    data: { dni: input.dni, legajo: input.legajo },
+  });
+  return getMe(auth);
+};
+
+export const solicitarBaja = async (auth: AuthContext, input: SolicitarBajaInput) => {
+  const profile = await profileOf(auth.userId);
+  if (profile.bajaSolicitadaAt && !profile.bajaResueltaAt) {
+    throw conflict("Ya solicitaste la baja de tu cuenta");
+  }
+  await prisma.userProfile.update({
+    where: { userId: auth.userId },
+    data: { bajaSolicitadaAt: new Date(), bajaMotivo: input.motivo ?? null, bajaResueltaAt: null },
+  });
   return getMe(auth);
 };

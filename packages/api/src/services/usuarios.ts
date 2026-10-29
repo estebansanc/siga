@@ -27,6 +27,9 @@ const usuarioSelect = {
   dni: true,
   legajo: true,
   activo: true,
+  bajaSolicitadaAt: true,
+  bajaMotivo: true,
+  bajaResueltaAt: true,
   user: {
     select: {
       name: true,
@@ -42,6 +45,8 @@ const usuarioSelect = {
 } satisfies Prisma.UserProfileSelect;
 
 type UsuarioConDatos = Prisma.UserProfileGetPayload<{ select: typeof usuarioSelect }>;
+
+export const bajaPendiente = { bajaSolicitadaAt: { not: null }, bajaResueltaAt: null } as const;
 
 const toUsuarioDto = (perfil: UsuarioConDatos, solicitanteId: string): UsuarioDto => ({
   id: perfil.userId,
@@ -59,6 +64,10 @@ const toUsuarioDto = (perfil: UsuarioConDatos, solicitanteId: string): UsuarioDt
     }))
     .sort((a, b) => a.materia.localeCompare(b.materia) || a.codigo.localeCompare(b.codigo)),
   esPropio: perfil.userId === solicitanteId,
+  bajaSolicitada:
+    perfil.bajaSolicitadaAt && !perfil.bajaResueltaAt
+      ? { solicitadaEn: perfil.bajaSolicitadaAt.toISOString(), motivo: perfil.bajaMotivo }
+      : null,
 });
 
 const buscarUsuario = async (organizationId: string, id: string) => {
@@ -80,6 +89,7 @@ export const listarUsuarios = async (
     where: {
       organizationId,
       perfil: query.perfil,
+      ...(query.bajaSolicitada ? bajaPendiente : {}),
       ...(texto
         ? {
             OR: [
@@ -96,7 +106,7 @@ export const listarUsuarios = async (
   return perfiles.map((perfil) => toUsuarioDto(perfil, auth.userId));
 };
 
-const assertDatosLibres = async (
+export const assertDatosLibres = async (
   organizationId: string,
   datos: { dni?: string; correo?: string },
   excluirId?: string,
@@ -254,7 +264,12 @@ const cambiarActivo = async (auth: AuthContext, id: string, activo: boolean) => 
       activo ? "La cuenta ya está activa" : "La cuenta ya está desactivada",
     );
   }
-  await prisma.userProfile.update({ where: { userId: id }, data: { activo } });
+  const resuelveBaja =
+    !activo && actual.bajaSolicitadaAt !== null && actual.bajaResueltaAt === null;
+  await prisma.userProfile.update({
+    where: { userId: id },
+    data: { activo, ...(resuelveBaja ? { bajaResueltaAt: new Date() } : {}) },
+  });
   return toUsuarioDto(await buscarUsuario(organizationId, id), auth.userId);
 };
 
