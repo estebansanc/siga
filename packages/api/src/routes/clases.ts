@@ -4,8 +4,8 @@ import { elegirAulaSchema, listarClasesQuerySchema } from "@repo/domain";
 import type { ApiEnv } from "../context";
 import { perfilOnly } from "../middleware";
 import { claseSchema, clasesDelDiaSchema, clasesSinAulaSchema, idParamSchema } from "../schemas";
-import * as asignacion from "../services/asignacion-aulas";
 import * as acciones from "../services/acciones-plano-aulas";
+import * as asignacion from "../services/asignacion-aulas";
 import * as clases from "../services/clases";
 
 import { commonErrors, jsonBody, jsonResponse } from "./shared";

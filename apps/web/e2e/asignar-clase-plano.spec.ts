@@ -45,9 +45,7 @@ test.describe("Asignar, mover y reemplazar desde el plano", () => {
     await celda(page, escenario.conClase.codigo).click();
     await page.getByRole("button", { name: "Mover a otra aula" }).click();
     const mover = page.getByRole("dialog", { name: "Mover a otra aula" });
-    await expect(
-      mover.getByRole("group", { name: `${escenario.edificio}, 1.º piso` }),
-    ).toBeVisible();
+    await expect(mover.locator(`optgroup[label="${escenario.edificio}, 1.º piso"]`)).toHaveCount(1);
     await mover.getByLabel("Aula de destino").selectOption(escenario.destino.id);
     await mover.getByRole("button", { name: "Mover", exact: true }).click();
     await expect(mover).toBeHidden();
