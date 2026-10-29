@@ -40,4 +40,36 @@ describe("ayuda", () => {
       );
     },
   );
+
+  it("la guía de cada perfil tiene exactamente las tareas del ticket", () => {
+    const titulos = (perfil: Perfil) => ayudaPorPerfil[perfil].guia.map((tarea) => tarea.titulo);
+    expect(titulos("ESTUDIANTE")).toEqual([
+      "Elegir las comisiones que seguís",
+      "Ver tus clases del día con estado y novedades",
+      "Buscar una clase",
+      "Leer los avisos",
+    ]);
+    expect(titulos("DOCENTE")).toEqual([
+      "Ver tus clases del día",
+      "Registrar tu asistencia con QR",
+      "Publicar una novedad",
+      "Editar o finalizar una novedad",
+      "Consultar aulas",
+    ]);
+    expect(titulos("BEDEL")).toEqual([
+      "Registrar la apertura o el cierre de la institución",
+      "Consultar las clases del día",
+      "Publicar una novedad",
+      "Generar el QR de asistencia",
+      "Resolver una solicitud de aula",
+      "Registrar una incidencia",
+      "Publicar un aviso",
+    ]);
+    expect(titulos("AUTORIDAD")).toEqual([
+      "Ver las clases de hoy",
+      "Consultar los históricos",
+      "Publicar un aviso",
+      "Consultar el estado institucional",
+    ]);
+  });
 });

@@ -22,7 +22,7 @@ const misClasesEstudiante: SeccionManual = {
     "Muestra las clases de hoy de las comisiones que seguís, con su estado y novedades.",
   comoSeLlega: menu("Mis clases"),
   pasos: [
-    'Si todavía no seguís comisiones, tocá "Elegir comisiones" y marcalas.',
+    'Si todavía no seguís comisiones, tocá "Elegir comisiones" y agregalas.',
     "Cada tarjeta indica materia, horario, aula y estado.",
     "Tocá una clase para ver su detalle y sus novedades.",
   ],
@@ -39,19 +39,18 @@ const misClasesDocente: SeccionManual = {
     "Revisá la lista de clases de hoy: materia, comisión, horario y aula.",
     "Tocá una clase para ver su detalle.",
   ],
-  mensajes: ["Sin clases hoy: no tenés clases asignadas para este día."],
+  mensajes: ["No tenés clases hoy: no hay clases asignadas para este día."],
 };
 
 const buscar: SeccionManual = {
   titulo: "Buscar",
-  paraQueSirve:
-    "Encuentra clases de cualquier fecha por carrera, año, materia, comisión o docente.",
+  paraQueSirve: "Encuentra las clases de una fecha por carrera, año, materia o comisión.",
   comoSeLlega: menu("Buscar"),
   pasos: [
-    'Elegí la fecha en "Fecha de las clases" y completá los filtros que necesites.',
+    'Elegí la fecha en "Fecha" y completá los filtros que necesites.',
     "Tocá una clase del resultado para ver su estado y novedades.",
   ],
-  mensajes: ["Sin resultados: ninguna clase coincide con los filtros elegidos."],
+  mensajes: ["No se encontraron clases: ninguna coincide con los filtros elegidos."],
 };
 
 const avisosLectura: SeccionManual = {
@@ -76,13 +75,16 @@ const avisosGestion: SeccionManual = {
 
 const preferencias: SeccionManual = {
   titulo: "Preferencias",
-  paraQueSirve: "Define las comisiones que seguís y si recibís novedades por correo.",
+  paraQueSirve: "Define las comisiones que seguís y qué correos recibís.",
   comoSeLlega: menu("Preferencias"),
   pasos: [
-    "Marcá o desmarcá las comisiones que cursás.",
-    'Activá o desactivá "Enviar por correo" y guardá.',
+    'En "Agregar comisión" elegí carrera, año y materia, y tocá "Agregar" en la comisión.',
+    'Para dejar de seguir una comisión, tocá "Quitar".',
+    'Activá "Recibir novedades por correo" o "Recibir avisos institucionales por correo" y tocá "Guardar".',
   ],
-  mensajes: ["Preferencias guardadas: los cambios ya rigen."],
+  mensajes: [
+    'La comisión agregada pasa a decir "Agregada". Por defecto los correos están desactivados.',
+  ],
 };
 
 const asistencia: SeccionManual = {
@@ -153,13 +155,13 @@ const estado: SeccionManual = {
 
 const clasesBedel: SeccionManual = {
   titulo: "Clases",
-  paraQueSirve: "Lista las clases del día para controlar su estado.",
+  paraQueSirve: "Busca las clases de una fecha para controlar su estado.",
   comoSeLlega: menu("Clases"),
   pasos: [
-    'Revisá cada clase y tocá "Detalle" para ver más.',
-    'Para registrar presencia manual, usá "Registrar asistencia".',
+    'Elegí la fecha en "Fecha" y filtrá por carrera, año, materia o comisión.',
+    "Tocá una clase para ver su detalle.",
   ],
-  mensajes: ["Los estados son los mismos que ve el estudiante."],
+  mensajes: ["No se encontraron clases: ninguna coincide con los filtros elegidos."],
 };
 
 const clasesAutoridad: SeccionManual = {
@@ -167,7 +169,7 @@ const clasesAutoridad: SeccionManual = {
   paraQueSirve: "Muestra el panorama de las clases del día.",
   comoSeLlega: menu("Clases de hoy"),
   pasos: ["Revisá las clases y sus estados.", "Tocá una clase para ver su detalle."],
-  mensajes: ["Sin clases hoy: no hay clases programadas."],
+  mensajes: ["No hay clases programadas hoy: no hay clases para este día."],
 };
 
 const plano: SeccionManual = {
@@ -175,7 +177,7 @@ const plano: SeccionManual = {
   paraQueSirve: "Muestra el estado de cada aula en tiempo real.",
   comoSeLlega: menu("Plano de aulas"),
   pasos: ["Elegí el edificio.", "Tocá un aula para ver su clase actual y la asistencia."],
-  mensajes: ["Ocupada, Pendiente y Fuera de servicio describen el aula."],
+  mensajes: ["Libre, Ocupada, Pendiente y Fuera de servicio describen el aula."],
 };
 
 const qr: SeccionManual = {
@@ -186,6 +188,7 @@ const qr: SeccionManual = {
     "Elegí el turno y el aula.",
     'Tocá "Generar QR"; se renueva solo.',
     'Usá "Pantalla completa" para proyectarlo.',
+    'Si un docente no puede escanear, tocá "Registro manual" y registrá su asistencia con "Registrar asistencia".',
   ],
   mensajes: ["El turno terminado deja de mostrar el QR."],
 };
@@ -198,7 +201,7 @@ const solicitudes: SeccionManual = {
     "Elegí una solicitud pendiente.",
     'Tocá "Aprobar" y asigná el aula, o "Rechazar" e indicá el motivo.',
   ],
-  mensajes: ["El aula ya está asignada en esa franja: elegí otra."],
+  mensajes: ["No hay aulas libres en esa franja."],
 };
 
 const incidencias: SeccionManual = {
@@ -238,15 +241,20 @@ const datosAcademicos: SeccionManual = {
   titulo: "Datos académicos",
   paraQueSirve: "Mantiene carreras, materias, comisiones y horarios.",
   comoSeLlega: menu("Datos académicos"),
-  pasos: ["Elegí la pestaña del dato.", "Creá, editá o dá de baja un registro."],
+  pasos: ["Elegí la pestaña del dato.", "Creá, editá o da de baja un registro."],
   mensajes: ["Los cambios se ven enseguida en las clases."],
 };
 
 const configuracion: SeccionManual = {
   titulo: "Configuración",
-  paraQueSirve: "Administra la organización: nombre, miembros y versión.",
+  paraQueSirve:
+    "Administra la organización: nombre, miembros, turnos, presencia del docente y versión.",
   comoSeLlega: menu("Configuración"),
-  pasos: ["Editá el nombre de la organización y guardá.", "Quitá miembros desde el listado."],
+  pasos: [
+    'Editá el nombre de la organización y tocá "Guardar".',
+    'Ajustá "Turnos" y "Presencia del docente" y guardá con "Guardar turnos" o "Guardar presencia".',
+    'Quitá miembros con "Quitar de la organización".',
+  ],
   mensajes: ["Solo el Administrador de la organización ve esta sección."],
 };
 
@@ -270,7 +278,7 @@ const cerrarSesion: SeccionManual = {
   titulo: "Cerrar sesión",
   paraQueSirve: "Termina tu sesión en este dispositivo.",
   comoSeLlega: 'Tocá tu nombre al pie del menú lateral y elegí "Cerrar sesión".',
-  pasos: ["Confirmá con un toque; volvés a la pantalla de ingreso."],
+  pasos: ["La sesión se cierra enseguida y volvés a la pantalla de ingreso."],
   mensajes: ["Tu sesión se cierra solo en este dispositivo."],
 };
 
@@ -369,7 +377,10 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
       },
       {
         titulo: "Consultar las clases del día",
-        pasos: ['Entrá a "Clases".', 'Tocá "Detalle" en la clase que quieras revisar.'],
+        pasos: [
+          'Entrá a "Clases" y elegí la fecha en "Fecha".',
+          "Tocá una clase para ver su detalle.",
+        ],
       },
       {
         titulo: "Publicar una novedad",
@@ -456,7 +467,11 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
       avisosGestion,
       buscar,
       plano,
-      { ...estado, pasos: ["Revisá el estado actual y su historial."] },
+      {
+        ...estado,
+        pasos: ["Revisá el estado actual y su historial."],
+        mensajes: ["Solo el Bedel cambia el estado de la institución."],
+      },
       usuarios,
       datosAcademicos,
     ],
