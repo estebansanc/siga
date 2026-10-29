@@ -1,6 +1,6 @@
 import type { AuthContext } from "@repo/auth";
 import { prisma } from "@repo/db";
-import type { SolicitarBajaInput, UpdateProfileInput } from "@repo/domain";
+import { bajaPendienteDesde, type SolicitarBajaInput, type UpdateProfileInput } from "@repo/domain";
 
 import { conflict } from "../errors";
 import type { MeDto } from "../schemas";
@@ -24,14 +24,14 @@ export const getMe = async (auth: AuthContext): Promise<MeDto> => {
       },
     },
   });
-  const bajaPendiente = user.profile?.bajaSolicitadaAt && !user.profile.bajaResueltaAt;
+  const bajaSolicitadaEn = user.profile ? bajaPendienteDesde(user.profile) : null;
   return {
     userId: auth.userId,
     userName: user.name,
     userEmail: user.email,
     dni: user.profile?.dni ?? null,
     legajo: user.profile?.legajo ?? null,
-    bajaSolicitadaEn: bajaPendiente ? user.profile!.bajaSolicitadaAt!.toISOString() : null,
+    bajaSolicitadaEn: bajaSolicitadaEn?.toISOString() ?? null,
     organizationId: auth.organizationId,
     role: auth.role,
     perfil: auth.perfil,
@@ -52,17 +52,19 @@ export const updateProfile = async (auth: AuthContext, input: UpdateProfileInput
   if (input.dni && input.dni !== profile.dni) {
     await assertDatosLibres(profile.organizationId, { dni: input.dni }, auth.userId);
   }
-  await prisma.user.update({ where: { id: auth.userId }, data: { name: input.name } });
-  await prisma.userProfile.update({
-    where: { userId: auth.userId },
-    data: { dni: input.dni, legajo: input.legajo },
-  });
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: auth.userId }, data: { name: input.name } }),
+    prisma.userProfile.update({
+      where: { userId: auth.userId },
+      data: { dni: input.dni, legajo: input.legajo },
+    }),
+  ]);
   return getMe(auth);
 };
 
 export const solicitarBaja = async (auth: AuthContext, input: SolicitarBajaInput) => {
   const profile = await profileOf(auth.userId);
-  if (profile.bajaSolicitadaAt && !profile.bajaResueltaAt) {
+  if (bajaPendienteDesde(profile)) {
     throw conflict("Ya solicitaste la baja de tu cuenta");
   }
   await prisma.userProfile.update({

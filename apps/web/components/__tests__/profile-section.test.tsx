@@ -86,6 +86,14 @@ describe("ProfileSection", () => {
     expect(updateProfile).not.toHaveBeenCalled();
   });
 
+  it("quien ya tiene DNI no puede dejarlo vacío", async () => {
+    renderWithProviders(<ProfileSection initialMe={me} />);
+    await userEvent.clear(screen.getByLabelText("DNI"));
+    await userEvent.click(guardar());
+    expect(await screen.findByText("Ingresá tu DNI")).toBeVisible();
+    expect(updateProfile).not.toHaveBeenCalled();
+  });
+
   it("un DNI sin 7 u 8 dígitos muestra el error debajo del campo y no guarda", async () => {
     renderWithProviders(<ProfileSection initialMe={me} />);
     const dni = screen.getByLabelText("DNI");

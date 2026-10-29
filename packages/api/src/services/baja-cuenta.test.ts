@@ -1,15 +1,19 @@
 import { prisma, runWithAuditActor } from "@repo/db";
+import { fechaArgentina } from "@repo/domain";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   authOf,
+  createClase,
   createInstitution,
   createUserWithPerfil,
   resetDatabase,
+  seedAcademicFixture,
   type TestOrganization,
   type TestUser,
 } from "../test/db";
 
+import { publicarNovedad, listarNovedades } from "./novedades";
 import { getMe, solicitarBaja, updateProfile } from "./me";
 import { desactivarUsuario, listarUsuarios, reactivarUsuario } from "./usuarios";
 
@@ -161,9 +165,20 @@ describe("resolver la baja desde Usuarios", () => {
     expect(me.bajaSolicitadaEn).not.toBeNull();
   });
 
-  it("conserva al autor de lo publicado por la cuenta desactivada", async () => {
-    await comoBedel(() => desactivarUsuario(bedelAuth(), docente.userId));
-    const autor = await prisma.user.findUniqueOrThrow({ where: { id: docente.userId } });
-    expect(autor.name).toBe(docente.userName);
+  it("conserva a la cuenta desactivada como autora de lo que publicó en Novedades", async () => {
+    const fixture = await seedAcademicFixture(institution);
+    const autora = authOf(institution, fixture.docente);
+    const clase = await createClase(institution, fixture, fechaArgentina(new Date()));
+    await runWithAuditActor(
+      { userId: fixture.docente.userId, organizationId: institution.organizationId },
+      () => publicarNovedad(autora, { claseIds: [clase.id], tipo: "DEMORA", minutosDemora: 10 }),
+    );
+    await comoBedel(() => desactivarUsuario(bedelAuth(), fixture.docente.userId));
+
+    expect(await listarNovedades(bedelAuth(), {})).toEqual([
+      expect.objectContaining({
+        publicadaPor: { id: fixture.docente.userId, nombre: fixture.docente.userName },
+      }),
+    ]);
   });
 });

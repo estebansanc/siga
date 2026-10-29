@@ -170,13 +170,7 @@ export const reubicarClasesFuturas = async (
       where: { comisionId: clase.comisionId, inicio, id: { not: clase.id } },
       select: { id: true },
     });
-    if (
-      fecha < hoy ||
-      fecha < inicioPeriodo ||
-      fecha > finPeriodo ||
-      diasNoLaborables.has(fecha) ||
-      otra
-    ) {
+    if (fecha < hoy || fecha < inicioPeriodo || fecha > finPeriodo || diasNoLaborables.has(fecha) || otra) {
       await db.claseProgramada.delete({ where: { id: clase.id } });
       continue;
     }

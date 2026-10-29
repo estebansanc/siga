@@ -63,6 +63,10 @@ function ProfileForm({ me }: { me: MeDto }) {
   const { errors } = form.formState;
 
   const onSubmit = async ({ name, dni, legajo }: UpdateProfileFormInput) => {
+    if (me.dni && !dni) {
+      form.setError("dni", { message: "Ingresá tu DNI" });
+      return;
+    }
     try {
       await updateProfile.mutateAsync({ name, dni: dni || undefined, legajo });
       form.reset({ name, dni, legajo });

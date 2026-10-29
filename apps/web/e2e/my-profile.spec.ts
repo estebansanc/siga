@@ -30,8 +30,11 @@ test.describe("Mi perfil", () => {
     const dni = String(10_000_000 + Math.floor(Math.random() * 89_999_999));
     await page.getByLabel("DNI").fill(dni);
     await page.getByLabel("Legajo").fill("L-QA");
+    const guardado = page.waitForResponse(
+      (response) => response.url().endsWith("/api/me") && response.request().method() === "PATCH",
+    );
     await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByRole("button", { name: "Guardar" })).toBeDisabled();
+    expect((await guardado).ok()).toBe(true);
 
     await page.reload();
     await expect(page.getByLabel("DNI")).toHaveValue(dni);

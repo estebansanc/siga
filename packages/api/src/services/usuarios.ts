@@ -1,6 +1,7 @@
 import { auth, type AuthContext } from "@repo/auth";
 import { prisma, type Prisma } from "@repo/db";
 import {
+  bajaPendienteDesde,
   estadoDeUsuario,
   type ActualizarUsuario,
   type CrearUsuario,
@@ -46,7 +47,14 @@ const usuarioSelect = {
 
 type UsuarioConDatos = Prisma.UserProfileGetPayload<{ select: typeof usuarioSelect }>;
 
-export const bajaPendiente = { bajaSolicitadaAt: { not: null }, bajaResueltaAt: null } as const;
+const bajaPendiente = { bajaSolicitadaAt: { not: null }, bajaResueltaAt: null } as const;
+
+const bajaSolicitadaDe = (perfil: UsuarioConDatos): UsuarioDto["bajaSolicitada"] => {
+  const solicitadaEn = bajaPendienteDesde(perfil);
+  return solicitadaEn
+    ? { solicitadaEn: solicitadaEn.toISOString(), motivo: perfil.bajaMotivo }
+    : null;
+};
 
 const toUsuarioDto = (perfil: UsuarioConDatos, solicitanteId: string): UsuarioDto => ({
   id: perfil.userId,
@@ -64,10 +72,7 @@ const toUsuarioDto = (perfil: UsuarioConDatos, solicitanteId: string): UsuarioDt
     }))
     .sort((a, b) => a.materia.localeCompare(b.materia) || a.codigo.localeCompare(b.codigo)),
   esPropio: perfil.userId === solicitanteId,
-  bajaSolicitada:
-    perfil.bajaSolicitadaAt && !perfil.bajaResueltaAt
-      ? { solicitadaEn: perfil.bajaSolicitadaAt.toISOString(), motivo: perfil.bajaMotivo }
-      : null,
+  bajaSolicitada: bajaSolicitadaDe(perfil),
 });
 
 const buscarUsuario = async (organizationId: string, id: string) => {

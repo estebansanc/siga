@@ -25,3 +25,9 @@ export const solicitarBajaSchema = z.object({
   motivo: optionalText(motivoBajaMaxLength),
 });
 export type SolicitarBajaInput = z.infer<typeof solicitarBajaSchema>;
+
+// La solicitud sigue pendiente hasta que desactivar la cuenta la resuelve.
+export const bajaPendienteDesde = (cuenta: {
+  bajaSolicitadaAt: Date | null;
+  bajaResueltaAt: Date | null;
+}) => (cuenta.bajaResueltaAt ? null : cuenta.bajaSolicitadaAt);
