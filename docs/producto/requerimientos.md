@@ -23,7 +23,7 @@ Prioridad: **Alta** = imprescindible para el MVP. **Media** = necesaria para el 
 | RF-13 | Gestión de datos académicos base: carreras, materias, comisiones, horarios, docentes asignados; generación de clases programadas | Alta      | Usuarios y roles              | CA-09        | Secretaría Académica, Bedeles     |
 | RF-14 | Publicación de avisos institucionales segmentados con notificación por correo                                                    | Alta      | Avisos y estado institucional | CA-03        | Autoridades, Bedeles, Estudiantes |
 | RF-15 | Registro y seguimiento de incidencias de infraestructura o equipamiento de un aula                                               | Media     | Aulas y espacios              | CA-06        | Bedeles, Mantenimiento            |
-| RF-16 | Asignación de aulas a clases y aprobación o rechazo de solicitudes, sin superposición de aula                                    | Alta      | Aulas y espacios              | CA-04        | Bedeles, Docentes                 |
+| RF-16 | Asignación de aulas a clases y aprobación o rechazo de solicitudes, sin superposición de aula                                    | Alta      | Aulas y espacios              | CA-04        | Bedeles, Docentes, Autoridades    |
 | RF-17 | Preferencias del estudiante: comisiones seguidas y notificaciones por correo                                                     | Media     | Avisos y estado institucional | CA-04        | Estudiantes                       |
 | RF-18 | Registro manual de asistencia docente por el bedel, como contingencia, con motivo                                                | Media     | Actividad docente             | CA-06        | Bedeles, Docentes                 |
 
@@ -43,24 +43,25 @@ Prioridad: **Alta** = imprescindible para el MVP. **Media** = necesaria para el 
 
 ## Matriz de permisos por perfil
 
-| Funcionalidad                                    | Estudiante |   Docente    |      Bedel      | Autoridad |
-| ------------------------------------------------ | :--------: | :----------: | :-------------: | :-------: |
-| Ver estado institucional y avisos (RF-08)        |     Sí     |      Sí      |       Sí        |    Sí     |
-| Registrar estado institucional (RF-01)           |     No     |      No      |       Sí        |    No     |
-| Consultar estado de clases (RF-07)               |     Sí     | Sí (propias) |       Sí        |    Sí     |
-| Publicar novedades de clase (RF-05)              |     No     | Sí (propias) |       Sí        |    No     |
-| Gestionar aulas (RF-02)                          |     No     |      No      |       Sí        |    No     |
-| Solicitar aula (RF-06)                           |     No     |      Sí      |       Sí        |    No     |
-| Asignar aulas / aprobar solicitudes (RF-16)      |     No     |      No      |       Sí        |    No     |
-| Generar QR de asistencia (RF-03)                 |     No     |      No      |       Sí        |    No     |
-| Registrar asistencia por QR (RF-04)              |     No     |      Sí      |       No        |    No     |
-| Registrar asistencia manual (RF-18)              |     No     |      No      |       Sí        |    No     |
-| Reportar incidencias (RF-15)                     |     No     |      Sí      |       Sí        |    No     |
-| Gestionar incidencias (RF-15)                    |     No     |      No      |       Sí        |    No     |
-| Publicar avisos institucionales (RF-14)          |     No     |      No      |       Sí        |    Sí     |
-| Consultas históricas (RF-09)                     |     No     |      No      | Sí (operativas) |    Sí     |
-| Administrar usuarios y datos base (RF-10, RF-13) |     No     |      No      |       Sí        |    Sí     |
-| Configurar preferencias (RF-17)                  |     Sí     |      No      |       No        |    No     |
+| Funcionalidad                                             | Estudiante |   Docente    |      Bedel      | Autoridad |
+| --------------------------------------------------------- | :--------: | :----------: | :-------------: | :-------: |
+| Ver estado institucional y avisos (RF-08)                 |     Sí     |      Sí      |       Sí        |    Sí     |
+| Registrar estado institucional (RF-01)                    |     No     |      No      |       Sí        |    No     |
+| Consultar estado de clases (RF-07)                        |     Sí     | Sí (propias) |       Sí        |    Sí     |
+| Publicar novedades de clase (RF-05)                       |     No     | Sí (propias) |       Sí        |    No     |
+| Gestionar aulas (RF-02)                                   |     No     |      No      |       Sí        |    No     |
+| Solicitar aula (RF-06)                                    |     No     |      Sí      |       Sí        |    No     |
+| Asignar aulas / aprobar solicitudes (RF-16)               |     No     |      No      |       Sí        |    No     |
+| Asignar, mover y reemplazar clases desde el plano (RF-16) |     No     |      No      |       Sí        |    Sí     |
+| Generar QR de asistencia (RF-03)                          |     No     |      No      |       Sí        |    No     |
+| Registrar asistencia por QR (RF-04)                       |     No     |      Sí      |       No        |    No     |
+| Registrar asistencia manual (RF-18)                       |     No     |      No      |       Sí        |    No     |
+| Reportar incidencias (RF-15)                              |     No     |      Sí      |       Sí        |    No     |
+| Gestionar incidencias (RF-15)                             |     No     |      No      |       Sí        |    No     |
+| Publicar avisos institucionales (RF-14)                   |     No     |      No      |       Sí        |    Sí     |
+| Consultas históricas (RF-09)                              |     No     |      No      | Sí (operativas) |    Sí     |
+| Administrar usuarios y datos base (RF-10, RF-13)          |     No     |      No      |       Sí        |    Sí     |
+| Configurar preferencias (RF-17)                           |     Sí     |      No      |       No        |    No     |
 
 El control de permisos se verifica en el servidor en cada operación, nunca solo ocultando opciones en la interfaz. Todo acceso denegado queda en auditoría.
 
