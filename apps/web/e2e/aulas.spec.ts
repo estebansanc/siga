@@ -150,6 +150,12 @@ const proximoDiaHabil = () => {
   return fecha;
 };
 
+const proximoDomingo = () => {
+  let fecha = sumarDias(fechaArgentina(new Date()), 1);
+  while (diaSemanaDe(fecha) !== 7) fecha = sumarDias(fecha, 1);
+  return fecha;
+};
+
 test.describe("Solicitar aula", () => {
   test("el docente busca, solicita un aula y una segunda solicitud para la clase se rechaza", async ({
     page,
@@ -200,6 +206,31 @@ test.describe("Solicitar aula", () => {
       .click();
     await page.getByRole("button", { name: "Confirmar solicitud" }).click();
     await expect(page.getByText("Esta clase ya tiene una solicitud pendiente.")).toBeVisible();
+  });
+
+  test("el docente ve el estado vacío en un día sin clases y el formulario en uno con clases", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.docente);
+    await page.goto("/solicitudes");
+    await page.getByRole("button", { name: "Nueva solicitud" }).click();
+    const dialog = page.getByRole("dialog", { name: "Nueva solicitud" });
+
+    await dialog.getByLabel("Fecha").fill(proximoDomingo());
+    await expect(dialog.getByText("No hay clases para pedir aula")).toBeVisible();
+    await expect(dialog.getByText(/no tenés clases que admitan pedir aula/)).toBeVisible();
+    await expect(dialog.getByLabel("Clase")).toHaveCount(0);
+    await expect(dialog.getByRole("button", { name: "Buscar aulas" })).toHaveCount(0);
+    await expectNoHorizontalPageScroll(page);
+
+    await dialog.getByLabel("Fecha").fill(proximoDiaHabil());
+    await expect(dialog.getByLabel("Clase")).toBeVisible();
+    await expect(dialog.getByText("No hay clases para pedir aula")).toHaveCount(0);
+
+    await dialog.getByLabel("Fecha").fill(proximoDomingo());
+    await dialog.getByRole("button", { name: "Ver mis solicitudes" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page).toHaveURL(/\/solicitudes$/);
   });
 
   test("el bedel que abre las URLs viejas de Solicitar aula llega a Solicitudes", async ({

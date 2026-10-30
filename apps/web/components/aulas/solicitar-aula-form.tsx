@@ -14,6 +14,14 @@ import { Alert, AlertDescription, AlertTitle } from "@repo/ui/components/alert";
 import { Button } from "@repo/ui/components/button";
 import { Checkbox } from "@repo/ui/components/checkbox";
 import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@repo/ui/components/empty";
+import {
   Field,
   FieldDescription,
   FieldError,
@@ -34,6 +42,7 @@ import { NativeSelect, NativeSelectOption } from "@repo/ui/components/native-sel
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Spinner } from "@repo/ui/components/spinner";
 import { Textarea } from "@repo/ui/components/textarea";
+import { CalendarXIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -42,6 +51,7 @@ import {
   useClasesSolicitables,
   useCrearSolicitudAula,
 } from "@/hooks/use-solicitudes-aula";
+import { formatFechaLarga } from "@/lib/dates";
 import { showRequestError } from "@/lib/form-errors";
 
 const describirClase = (clase: ClaseDto) =>
@@ -87,7 +97,13 @@ function AulaOpcion({
 }
 
 // RF-06: busca aulas libres para una clase según alumnos y recursos y confirma la solicitud.
-export function SolicitarAulaForm({ onSolicitada }: { onSolicitada: () => void }) {
+export function SolicitarAulaForm({
+  onSolicitada,
+  onVerSolicitudes,
+}: {
+  onSolicitada: () => void;
+  onVerSolicitudes: () => void;
+}) {
   const [fecha, setFecha] = useState(() => fechaArgentina(new Date()));
   const [claseId, setClaseId] = useState("");
   const [alumnos, setAlumnos] = useState("");
@@ -143,6 +159,8 @@ export function SolicitarAulaForm({ onSolicitada }: { onSolicitada: () => void }
     }
   };
 
+  const cargandoClases = clases.isPending;
+  const sinClases = clases.data?.clases.length === 0;
   const sinCoincidencias = busqueda.data && busqueda.data.aulas.length === 0;
 
   return (
@@ -162,126 +180,157 @@ export function SolicitarAulaForm({ onSolicitada }: { onSolicitada: () => void }
               }}
             />
           </Field>
-          <Field>
-            <FieldLabel htmlFor="solicitud-clase">Clase</FieldLabel>
-            <NativeSelect
-              id="solicitud-clase"
-              className="w-full"
-              value={claseId}
-              onChange={(event) => cambiar(setClaseId)(event.target.value)}
-            >
-              <NativeSelectOption value="">
-                {clases.data?.clases.length === 0
-                  ? "No hay clases para pedir aula"
-                  : "Elegí una clase"}
-              </NativeSelectOption>
-              {clases.data?.clases.map((candidata) => (
-                <NativeSelectOption key={candidata.id} value={candidata.id}>
-                  {describirClase(candidata)}
+          {cargandoClases || sinClases ? null : (
+            <Field>
+              <FieldLabel htmlFor="solicitud-clase">Clase</FieldLabel>
+              <NativeSelect
+                id="solicitud-clase"
+                className="w-full"
+                value={claseId}
+                onChange={(event) => cambiar(setClaseId)(event.target.value)}
+              >
+                <NativeSelectOption value="">
+                  {clases.data?.clases.length === 0
+                    ? "No hay clases para pedir aula"
+                    : "Elegí una clase"}
                 </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </Field>
+                {clases.data?.clases.map((candidata) => (
+                  <NativeSelectOption key={candidata.id} value={candidata.id}>
+                    {describirClase(candidata)}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
+          )}
         </div>
-        {clase ? (
-          <p className="text-muted-foreground text-sm">
-            Franja {clase.horaInicio} a {clase.horaFin} ·{" "}
-            {clase.aula ? `Aula actual: ${clase.aula.codigo}` : "Sin aula asignada"}
-          </p>
+        {cargandoClases ? <Skeleton className="h-40 w-full" /> : null}
+        {sinClases ? (
+          <Empty className="border">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <CalendarXIcon />
+              </EmptyMedia>
+              <EmptyTitle>No hay clases para pedir aula</EmptyTitle>
+              <EmptyDescription>
+                El {formatFechaLarga(fecha)} no tenés clases que admitan pedir aula. No aparecen las
+                que ya terminaron ni las suspendidas, con ausencia docente o virtuales. Elegí otra
+                fecha.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button type="button" variant="outline" onClick={onVerSolicitudes}>
+                Ver mis solicitudes
+              </Button>
+            </EmptyContent>
+          </Empty>
         ) : null}
-        <Field data-invalid={Boolean(errorAlumnos)}>
-          <FieldLabel htmlFor="solicitud-alumnos">Cantidad de alumnos</FieldLabel>
-          <Input
-            id="solicitud-alumnos"
-            type="number"
-            inputMode="numeric"
-            value={alumnos}
-            aria-invalid={Boolean(errorAlumnos)}
-            onChange={(event) => cambiar(setAlumnos)(event.target.value)}
-          />
-          <FieldError>{errorAlumnos}</FieldError>
-        </Field>
-        <Field>
-          <FieldLabel>Recursos</FieldLabel>
-          <div className="grid grid-cols-2 gap-2" role="group" aria-label="Recursos">
-            {equipamientoSchema.options.map((recurso) => (
-              <Label key={recurso} className="font-normal">
-                <Checkbox
-                  checked={recursos.includes(recurso)}
-                  onCheckedChange={(valor) => toggleRecurso(recurso, valor === true)}
-                />
-                {equipamientoLabels[recurso]}
-              </Label>
-            ))}
-          </div>
-        </Field>
+        {cargandoClases || sinClases ? null : (
+          <>
+            {clase ? (
+              <p className="text-muted-foreground text-sm">
+                Franja {clase.horaInicio} a {clase.horaFin} ·{" "}
+                {clase.aula ? `Aula actual: ${clase.aula.codigo}` : "Sin aula asignada"}
+              </p>
+            ) : null}
+            <Field data-invalid={Boolean(errorAlumnos)}>
+              <FieldLabel htmlFor="solicitud-alumnos">Cantidad de alumnos</FieldLabel>
+              <Input
+                id="solicitud-alumnos"
+                type="number"
+                inputMode="numeric"
+                value={alumnos}
+                aria-invalid={Boolean(errorAlumnos)}
+                onChange={(event) => cambiar(setAlumnos)(event.target.value)}
+              />
+              <FieldError>{errorAlumnos}</FieldError>
+            </Field>
+            <Field>
+              <FieldLabel>Recursos</FieldLabel>
+              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Recursos">
+                {equipamientoSchema.options.map((recurso) => (
+                  <Label key={recurso} className="font-normal">
+                    <Checkbox
+                      checked={recursos.includes(recurso)}
+                      onCheckedChange={(valor) => toggleRecurso(recurso, valor === true)}
+                    />
+                    {equipamientoLabels[recurso]}
+                  </Label>
+                ))}
+              </div>
+            </Field>
+          </>
+        )}
       </FieldGroup>
-      <Button type="button" disabled={!claseId || busqueda.isFetching} onClick={buscar}>
-        {busqueda.isFetching ? <Spinner /> : null}
-        Buscar aulas
-      </Button>
-
-      {busqueda.isFetching && !busqueda.data ? <Skeleton className="h-24 w-full" /> : null}
-      {busqueda.data ? (
-        <section className="flex flex-col gap-3" aria-label="Resultados">
-          {sinCoincidencias ? (
-            <Alert>
-              <AlertTitle>Ninguna aula cumple todos los criterios.</AlertTitle>
-              {!busqueda.data.hayAulasLibres ? (
-                <AlertDescription>No hay aulas libres en esa franja.</AlertDescription>
-              ) : (
-                <AlertDescription>Estas aulas libres cumplen en parte:</AlertDescription>
-              )}
-            </Alert>
-          ) : null}
-          <ItemGroup className="gap-2">
-            {busqueda.data.aulas.map((aula) => (
-              <AulaOpcion
-                key={aula.id}
-                aula={aula}
-                elegida={aula.id === aulaId}
-                onElegir={() => setAulaId(aula.id)}
-              />
-            ))}
-            {busqueda.data.sugerencias.map((sugerida: AulaSugeridaDto) => (
-              <AulaOpcion
-                key={sugerida.id}
-                aula={sugerida}
-                faltantes={sugerida.faltantes}
-                elegida={sugerida.id === aulaId}
-                onElegir={() => setAulaId(sugerida.id)}
-              />
-            ))}
-          </ItemGroup>
-        </section>
-      ) : null}
-
-      {aulaId ? (
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor="solicitud-comentario">
-              Comentario{" "}
-              <span className="text-muted-foreground font-normal">
-                (opcional, máx. {comentarioSolicitudMax})
-              </span>
-            </FieldLabel>
-            <Textarea
-              id="solicitud-comentario"
-              rows={3}
-              maxLength={comentarioSolicitudMax}
-              value={comentario}
-              onChange={(event) => setComentario(event.target.value)}
-            />
-            <FieldDescription>
-              {comentario.length} / {comentarioSolicitudMax}
-            </FieldDescription>
-          </Field>
-          <Button type="button" disabled={crear.isPending} onClick={() => void confirmar()}>
-            {crear.isPending ? <Spinner /> : null}
-            Confirmar solicitud
+      {cargandoClases || sinClases ? null : (
+        <>
+          <Button type="button" disabled={!claseId || busqueda.isFetching} onClick={buscar}>
+            {busqueda.isFetching ? <Spinner /> : null}
+            Buscar aulas
           </Button>
-        </FieldGroup>
-      ) : null}
+
+          {busqueda.isFetching && !busqueda.data ? <Skeleton className="h-24 w-full" /> : null}
+          {busqueda.data ? (
+            <section className="flex flex-col gap-3" aria-label="Resultados">
+              {sinCoincidencias ? (
+                <Alert>
+                  <AlertTitle>Ninguna aula cumple todos los criterios.</AlertTitle>
+                  {!busqueda.data.hayAulasLibres ? (
+                    <AlertDescription>No hay aulas libres en esa franja.</AlertDescription>
+                  ) : (
+                    <AlertDescription>Estas aulas libres cumplen en parte:</AlertDescription>
+                  )}
+                </Alert>
+              ) : null}
+              <ItemGroup className="gap-2">
+                {busqueda.data.aulas.map((aula) => (
+                  <AulaOpcion
+                    key={aula.id}
+                    aula={aula}
+                    elegida={aula.id === aulaId}
+                    onElegir={() => setAulaId(aula.id)}
+                  />
+                ))}
+                {busqueda.data.sugerencias.map((sugerida: AulaSugeridaDto) => (
+                  <AulaOpcion
+                    key={sugerida.id}
+                    aula={sugerida}
+                    faltantes={sugerida.faltantes}
+                    elegida={sugerida.id === aulaId}
+                    onElegir={() => setAulaId(sugerida.id)}
+                  />
+                ))}
+              </ItemGroup>
+            </section>
+          ) : null}
+
+          {aulaId ? (
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="solicitud-comentario">
+                  Comentario{" "}
+                  <span className="text-muted-foreground font-normal">
+                    (opcional, máx. {comentarioSolicitudMax})
+                  </span>
+                </FieldLabel>
+                <Textarea
+                  id="solicitud-comentario"
+                  rows={3}
+                  maxLength={comentarioSolicitudMax}
+                  value={comentario}
+                  onChange={(event) => setComentario(event.target.value)}
+                />
+                <FieldDescription>
+                  {comentario.length} / {comentarioSolicitudMax}
+                </FieldDescription>
+              </Field>
+              <Button type="button" disabled={crear.isPending} onClick={() => void confirmar()}>
+                {crear.isPending ? <Spinner /> : null}
+                Confirmar solicitud
+              </Button>
+            </FieldGroup>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

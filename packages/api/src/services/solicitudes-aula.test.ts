@@ -94,6 +94,20 @@ describe("clases solicitables", () => {
     expect(clases.map((clase) => clase.id)).toEqual([vigente.id]);
   });
 
+  it("devuelve la lista vacía para un día sin clases y para uno con todas terminadas o suspendidas", async () => {
+    const sinClases = await listarClasesSolicitables(docente(), "2026-10-18", ahora);
+    expect(sinClases.clases).toEqual([]);
+
+    await createClase(institution, fixture, fecha, "06:00", "09:00");
+    const suspendida = await createClase(institution, fixture, fecha, "19:00", "20:00");
+    await prisma.claseProgramada.update({
+      where: { id: suspendida.id },
+      data: { estado: "SUSPENDIDA" },
+    });
+    const sinSolicitables = await listarClasesSolicitables(docente(), fecha, ahora);
+    expect(sinSolicitables.clases).toEqual([]);
+  });
+
   it.each(["ESTUDIANTE", "AUTORIDAD"] as const)("%s no accede", async (perfil) => {
     const usuario = await createUserWithPerfil(institution, perfil);
     const auth = authOf(institution, usuario);

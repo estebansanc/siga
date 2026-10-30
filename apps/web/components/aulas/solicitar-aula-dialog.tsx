@@ -22,7 +22,10 @@ export function SolicitarAulaDialog({
             Buscá un aula libre para una de tus clases y pedila a bedelía.
           </DialogDescription>
         </DialogHeader>
-        <SolicitarAulaForm onSolicitada={() => onOpenChange(false)} />
+        <SolicitarAulaForm
+          onSolicitada={() => onOpenChange(false)}
+          onVerSolicitudes={() => onOpenChange(false)}
+        />
       </FormDialogContent>
     </Dialog>
   );

@@ -9,9 +9,12 @@ import { renderWithProviders } from "@/test/render";
 const state = vi.hoisted(() => ({
   busqueda: undefined as BusquedaAulaDto | undefined,
   pedidos: [] as (object | null)[],
+  clases: [] as ClaseDto[],
+  cargando: false,
 }));
 const crear = vi.hoisted(() => vi.fn());
 const onSolicitada = vi.hoisted(() => vi.fn());
+const onVerSolicitudes = vi.hoisted(() => vi.fn());
 
 const materia = {
   id: "m1",
@@ -31,7 +34,10 @@ const clase = {
 } as ClaseDto;
 
 vi.mock("@/hooks/use-solicitudes-aula", () => ({
-  useClasesSolicitables: () => ({ data: { fecha: "2026-10-14", clases: [clase] } }),
+  useClasesSolicitables: () => ({
+    data: state.cargando ? undefined : { fecha: "2026-10-14", clases: state.clases },
+    isPending: state.cargando,
+  }),
   useBuscarAulas: (pedido: object | null) => {
     state.pedidos.push(pedido);
     return { data: pedido ? state.busqueda : undefined, isFetching: false };
@@ -58,27 +64,35 @@ const completarPedido = async (alumnos: string) => {
 beforeEach(() => {
   vi.clearAllMocks();
   state.pedidos = [];
+  state.clases = [clase];
+  state.cargando = false;
   state.busqueda = { aulas: [aula("Aula 7", 45)], sugerencias: [], hayAulasLibres: true };
   crear.mockResolvedValue({});
 });
 
 describe("SolicitarAulaForm", () => {
   it.each(["", "0", "2.5"])("con alumnos %j avisa y no busca", async (alumnos) => {
-    renderWithProviders(<SolicitarAulaForm onSolicitada={onSolicitada} />);
+    renderWithProviders(
+      <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
+    );
     await completarPedido(alumnos);
     expect(screen.getByText("Ingresá una cantidad de alumnos mayor que 0.")).toBeVisible();
     expect(state.pedidos.every((pedido) => pedido === null)).toBe(true);
   });
 
   it("muestra la franja y el aula de la clase elegida", async () => {
-    renderWithProviders(<SolicitarAulaForm onSolicitada={onSolicitada} />);
+    renderWithProviders(
+      <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
+    );
     await userEvent.selectOptions(screen.getByLabelText("Clase"), "clase-1");
     expect(screen.getByText(/Franja 19:00 a 23:00/)).toBeVisible();
     expect(screen.getByText(/Aula actual: Aula 12/)).toBeVisible();
   });
 
   it("busca con alumnos y recursos, elige un aula y confirma con el comentario", async () => {
-    renderWithProviders(<SolicitarAulaForm onSolicitada={onSolicitada} />);
+    renderWithProviders(
+      <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
+    );
     await userEvent.click(screen.getByRole("checkbox", { name: "Proyector" }));
     await completarPedido("40");
     expect(state.pedidos.at(-1)).toEqual({
@@ -108,7 +122,9 @@ describe("SolicitarAulaForm", () => {
       sugerencias: [{ ...aula("Aula 12", 60), faltantes: ["Capacidad para 100 alumnos"] }],
       hayAulasLibres: true,
     };
-    renderWithProviders(<SolicitarAulaForm onSolicitada={onSolicitada} />);
+    renderWithProviders(
+      <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
+    );
     await completarPedido("100");
     expect(screen.getByText("Ninguna aula cumple todos los criterios.")).toBeVisible();
     expect(screen.getByText("Capacidad para 100 alumnos")).toBeVisible();
@@ -116,8 +132,48 @@ describe("SolicitarAulaForm", () => {
 
   it("sin aulas libres lo dice", async () => {
     state.busqueda = { aulas: [], sugerencias: [], hayAulasLibres: false };
-    renderWithProviders(<SolicitarAulaForm onSolicitada={onSolicitada} />);
+    renderWithProviders(
+      <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
+    );
     await completarPedido("10");
     expect(screen.getByText("No hay aulas libres en esa franja.")).toBeVisible();
+  });
+
+  it("sin clases en la fecha muestra el estado vacío con la acción y sin el resto del formulario", async () => {
+    state.clases = [];
+    renderWithProviders(
+      <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
+    );
+    expect(screen.getByText("No hay clases para pedir aula")).toBeVisible();
+    expect(
+      screen.getByText(/no tenés clases que admitan pedir aula.*Elegí otra fecha\./),
+    ).toBeVisible();
+    expect(screen.getByLabelText("Fecha")).toBeVisible();
+    for (const etiqueta of ["Clase", "Cantidad de alumnos"]) {
+      expect(screen.queryByLabelText(etiqueta)).not.toBeInTheDocument();
+    }
+    expect(screen.queryByRole("group", { name: "Recursos" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Buscar aulas" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Ver mis solicitudes" }));
+    expect(onVerSolicitudes).toHaveBeenCalledOnce();
+  });
+
+  it("con clases muestra el formulario y no el estado vacío", () => {
+    renderWithProviders(
+      <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
+    );
+    expect(screen.getByLabelText("Clase")).toBeVisible();
+    expect(screen.queryByText("No hay clases para pedir aula")).not.toBeInTheDocument();
+  });
+
+  it("mientras cargan las clases no muestra el formulario ni el estado vacío", () => {
+    state.cargando = true;
+    renderWithProviders(
+      <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
+    );
+    expect(screen.getByLabelText("Fecha")).toBeVisible();
+    expect(screen.queryByLabelText("Clase")).not.toBeInTheDocument();
+    expect(screen.queryByText("No hay clases para pedir aula")).not.toBeInTheDocument();
   });
 });
