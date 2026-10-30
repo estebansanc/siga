@@ -1,7 +1,7 @@
 import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
 
 test.describe("Configuración", () => {
-  test("muestra la versión del sistema y "Qué hay de nuevo", aunque no haya cambios", async ({
+  test("muestra la versión del sistema y Qué hay de nuevo, aunque no haya cambios", async ({
     page,
   }) => {
     await loginViaUi(page, seededUsers.bedel);

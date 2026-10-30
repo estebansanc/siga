@@ -175,7 +175,7 @@ test.describe("Teclado", () => {
     await expect(abrir).toBeFocused();
   });
 
-  test("Escape cierra "Qué hay de nuevo" de Configuración y devuelve el foco al botón", async ({
+  test("Escape cierra Qué hay de nuevo de Configuración y devuelve el foco al botón", async ({
     page,
   }) => {
     await loginViaUi(page, seededUsers.bedel);
