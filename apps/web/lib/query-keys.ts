@@ -35,7 +35,7 @@ export const queryKeys = {
   clasesSolicitables: (fecha: string) => ["solicitudes-aula", "clases", fecha] as const,
   busquedaAulas: (pedido: object) => ["solicitudes-aula", "aulas", pedido] as const,
   misSolicitudesAula: ["solicitudes-aula", "mias"] as const,
-  solicitudesAula: (estado: string) => ["solicitudes-aula", "lista", estado] as const,
+  solicitudesAula: (estados: string[]) => ["solicitudes-aula", "lista", ...estados] as const,
   incidencias: ["incidencias", "lista"] as const,
   incidenciasHistorial: (query: Record<string, string>) =>
     ["incidencias", "historial", query] as const,

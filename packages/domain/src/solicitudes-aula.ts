@@ -77,6 +77,15 @@ export type RechazarSolicitudAula = z.infer<typeof rechazarSolicitudAulaSchema>;
 export const elegirAulaSchema = z.object({ aulaId: z.string().min(1) });
 export type ElegirAula = z.infer<typeof elegirAulaSchema>;
 
+export const estadosSolicitudAulaOrden = estadoSolicitudAulaSchema.options;
+
 export const listarSolicitudesAulaQuerySchema = z.object({
-  estado: estadoSolicitudAulaSchema,
+  estado: z
+    .string()
+    .transform((value) => value.split(",").filter(Boolean))
+    .pipe(z.array(estadoSolicitudAulaSchema).min(1))
+    .meta({
+      description: "Estados separados por coma; la respuesta los agrupa en el orden del enum",
+      example: "PENDIENTE,ASIGNADA",
+    }),
 });

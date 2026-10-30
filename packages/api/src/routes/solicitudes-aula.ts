@@ -95,9 +95,9 @@ export const solicitudAulaRoutes = new OpenAPIHono<ApiEnv>()
       method: "get",
       path: "/",
       tags,
-      summary: "Solicitudes de aula de un estado (Bedel)",
+      summary: "Solicitudes de aula por estado (Bedel)",
       description:
-        "Solo Bedel. Pendientes y Asignadas (inmediatas) por franja más próxima; Aprobadas y Rechazadas, las resueltas más recientes primero.",
+        "Solo Bedel. `estado` admite varios valores separados por coma; la respuesta los agrupa en el orden Pendiente, Asignada, Aprobada, Rechazada. Dentro de cada grupo, Pendientes y Asignadas (inmediatas) por franja más próxima; Aprobadas y Rechazadas, las resueltas más recientes primero.",
       request: { query: listarSolicitudesAulaQuerySchema },
       middleware: [soloBedel] as const,
       responses: {

@@ -679,6 +679,18 @@ describe("Solicitudes de aula por HTTP", () => {
     expect((await call("/solicitudes-aula", json(pedido))).status).toBe(403);
   });
 
+  it("el Bedel lista solicitudes de varios estados y un estado inválido devuelve 422", async () => {
+    const institution = await createInstitution();
+    getAuthContext.mockResolvedValue(authOf(institution, institution));
+
+    const varios = await call("/solicitudes-aula?estado=RECHAZADA,PENDIENTE");
+    expect(varios.status).toBe(200);
+    expect(await varios.json()).toEqual([]);
+    expect((await call("/solicitudes-aula?estado=PENDIENTE,OTRO")).status).toBe(422);
+    expect((await call("/solicitudes-aula?estado=")).status).toBe(422);
+    expect((await call("/solicitudes-aula")).status).toBe(422);
+  });
+
   it("el Docente debe informar la cantidad de alumnos para buscar aulas", async () => {
     const institution = await createInstitution();
     const fixture = await seedAcademicFixture(institution);
@@ -694,7 +706,7 @@ describe("Solicitudes de aula por HTTP", () => {
     getAuthContext.mockResolvedValue(authOf(institution, fixture.docente));
     const aulaId = fixture.otraAulaId;
     for (const respuesta of [
-      await call("/solicitudes-aula?estado=PENDIENTE"),
+      await call("/solicitudes-aula?estado=PENDIENTE,ASIGNADA"),
       await call("/solicitudes-aula/x/aprobar", json({ aulaId })),
       await call("/solicitudes-aula/x/rechazar", json({ motivo: "No" })),
       await call("/solicitudes-aula/x/reasignar", json({ aulaId })),

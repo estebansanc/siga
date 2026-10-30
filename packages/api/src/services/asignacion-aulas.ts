@@ -2,6 +2,7 @@ import type { AuthContext } from "@repo/auth";
 import { prisma, toDateColumn, type DbTransaction, type EmailOutbox } from "@repo/db";
 import {
   diasClasesSinAula,
+  estadosSolicitudAulaOrden,
   fechaArgentina,
   sumarDias,
   type ElegirAula,
@@ -47,12 +48,24 @@ export const entregarResultado = async <T>(
 
 export const listarSolicitudesAulaPorEstado = async (
   auth: AuthContext,
-  estado: EstadoSolicitudAula,
+  estados: EstadoSolicitudAula[],
 ): Promise<SolicitudAulaDto[]> => {
   await assertPerfil(auth, "BEDEL");
+  const grupos = await Promise.all(
+    estadosSolicitudAulaOrden
+      .filter((estado) => estados.includes(estado))
+      .map((estado) => listarSolicitudesDeUnEstado(auth.organizationId, estado)),
+  );
+  return grupos.flat();
+};
+
+const listarSolicitudesDeUnEstado = async (
+  organizationId: string,
+  estado: EstadoSolicitudAula,
+): Promise<SolicitudAulaDto[]> => {
   const abiertas = estado === "PENDIENTE" || estado === "ASIGNADA";
   const solicitudes = await prisma.solicitudAula.findMany({
-    where: { organizationId: auth.organizationId, estado },
+    where: { organizationId, estado },
     include: solicitudInclude,
     orderBy: abiertas ? { clase: { inicio: "asc" } } : { resueltaEn: "desc" },
   });
