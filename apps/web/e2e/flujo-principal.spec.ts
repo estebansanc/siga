@@ -42,7 +42,8 @@ test.describe("Flujo principal de SiGA", () => {
     await expect(page.getByText("Ese ya es el estado actual.")).toBeVisible();
 
     await page.getByLabel("Nuevo estado").selectOption("ABIERTA_CON_NOVEDADES");
-    await page.getByLabel(/Motivo/).fill("Paro de transporte: las clases se dictan con normalidad");
+    const motivo = "Paro de transporte: las clases se dictan con normalidad".padEnd(280, " y");
+    await page.getByLabel(/Motivo/).fill(motivo);
     await page.getByRole("button", { name: "Cambiar estado" }).click();
     await expect(page.getByText("Estado registrado")).toBeVisible();
     await page.getByRole("button", { name: "Ahora no" }).click();
@@ -58,6 +59,8 @@ test.describe("Flujo principal de SiGA", () => {
       await page.goto(ruta);
       await expect(indicador).toBeVisible();
       await expect(indicador).toContainText("Paro de transporte: las clases se dictan");
+      const titulo = page.locator("header h1");
+      expect(await titulo.evaluate((h1) => h1.scrollWidth <= h1.clientWidth)).toBe(true);
       await expect(page.locator("[data-slot=alert]")).toHaveCount(0);
     }
     await page.setViewportSize({ width: 360, height: 740 });

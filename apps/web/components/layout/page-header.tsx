@@ -14,7 +14,7 @@ export function PageHeader({ title, children }: { title: ReactNode; children?: R
         orientation="vertical"
         className="data-vertical:h-4 data-vertical:self-auto mr-2"
       />
-      <h1 className="truncate text-base font-semibold">{title}</h1>
+      <h1 className="max-w-[60%] shrink-0 truncate text-base font-semibold">{title}</h1>
       <div className="ml-auto flex min-w-0 items-center gap-2">
         {children}
         <AvisosUrgentesIndicator />

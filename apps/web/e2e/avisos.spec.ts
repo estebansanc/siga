@@ -118,6 +118,16 @@ test.describe("Avisos institucionales", () => {
     await expect(nuevo.getByRole("checkbox", { name: "Todos" })).toBeChecked();
     await nuevo.getByRole("button", { name: "Cancelar" }).click();
 
+    for (const ruta of ["/clases", "/novedades"]) {
+      await page.goto(ruta);
+      const indicador = page.getByRole("link", {
+        name: /Institución cerrada, Corte de energía, actualizado/,
+      });
+      await expect(indicador).toBeVisible();
+      await expect(indicador.getByText("Corte de energía")).toBeVisible();
+      await expect(page.locator("[data-slot=alert]")).toHaveCount(0);
+    }
+
     await page.goto("/estado-institucional");
     await page.getByLabel("Nuevo estado").selectOption("ABIERTA");
     await page.getByRole("button", { name: "Cambiar estado" }).click();
