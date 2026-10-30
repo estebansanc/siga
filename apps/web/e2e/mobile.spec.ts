@@ -226,6 +226,41 @@ test.describe("Móvil", () => {
     }
   });
 
+  test("las pestañas de Datos académicos se desplazan a lo ancho sin superponerse ni mover la página", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, "Solo aplica al viewport de celular");
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/datos-academicos");
+    const lista = page.getByRole("tablist");
+    await expect(lista).toBeVisible();
+    expect(await lista.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+    await expect(lista).toHaveAttribute("data-fade-end", "");
+    await expect(lista).not.toHaveAttribute("data-fade-start", "");
+
+    const cajas = await page.getByRole("tab").evaluateAll((tabs) =>
+      tabs.map((tab) => {
+        const { left, right } = tab.getBoundingClientRect();
+        return { left, right };
+      }),
+    );
+    cajas.slice(1).forEach((caja, indice) => {
+      expect(caja.left).toBeGreaterThanOrEqual(cajas[indice].right - 1);
+    });
+
+    await page.getByRole("tab", { name: "Días no laborables" }).click();
+    await expect(page.getByRole("tab", { name: "Días no laborables" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(page.getByRole("tab", { name: "Días no laborables" })).toBeInViewport({
+      ratio: 1,
+    });
+    await expect(lista).toHaveAttribute("data-fade-start", "");
+    await expectNoHorizontalPageScroll(page);
+  });
+
   test.describe("Historiales a 360 px", () => {
     test.use({ viewport: { width: 360, height: 740 }, hasTouch: true });
 
