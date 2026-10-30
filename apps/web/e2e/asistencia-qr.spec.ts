@@ -149,7 +149,11 @@ test.describe("Asistencia docente por QR", () => {
     await context.addInitScript(() => {
       Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
         configurable: true,
-        value: () => Promise.reject(new DOMException("sin cámara", "NotFoundError")),
+        value: () => {
+          const w = window as unknown as { pedidosDeCamara?: number };
+          w.pedidosDeCamara = (w.pedidosDeCamara ?? 0) + 1;
+          return Promise.reject(new DOMException("sin cámara", "NotFoundError"));
+        },
       });
     });
     const docente = await context.newPage();
@@ -166,6 +170,11 @@ test.describe("Asistencia docente por QR", () => {
       (window as unknown as { marca: boolean }).marca = true;
     });
     await docente.getByRole("button", { name: "Volver a intentar" }).click();
+    await expect
+      .poll(() =>
+        docente.evaluate(() => (window as unknown as { pedidosDeCamara?: number }).pedidosDeCamara),
+      )
+      .toBe(2);
     await expect(docente.getByText("Escaneá el QR desde tu celular")).toBeVisible();
     expect(await docente.evaluate(() => (window as unknown as { marca?: boolean }).marca)).toBe(
       true,

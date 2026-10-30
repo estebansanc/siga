@@ -50,4 +50,16 @@ describe("EscanearAsistencia con la cámara real del hook", () => {
     await waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(2));
     expect(await screen.findByText("Escaneá el QR desde tu celular")).toBeInTheDocument();
   });
+
+  it("al reintentar muestra Abriendo la cámara… mientras la cámara tarda en abrir", async () => {
+    getUserMedia
+      .mockRejectedValueOnce(new DOMException("sin cámara", "NotFoundError"))
+      .mockReturnValue(new Promise(() => undefined));
+    renderWithProviders(<EscanearAsistencia />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Volver a intentar" }));
+
+    expect(await screen.findByText("Abriendo la cámara…")).toBeInTheDocument();
+    expect(screen.queryByText("Escaneá el QR desde tu celular")).not.toBeInTheDocument();
+  });
 });

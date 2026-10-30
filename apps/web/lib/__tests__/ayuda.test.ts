@@ -2,6 +2,7 @@ import type { MemberRole, Perfil } from "@repo/domain";
 import { describe, expect, it } from "vitest";
 
 import { navigationItemsFor } from "@/components/layout/navigation";
+import { textoRegistroManual, textoSinCamara } from "@/lib/asistencia-sin-camara";
 import { ayudaPorPerfil, contarPalabras, manualFor, maximoPalabrasGuia } from "@/lib/ayuda";
 
 const perfiles: Perfil[] = ["ESTUDIANTE", "DOCENTE", "BEDEL", "AUTORIDAD"];
@@ -120,5 +121,16 @@ describe("ayuda", () => {
       expect(texto).not.toContain("Guardar");
       expect(texto).toMatch(/se guardan? en el momento/);
     }
+  });
+
+  it("la Ayuda de Asistencia explica qué hacer sin cámara con los textos de la pantalla", () => {
+    const seccion = manualFor("DOCENTE", "member").find((s) => s.titulo === "Asistencia");
+    expect(seccion?.mensajes.join(" ")).toContain(textoSinCamara);
+    expect(seccion?.mensajes.join(" ")).toContain(textoRegistroManual);
+
+    const tarea = ayudaPorPerfil.DOCENTE.guia.find(
+      (t) => t.titulo === "Registrar tu asistencia con QR",
+    );
+    expect(tarea?.pasos.join(" ")).toContain("no tiene cámara");
   });
 });
