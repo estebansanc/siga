@@ -962,15 +962,15 @@ describe("política de privacidad por HTTP", () => {
     expect(await pendiente()).toBe(true);
 
     const vigente = await call("/politica-de-privacidad");
-    expect(await vigente.json()).toMatchObject({ version: 1, aceptadaEn: null });
+    expect(await vigente.json()).toMatchObject({ version: 2, aceptadaEn: null });
 
-    const vieja = await call("/politica-de-privacidad/aceptaciones", json({ version: 2 }));
+    const vieja = await call("/politica-de-privacidad/aceptaciones", json({ version: 1 }));
     expect(vieja.status).toBe(409);
     expect(await pendiente()).toBe(true);
 
-    const aceptada = await call("/politica-de-privacidad/aceptaciones", json({ version: 1 }));
+    const aceptada = await call("/politica-de-privacidad/aceptaciones", json({ version: 2 }));
     expect(aceptada.status).toBe(200);
-    expect(await aceptada.json()).toMatchObject({ version: 1, aceptadaEn: expect.any(String) });
+    expect(await aceptada.json()).toMatchObject({ version: 2, aceptadaEn: expect.any(String) });
     expect(await pendiente()).toBe(false);
   });
 });
