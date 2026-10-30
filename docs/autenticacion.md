@@ -17,7 +17,7 @@ SiGA tiene una sola institución (CFG-2): la organización `utn-frt` que carga e
 
 `userName` y `userEmail` vienen de la sesión; `GET /me` los lee de la base para que un cambio hecho en Mi perfil (`PATCH /me`) se vea sin depender de la sesión.
 
-Quien pierde el acceso (`lostOrganization`) ve en `LostOrganizationNotice` "Ya no tenés acceso a <institución>." y "Si creés que es un error, consultá en Bedelía."; el acceso no vuelve solo. Los textos hablan de institución y usuarios, no de organización, miembro ni invitación (`memberRoleLabels`: Administrador / Usuario).
+Quien pierde el acceso (`lostOrganization`) ve en `LostOrganizationNotice` "Ya no tenés acceso a <institución>." y "Si creés que es un error, consultá en Bedelía."; el acceso no vuelve solo. Los textos hablan de institución y usuarios, no de organización, miembro ni invitación.
 
 ## Autorización
 
