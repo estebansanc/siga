@@ -85,7 +85,7 @@ describe("AppSidebar", () => {
       "Clases",
       "Novedades",
       "Aulas",
-      "QR de asistencia",
+      "Asistencia docente",
       "Solicitudes",
       "Incidencias",
       "Consultas históricas",

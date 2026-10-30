@@ -196,14 +196,15 @@ const aulasAutoridad: SeccionManual = {
 };
 
 const qr: SeccionManual = {
-  titulo: "QR de asistencia",
-  paraQueSirve: "Genera el QR que los docentes escanean para registrar su asistencia.",
-  comoSeLlega: menu("QR de asistencia"),
+  titulo: "Asistencia docente",
+  paraQueSirve:
+    "Registra la asistencia de los docentes de dos formas: con el QR que escanean o con un registro manual.",
+  comoSeLlega: menu("Asistencia docente"),
   pasos: [
-    "Elegí el turno y el aula.",
+    'En "Generar QR", revisá el turno (viene el actual) y elegí el aula.',
     'Tocá "Generar QR"; se renueva solo.',
     'Usá "Pantalla completa" para proyectarlo.',
-    'Si un docente no puede escanear, tocá "Registro manual" y registrá su asistencia con "Registrar asistencia".',
+    'Si un docente no puede escanear, en "Registro manual" tocá "Registrar asistencia manual" y registrá su asistencia con "Registrar asistencia".',
   ],
   mensajes: ["El turno terminado deja de mostrar el QR."],
 };
@@ -433,7 +434,7 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
       {
         titulo: "Generar el QR de asistencia",
         pasos: [
-          'Entrá a "QR de asistencia", elegí turno y aula.',
+          'Entrá a "Asistencia docente", revisá el turno y elegí el aula.',
           'Tocá "Generar QR" y proyectalo con "Pantalla completa".',
         ],
       },

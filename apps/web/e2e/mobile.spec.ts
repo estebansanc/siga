@@ -40,6 +40,19 @@ test.describe("Móvil", () => {
     expect(fontFamily).toContain("Google Sans");
   });
 
+  test("en Asistencia docente las tarjetas se apilan sin scroll horizontal", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, "Solo aplica al viewport de celular");
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/qr");
+    const generar = await page.getByRole("heading", { name: "Generar QR" }).boundingBox();
+    const manual = await page.getByRole("heading", { name: "Registro manual" }).boundingBox();
+    expect(manual!.y).toBeGreaterThan(generar!.y + generar!.height);
+    await expectNoHorizontalPageScroll(page);
+  });
+
   test("ninguna pantalla principal del estudiante scrollea a lo ancho", async ({ page }) => {
     await loginViaUi(page, seededUsers.estudiante);
     await expect(page.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();

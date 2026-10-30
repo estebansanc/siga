@@ -13,14 +13,14 @@ const proximaClaseEnAula12 = () => {
   return fechaArgentina(dia);
 };
 
-test.describe("QR de asistencia", () => {
+test.describe("Asistencia docente", () => {
   test("el bedel genera el QR, ve las clases del turno y el código se renueva solo", async ({
     page,
   }) => {
     test.setTimeout(120_000);
     await loginViaUi(page, seededUsers.bedel);
-    await page.getByRole("link", { name: "QR de asistencia" }).click();
-    await expect(page.getByRole("heading", { name: "QR de asistencia" })).toBeVisible();
+    await page.getByRole("link", { name: "Asistencia docente" }).click();
+    await expect(page.getByRole("heading", { name: "Asistencia docente" })).toBeVisible();
     await expect(page.getByLabel("Fecha")).toHaveValue(fechaArgentina(new Date()));
 
     await page.getByLabel("Aula").selectOption({ label: "Aula 12" });
@@ -143,7 +143,7 @@ test.describe("QR de asistencia", () => {
 
   test("un docente no ve el ítem y por URL vuelve al inicio", async ({ page }) => {
     await loginViaUi(page, seededUsers.docente);
-    await expect(page.getByRole("link", { name: "QR de asistencia" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Asistencia docente" })).toHaveCount(0);
     await page.goto("/qr");
     await expect(page).toHaveURL(/\/$/);
   });

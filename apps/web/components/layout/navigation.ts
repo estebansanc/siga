@@ -99,7 +99,7 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     clases,
     novedades,
     aulas,
-    { title: "QR de asistencia", href: "/qr", icon: QrCodeIcon },
+    { title: "Asistencia docente", href: "/qr", icon: QrCodeIcon },
     { title: "Solicitudes", href: "/solicitudes", icon: InboxIcon },
     incidencias,
     consultasHistoricas,
