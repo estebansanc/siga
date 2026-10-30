@@ -1,5 +1,6 @@
 import type { SolicitudAulaDto } from "@repo/api/client";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MisSolicitudesAula } from "@/components/aulas/mis-solicitudes-aula";
@@ -9,6 +10,11 @@ const state = vi.hoisted(() => ({ solicitudes: undefined as SolicitudAulaDto[] |
 
 vi.mock("@/hooks/use-solicitudes-aula", () => ({
   useMisSolicitudesAula: () => ({ data: state.solicitudes }),
+}));
+vi.mock("@/components/aulas/solicitar-aula-form", () => ({
+  SolicitarAulaForm: ({ onSolicitada }: { onSolicitada: () => void }) => (
+    <button onClick={onSolicitada}>Enviar formulario</button>
+  ),
 }));
 
 const solicitud = (parcial: Partial<SolicitudAulaDto>): SolicitudAulaDto => ({
@@ -39,14 +45,17 @@ beforeEach(() => {
 });
 
 describe("MisSolicitudesAula", () => {
-  it("lleva a Solicitar aula", () => {
+  it("abre el formulario en un diálogo con Nueva solicitud y lo cierra al enviar", async () => {
     state.solicitudes = [];
     renderWithProviders(<MisSolicitudesAula />);
-    expect(screen.getByRole("link", { name: "Solicitar aula" })).toHaveAttribute(
-      "href",
-      "/aulas/solicitar",
-    );
     expect(screen.getByText("Todavía no pediste ningún aula")).toBeVisible();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Nueva solicitud" }));
+    expect(await screen.findByRole("dialog", { name: "Nueva solicitud" })).toBeVisible();
+
+    await userEvent.click(screen.getByRole("button", { name: "Enviar formulario" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
   it("muestra clase, franja, aula, alumnos, recursos y estado", () => {

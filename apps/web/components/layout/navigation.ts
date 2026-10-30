@@ -32,8 +32,6 @@ export type NavigationHref =
   | "/avisos"
   | "/asistencia"
   | "/aulas"
-  | "/aulas/solicitar"
-  | "/aulas/mis-solicitudes"
   | "/qr"
   | "/solicitudes"
   | "/incidencias"
@@ -86,7 +84,7 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     { title: "Asistencia", href: "/asistencia", icon: QrCodeIcon },
     novedades,
     avisos,
-    aulas,
+    { title: "Solicitudes de aula", href: "/solicitudes", icon: InboxIcon },
     clases,
   ],
   BEDEL: [

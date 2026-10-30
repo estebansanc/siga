@@ -11,7 +11,7 @@ const state = vi.hoisted(() => ({
   pedidos: [] as (object | null)[],
 }));
 const crear = vi.hoisted(() => vi.fn());
-const push = vi.hoisted(() => vi.fn());
+const onSolicitada = vi.hoisted(() => vi.fn());
 
 const materia = {
   id: "m1",
@@ -38,7 +38,6 @@ vi.mock("@/hooks/use-solicitudes-aula", () => ({
   },
   useCrearSolicitudAula: () => ({ mutateAsync: crear, isPending: false }),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const aula = (codigo: string, capacidad: number, equipamiento: string[] = []) => ({
@@ -65,21 +64,21 @@ beforeEach(() => {
 
 describe("SolicitarAulaForm", () => {
   it.each(["", "0", "2.5"])("con alumnos %j avisa y no busca", async (alumnos) => {
-    renderWithProviders(<SolicitarAulaForm />);
+    renderWithProviders(<SolicitarAulaForm onSolicitada={onSolicitada} />);
     await completarPedido(alumnos);
     expect(screen.getByText("Ingresá una cantidad de alumnos mayor que 0.")).toBeVisible();
     expect(state.pedidos.every((pedido) => pedido === null)).toBe(true);
   });
 
   it("muestra la franja y el aula de la clase elegida", async () => {
-    renderWithProviders(<SolicitarAulaForm />);
+    renderWithProviders(<SolicitarAulaForm onSolicitada={onSolicitada} />);
     await userEvent.selectOptions(screen.getByLabelText("Clase"), "clase-1");
     expect(screen.getByText(/Franja 19:00 a 23:00/)).toBeVisible();
     expect(screen.getByText(/Aula actual: Aula 12/)).toBeVisible();
   });
 
   it("busca con alumnos y recursos, elige un aula y confirma con el comentario", async () => {
-    renderWithProviders(<SolicitarAulaForm />);
+    renderWithProviders(<SolicitarAulaForm onSolicitada={onSolicitada} />);
     await userEvent.click(screen.getByRole("checkbox", { name: "Proyector" }));
     await completarPedido("40");
     expect(state.pedidos.at(-1)).toEqual({
@@ -100,7 +99,7 @@ describe("SolicitarAulaForm", () => {
         comentario: "Con parlantes",
       }),
     );
-    expect(push).toHaveBeenCalledWith("/aulas/mis-solicitudes");
+    expect(onSolicitada).toHaveBeenCalledOnce();
   });
 
   it("sin coincidencias avisa y lista las sugerencias con el criterio que falla", async () => {
@@ -109,7 +108,7 @@ describe("SolicitarAulaForm", () => {
       sugerencias: [{ ...aula("Aula 12", 60), faltantes: ["Capacidad para 100 alumnos"] }],
       hayAulasLibres: true,
     };
-    renderWithProviders(<SolicitarAulaForm />);
+    renderWithProviders(<SolicitarAulaForm onSolicitada={onSolicitada} />);
     await completarPedido("100");
     expect(screen.getByText("Ninguna aula cumple todos los criterios.")).toBeVisible();
     expect(screen.getByText("Capacidad para 100 alumnos")).toBeVisible();
@@ -117,7 +116,7 @@ describe("SolicitarAulaForm", () => {
 
   it("sin aulas libres lo dice", async () => {
     state.busqueda = { aulas: [], sugerencias: [], hayAulasLibres: false };
-    renderWithProviders(<SolicitarAulaForm />);
+    renderWithProviders(<SolicitarAulaForm onSolicitada={onSolicitada} />);
     await completarPedido("10");
     expect(screen.getByText("No hay aulas libres en esa franja.")).toBeVisible();
   });

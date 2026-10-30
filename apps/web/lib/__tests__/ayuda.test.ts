@@ -59,7 +59,7 @@ describe("ayuda", () => {
       "Registrar tu asistencia con QR",
       "Publicar una novedad",
       "Editar o finalizar una novedad",
-      "Consultar aulas",
+      "Solicitar un aula",
     ]);
     expect(titulos("BEDEL")).toEqual([
       "Registrar la apertura o el cierre de la institución",

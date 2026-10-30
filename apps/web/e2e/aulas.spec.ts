@@ -121,23 +121,25 @@ test.describe("Aulas", () => {
     await expect(page).toHaveURL(/\/aulas\?vista=plano/);
   });
 
-  test("el docente va de Aulas a sus solicitudes y de sus solicitudes a Solicitar aula", async ({
+  test("el docente ve Solicitudes de aula en el menú y las URLs viejas llevan ahí", async ({
     page,
   }) => {
     await loginViaUi(page, seededUsers.docente);
-    await page.goto("/aulas");
-    await expect(page).toHaveURL(/\/aulas\/mis-solicitudes$/);
+    const menu = page.getByRole("navigation");
+    await expect(menu.getByRole("link", { name: "Solicitudes de aula" })).toBeVisible();
+    await expect(menu.getByRole("link", { name: "Aulas", exact: true })).toHaveCount(0);
+    for (const ruta of ["/aulas", "/aulas/solicitar", "/aulas/mis-solicitudes"]) {
+      await page.goto(ruta);
+      await expect(page).toHaveURL(/\/solicitudes$/);
+      await expect(page.getByRole("heading", { name: "Solicitudes de aula" })).toBeVisible();
+    }
     await expect(page.getByRole("button", { name: "Nueva aula" })).toHaveCount(0);
-
-    await page.getByRole("link", { name: /Solicitar aula/ }).click();
-    await expect(page).toHaveURL(/\/aulas\/solicitar$/);
-    await expect(page.getByRole("heading", { name: "Solicitar aula" })).toBeVisible();
   });
 
-  test("el estudiante no accede a Solicitar aula", async ({ page }) => {
+  test("el estudiante no accede a Solicitudes de aula", async ({ page }) => {
     await loginViaUi(page, seededUsers.estudiante);
-    await page.goto("/aulas/solicitar");
-    await expect(page).not.toHaveURL(/\/aulas\/solicitar/);
+    await page.goto("/solicitudes");
+    await expect(page).not.toHaveURL(/\/solicitudes/);
   });
 });
 
@@ -152,9 +154,10 @@ test.describe("Solicitar aula", () => {
     page,
   }) => {
     await loginViaUi(page, seededUsers.docente);
-    await page.goto("/aulas/mis-solicitudes");
-    await page.getByRole("link", { name: "Solicitar aula" }).click();
-    await expect(page).toHaveURL(/\/aulas\/solicitar$/);
+    await page.goto("/solicitudes");
+    await page.getByRole("button", { name: "Nueva solicitud" }).click();
+    await expect(page.getByRole("dialog", { name: "Nueva solicitud" })).toBeVisible();
+    await expect(page).toHaveURL(/\/solicitudes$/);
     await expectNoHorizontalPageScroll(page);
 
     await page.getByLabel("Fecha").fill(proximoDiaHabil());
@@ -181,10 +184,10 @@ test.describe("Solicitar aula", () => {
       .click();
     await page.getByRole("button", { name: "Confirmar solicitud" }).click();
 
-    await expect(page).toHaveURL(/\/aulas\/mis-solicitudes$/);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.getByText("Pendiente").first()).toBeVisible();
 
-    await page.goto("/aulas/solicitar");
+    await page.getByRole("button", { name: "Nueva solicitud" }).click();
     await page.getByLabel("Fecha").fill(proximoDiaHabil());
     await expect(page.getByLabel("Clase").locator("option")).not.toHaveCount(1);
     await page.getByLabel("Clase").selectOption({ index: 1 });
@@ -198,7 +201,7 @@ test.describe("Solicitar aula", () => {
     await expect(page.getByText("Esta clase ya tiene una solicitud pendiente.")).toBeVisible();
   });
 
-  test("el bedel que abre Solicitar aula o Mis solicitudes llega a Solicitudes", async ({
+  test("el bedel que abre las URLs viejas de Solicitar aula llega a Solicitudes", async ({
     page,
   }) => {
     await loginViaUi(page, seededUsers.bedel);
@@ -206,6 +209,6 @@ test.describe("Solicitar aula", () => {
       await page.goto(ruta);
       await expect(page).toHaveURL(/\/solicitudes$/);
     }
-    await expect(page.getByRole("link", { name: /Solicitar aula|Mis solicitudes/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Nueva solicitud" })).toHaveCount(0);
   });
 });

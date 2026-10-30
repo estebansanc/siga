@@ -28,7 +28,7 @@ const perfiles = {
 const rutasComunes = ["/", "/mi-perfil", "/avisos", "/clases"];
 const rutasPorPerfil: Record<keyof typeof perfiles, string[]> = {
   Estudiante: ["/preferencias", "/aulas?vista=plano"],
-  Docente: ["/asistencia", "/novedades", "/aulas"],
+  Docente: ["/asistencia", "/novedades", "/solicitudes"],
   Bedel: [
     "/novedades",
     "/aulas",
@@ -269,8 +269,6 @@ test.describe("360 px", () => {
         ...rutasComunes,
         ...rutasPorPerfil[perfil as keyof typeof perfiles],
         "/estado-institucional",
-        "/aulas/solicitar",
-        "/aulas/mis-solicitudes",
       ];
       for (const ruta of rutas) {
         await page.goto(ruta);

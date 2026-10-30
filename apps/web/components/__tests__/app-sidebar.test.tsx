@@ -115,7 +115,7 @@ describe("AppSidebar", () => {
     );
   });
 
-  it("el docente ve Asistencia, Novedades, Avisos y Aulas; la autoridad, Consultas históricas, Estado y Usuarios", () => {
+  it("el docente ve Asistencia, Novedades, Avisos y Solicitudes de aula; la autoridad, Consultas históricas, Estado y Usuarios", () => {
     pathnameState.current = "/novedades";
     const docente = renderSidebar("member", meOf([ownOrganization], "DOCENTE"));
     expect(linkNames()).toEqual([
@@ -123,7 +123,7 @@ describe("AppSidebar", () => {
       "Asistencia",
       "Novedades",
       "Avisos",
-      "Aulas",
+      "Solicitudes de aula",
       "Clases",
       "Ayuda",
     ]);

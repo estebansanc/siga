@@ -128,13 +128,13 @@ const novedadesBedel: SeccionManual = {
 };
 
 const aulasDocente: SeccionManual = {
-  titulo: "Aulas",
+  titulo: "Solicitudes de aula",
   paraQueSirve: "Permite solicitar un aula para una clase y seguir tus solicitudes.",
-  comoSeLlega: menu("Aulas"),
+  comoSeLlega: menu("Solicitudes de aula"),
   pasos: [
-    'Entrá a "Solicitar aula" y completá "Fecha", "Clase", "Cantidad de alumnos" y "Recursos".',
+    'Tocá "Nueva solicitud" y completá "Fecha", "Clase", "Cantidad de alumnos" y "Recursos".',
     'Tocá "Buscar aulas", elegí una con "Elegir" y confirmá con "Confirmar solicitud".',
-    'En "Mis solicitudes" seguís su estado.',
+    'En la lista de "Solicitudes de aula" seguís su estado.',
   ],
   mensajes: [
     "Pendiente: bedelía todavía no respondió. Asignada: el aula se asignó enseguida. Aprobada: bedelía aceptó la solicitud. Rechazada: se muestra el motivo.",
@@ -369,10 +369,10 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
         ],
       },
       {
-        titulo: "Consultar aulas",
+        titulo: "Solicitar un aula",
         pasos: [
-          'Entrá a "Aulas" para solicitar un aula con "Solicitar aula".',
-          'En "Mis solicitudes" seguís su estado.',
+          'Entrá a "Solicitudes de aula" y tocá "Nueva solicitud".',
+          'En la lista seguís su estado.',
         ],
       },
     ],

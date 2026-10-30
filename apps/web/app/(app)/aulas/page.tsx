@@ -18,7 +18,7 @@ export default async function Page({
 }) {
   const session = await requireSession();
   const { vista } = await searchParams;
-  if (session.perfil === "DOCENTE" && vista !== "plano") redirect("/aulas/mis-solicitudes");
+  if (session.perfil === "DOCENTE" && vista !== "plano") redirect("/solicitudes");
 
   return (
     <>

@@ -34,7 +34,6 @@ import { NativeSelect, NativeSelectOption } from "@repo/ui/components/native-sel
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Spinner } from "@repo/ui/components/spinner";
 import { Textarea } from "@repo/ui/components/textarea";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -88,8 +87,7 @@ function AulaOpcion({
 }
 
 // RF-06: busca aulas libres para una clase según alumnos y recursos y confirma la solicitud.
-export function SolicitarAulaForm() {
-  const router = useRouter();
+export function SolicitarAulaForm({ onSolicitada }: { onSolicitada: () => void }) {
   const [fecha, setFecha] = useState(() => fechaArgentina(new Date()));
   const [claseId, setClaseId] = useState("");
   const [alumnos, setAlumnos] = useState("");
@@ -139,7 +137,7 @@ export function SolicitarAulaForm() {
     try {
       await crear.mutateAsync({ ...pedido, aulaId, comentario });
       toast.success("Solicitud enviada");
-      router.push("/aulas/mis-solicitudes");
+      onSolicitada();
     } catch (error) {
       showRequestError(error);
     }
