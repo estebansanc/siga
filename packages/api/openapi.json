@@ -1301,7 +1301,7 @@
           "novedades": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/NovedadHistorica"
+              "$ref": "#/components/schemas/Novedad"
             }
           }
         },
@@ -1312,77 +1312,6 @@
           "tamanioPagina",
           "totalPaginas",
           "novedades"
-        ]
-      },
-      "NovedadHistorica": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "publicadaEn": {
-            "type": "string"
-          },
-          "tipo": {
-            "type": "string",
-            "enum": [
-              "AUSENCIA",
-              "DEMORA",
-              "VIRTUAL",
-              "SUSPENSION",
-              "CAMBIO_AULA"
-            ]
-          },
-          "estado": {
-            "type": "string",
-            "enum": [
-              "ACTIVA",
-              "FINALIZADA"
-            ]
-          },
-          "materia": {
-            "type": "string"
-          },
-          "comision": {
-            "type": "string"
-          },
-          "fechaClaseDesde": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "fechaClaseHasta": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "docentes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "publicadaPor": {
-            "type": "string"
-          },
-          "publicadaPorBedelia": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "publicadaEn",
-          "tipo",
-          "estado",
-          "materia",
-          "comision",
-          "fechaClaseDesde",
-          "fechaClaseHasta",
-          "docentes",
-          "publicadaPor",
-          "publicadaPorBedelia"
         ]
       },
       "ConsultaAsistenciasResultado": {
@@ -1656,163 +1585,6 @@
           "horaInicioClase",
           "horaFinClase",
           "origen",
-          "usuario"
-        ]
-      },
-      "ConsultaIncidenciasResultado": {
-        "type": "object",
-        "properties": {
-          "total": {
-            "type": "integer"
-          },
-          "porEstado": {
-            "type": "object",
-            "properties": {
-              "ABIERTA": {
-                "type": "integer"
-              },
-              "EN_CURSO": {
-                "type": "integer"
-              },
-              "RESUELTA": {
-                "type": "integer"
-              }
-            },
-            "required": [
-              "ABIERTA",
-              "EN_CURSO",
-              "RESUELTA"
-            ]
-          },
-          "pagina": {
-            "type": "integer"
-          },
-          "tamanioPagina": {
-            "type": "integer"
-          },
-          "totalPaginas": {
-            "type": "integer"
-          },
-          "incidencias": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IncidenciaHistorica"
-            }
-          }
-        },
-        "required": [
-          "total",
-          "porEstado",
-          "pagina",
-          "tamanioPagina",
-          "totalPaginas",
-          "incidencias"
-        ]
-      },
-      "IncidenciaHistorica": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "reportadaEn": {
-            "type": "string"
-          },
-          "aula": {
-            "type": "string"
-          },
-          "elemento": {
-            "type": "string",
-            "enum": [
-              "PROYECTOR",
-              "CLIMATIZACION",
-              "ILUMINACION",
-              "MOBILIARIO",
-              "CONECTIVIDAD",
-              "OTRO"
-            ]
-          },
-          "gravedad": {
-            "type": "string",
-            "enum": [
-              "LEVE",
-              "IMPIDE_USO"
-            ]
-          },
-          "estado": {
-            "type": "string",
-            "enum": [
-              "ABIERTA",
-              "EN_CURSO",
-              "RESUELTA"
-            ]
-          },
-          "descripcion": {
-            "type": "string"
-          },
-          "reportadaPor": {
-            "type": "string"
-          },
-          "historial": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IncidenciaEstado"
-            },
-            "description": "Cada estado con fecha, hora, usuario y observaciones, del más antiguo al más nuevo"
-          }
-        },
-        "required": [
-          "id",
-          "reportadaEn",
-          "aula",
-          "elemento",
-          "gravedad",
-          "estado",
-          "descripcion",
-          "reportadaPor",
-          "historial"
-        ]
-      },
-      "IncidenciaEstado": {
-        "type": "object",
-        "properties": {
-          "estado": {
-            "type": "string",
-            "enum": [
-              "ABIERTA",
-              "EN_CURSO",
-              "RESUELTA"
-            ]
-          },
-          "observaciones": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "usuario": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "nombre": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "nombre"
-            ]
-          }
-        },
-        "required": [
-          "estado",
-          "observaciones",
-          "createdAt",
           "usuario"
         ]
       },
@@ -2961,6 +2733,143 @@
         "required": [
           "key",
           "uploadUrl"
+        ]
+      },
+      "ConsultaIncidenciasResultado": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "pagina": {
+            "type": "integer"
+          },
+          "tamanioPagina": {
+            "type": "integer"
+          },
+          "totalPaginas": {
+            "type": "integer"
+          },
+          "incidencias": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidenciaHistorica"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "pagina",
+          "tamanioPagina",
+          "totalPaginas",
+          "incidencias"
+        ]
+      },
+      "IncidenciaHistorica": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "reportadaEn": {
+            "type": "string"
+          },
+          "aula": {
+            "type": "string"
+          },
+          "elemento": {
+            "type": "string",
+            "enum": [
+              "PROYECTOR",
+              "CLIMATIZACION",
+              "ILUMINACION",
+              "MOBILIARIO",
+              "CONECTIVIDAD",
+              "OTRO"
+            ]
+          },
+          "gravedad": {
+            "type": "string",
+            "enum": [
+              "LEVE",
+              "IMPIDE_USO"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ABIERTA",
+              "EN_CURSO",
+              "RESUELTA"
+            ]
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "reportadaPor": {
+            "type": "string"
+          },
+          "historial": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidenciaEstado"
+            },
+            "description": "Cada estado con fecha, hora, usuario y observaciones, del más antiguo al más nuevo"
+          }
+        },
+        "required": [
+          "id",
+          "reportadaEn",
+          "aula",
+          "elemento",
+          "gravedad",
+          "estado",
+          "descripcion",
+          "reportadaPor",
+          "historial"
+        ]
+      },
+      "IncidenciaEstado": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ABIERTA",
+              "EN_CURSO",
+              "RESUELTA"
+            ]
+          },
+          "observaciones": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "usuario": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "nombre"
+            ]
+          }
+        },
+        "required": [
+          "estado",
+          "observaciones",
+          "createdAt",
+          "usuario"
         ]
       },
       "IncidenciaDetalle": {
@@ -6054,22 +5963,8 @@
         "tags": [
           "Novedades"
         ],
-        "summary": "Novedades publicadas, la más reciente primero",
-        "description": "El docente ve las de sus comisiones; bedel y autoridad, todas.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "ACTIVA",
-                "FINALIZADA"
-              ]
-            },
-            "required": false,
-            "name": "estado",
-            "in": "query"
-          }
-        ],
+        "summary": "Novedades activas, la más reciente primero",
+        "description": "Pestaña Activas: no finalizadas con alguna clase futura o en curso (Ausencia y Suspensión no se finalizan: salen cuando pasan sus clases). El docente ve las de sus comisiones; bedel y autoridad, todas. Sin paginar.",
         "responses": {
           "200": {
             "description": "Novedades",
@@ -6214,6 +6109,140 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Novedad"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/novedades/historial": {
+      "get": {
+        "tags": [
+          "Novedades"
+        ],
+        "summary": "Historial de novedades en un rango de fechas, con cantidad por tipo",
+        "description": "Solo lectura (sin `perfilOnly`: el servicio rechaza y audita el 403, SEG-6). Novedades finalizadas o sin clases por delante. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por fecha de publicación; `tipo` es opcional. El total y la cantidad por tipo cuentan todo el período filtrado; el detalle pagina de a 20, la más reciente primero. El docente ve las de sus comisiones; bedel y autoridad, todas.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "desde",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "hasta",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "AUSENCIA",
+                    "DEMORA",
+                    "VIRTUAL",
+                    "SUSPENSION",
+                    "CAMBIO_AULA"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    ""
+                  ]
+                }
+              ]
+            },
+            "required": false,
+            "name": "tipo",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "pagina",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Total, cantidad por tipo y detalle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaNovedadesResultado"
                 }
               }
             }
@@ -6429,180 +6458,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Novedad"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Solicitud inválida",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No autenticado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Sin permiso",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No encontrado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Error de validación",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/historico/novedades": {
-      "get": {
-        "tags": [
-          "Consultas históricas"
-        ],
-        "summary": "Novedades publicadas en un rango de fechas, con indicadores por tipo",
-        "description": "Solo Autoridad académica. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por fecha de publicación; los filtros opcionales se combinan. Los indicadores cuentan todo el período filtrado; el detalle pagina de a 20, la más reciente primero.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "desde",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "hasta",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "carreraId",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "materiaId",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "comisionId",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "docenteId",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "aulaId",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            },
-            "required": false,
-            "name": "pagina",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "AUSENCIA",
-                    "DEMORA",
-                    "VIRTUAL",
-                    "SUSPENSION",
-                    "CAMBIO_AULA"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "enum": [
-                    ""
-                  ]
-                }
-              ]
-            },
-            "required": false,
-            "name": "tipo",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Indicadores y detalle",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsultaNovedadesResultado"
                 }
               }
             }
@@ -6926,123 +6781,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConsultaUsoAulasResultado"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Solicitud inválida",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "No autenticado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Sin permiso",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No encontrado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflicto",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Error de validación",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/historico/incidencias": {
-      "get": {
-        "tags": [
-          "Consultas históricas"
-        ],
-        "summary": "Incidencias de aulas reportadas en un rango de fechas, con indicadores por estado",
-        "description": "Autoridad académica y Bedel. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por la fecha del reporte; `aulaId` es opcional. Los indicadores cuentan todo el período filtrado por estado actual; el detalle pagina de a 20, la más reciente primero, e incluye el historial de estados de solo lectura.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "desde",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "name": "hasta",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "aulaId",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            },
-            "required": false,
-            "name": "pagina",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Indicadores y detalle",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsultaIncidenciasResultado"
                 }
               }
             }
@@ -13791,18 +13529,8 @@
         "tags": [
           "Incidencias"
         ],
-        "summary": "Incidencias por estado, las más recientes primero",
-        "description": "Solo Bedel. `estados` separados por coma; sin él, Abiertas y En curso.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "required": false,
-            "name": "estados",
-            "in": "query"
-          }
-        ],
+        "summary": "Incidencias abiertas, las más recientes primero",
+        "description": "Pestaña Abiertas: Abierta y En curso, sin filtro de estado ni paginación. Bedel y Autoridad académica (solo lectura).",
         "responses": {
           "200": {
             "description": "Incidencias",
@@ -13880,13 +13608,130 @@
         }
       }
     },
+    "/api/v1/incidencias/historial": {
+      "get": {
+        "tags": [
+          "Incidencias"
+        ],
+        "summary": "Historial de incidencias resueltas en un rango de fechas",
+        "description": "Solo lectura, Bedel y Autoridad académica. Solo Resueltas. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por la fecha del reporte; `aulaId` es opcional. El total cuenta todo el período filtrado; el detalle pagina de a 20, la más reciente primero, e incluye el historial de estados.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "desde",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "hasta",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "aulaId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "pagina",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Total y detalle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaIncidenciasResultado"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/incidencias/{id}": {
       "get": {
         "tags": [
           "Incidencias"
         ],
         "summary": "Detalle de una incidencia con foto e historial",
-        "description": "Solo Bedel. `fotoUrl` es una URL firmada de lectura.",
+        "description": "Bedel y Autoridad académica. `fotoUrl` es una URL firmada de lectura.",
         "parameters": [
           {
             "schema": {

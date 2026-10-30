@@ -117,7 +117,21 @@ const novedadesDocente: SeccionManual = {
   ],
   mensajes: [
     "El tipo y las clases no se modifican al editar. La publicación original queda en el historial.",
-    "Las novedades finalizadas dejan de mostrarse como activas.",
+    "Activas muestra las novedades con clases por delante; las finalizadas o sin clases pendientes pasan al Historial, de solo lectura.",
+  ],
+};
+
+const novedadesAutoridad: SeccionManual = {
+  titulo: "Novedades",
+  paraQueSirve: "Consulta las novedades de la institución sin modificarlas.",
+  comoSeLlega: menu("Novedades"),
+  pasos: [
+    'En "Activas" leé las novedades con clases por delante.',
+    'En "Historial" fijá "Desde" y "Hasta", elegí el "Tipo de novedad" y tocá "Consultar".',
+  ],
+  mensajes: [
+    "La fecha desde no puede ser posterior a la fecha hasta.",
+    "El rango de fechas no puede superar los 12 meses.",
   ],
 };
 
@@ -217,18 +231,31 @@ const incidencias: SeccionManual = {
   pasos: [
     'Tocá "Nueva incidencia" y completá aula, elemento afectado y descripción; confirmá con "Reportar".',
     'Abrí la incidencia con "Detalle": una incidencia abierta se avanza con "Pasar a En curso".',
-    'Cuando ya está en curso, el mismo botón pasa a ser "Resolver".',
+    'Cuando ya está en curso, el mismo botón pasa a ser "Resolver" y la incidencia pasa a la pestaña "Historial".',
+    'En "Historial" fijá "Desde", "Hasta" y "Aula" y tocá "Consultar"; "Detalle" muestra los estados por los que pasó.',
   ],
-  mensajes: ["Una incidencia que impide el uso puede dejar el aula fuera de servicio."],
+  mensajes: [
+    "Una incidencia que impide el uso puede dejar el aula fuera de servicio.",
+    "El rango de fechas no puede superar los 12 meses.",
+  ],
+};
+
+const incidenciasAutoridad: SeccionManual = {
+  ...incidencias,
+  paraQueSirve: "Consulta las incidencias de las aulas sin modificarlas.",
+  pasos: [
+    'En "Abiertas" leé las incidencias abiertas o en curso y tocá "Detalle" para ver su historial.',
+    'En "Historial" fijá "Desde", "Hasta" y "Aula" y tocá "Consultar".',
+  ],
+  mensajes: ["El rango de fechas no puede superar los 12 meses."],
 };
 
 const historico: SeccionManual = {
   titulo: "Consultas históricas",
-  paraQueSirve:
-    "Consulta asistencia docente, uso de aulas, incidencias y, para la Autoridad, novedades de un período.",
+  paraQueSirve: "Consulta la asistencia docente y el uso de aulas de un período.",
   comoSeLlega: menu("Consultas históricas"),
   pasos: [
-    'Elegí el tipo de consulta en las pestañas "Asistencia docente", "Uso de aulas", "Incidencias" o "Novedades" (esta última solo para la Autoridad).',
+    'Elegí el tipo de consulta en las pestañas "Asistencia docente" o "Uso de aulas".',
     'Fijá "Desde" y "Hasta" y tocá "Consultar".',
   ],
   mensajes: ["Sin registros para el período: no hay datos en ese rango."],
@@ -476,6 +503,8 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
     ],
     manual: [
       clases,
+      novedadesAutoridad,
+      incidenciasAutoridad,
       historico,
       avisosGestion,
       aulasAutoridad,

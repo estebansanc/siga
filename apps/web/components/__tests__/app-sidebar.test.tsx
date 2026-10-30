@@ -134,6 +134,8 @@ describe("AppSidebar", () => {
     renderSidebar("member", meOf([ownOrganization], "AUTORIDAD"));
     expect(linkNames()).toEqual([
       "Clases",
+      "Novedades",
+      "Incidencias",
       "Consultas históricas",
       "Avisos",
       "Aulas",

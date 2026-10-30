@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { editarNovedadSchemaPara, publicarNovedadSchema } from "./novedades";
+import { editarNovedadSchemaPara, novedadActiva, publicarNovedadSchema } from "./novedades";
 
 const base = { claseIds: ["clase-1"] };
 
@@ -59,12 +59,38 @@ describe("editarNovedadSchemaPara", () => {
   });
 
   it("rechaza un enlace inválido y los datos ajenos al tipo", () => {
-    expect(
-      editarNovedadSchemaPara("VIRTUAL").safeParse({ enlaceVirtual: "ftp://x" }).success,
-    ).toBe(false);
+    expect(editarNovedadSchemaPara("VIRTUAL").safeParse({ enlaceVirtual: "ftp://x" }).success).toBe(
+      false,
+    );
     expect(
       editarNovedadSchemaPara("AUSENCIA").safeParse({ minutosDemora: 5, mensaje: "x" }).success,
     ).toBe(false);
     expect(editarNovedadSchemaPara("SUSPENSION").safeParse({ mensaje: "x" }).success).toBe(true);
+  });
+});
+
+describe("novedadActiva", () => {
+  const ahora = new Date("2026-10-30T15:00:00Z");
+  const clase = (estado: "PROGRAMADA" | "FINALIZADA" | "SUSPENDIDA", fin: string) => ({
+    estado,
+    fin: new Date(fin),
+  });
+
+  it("es activa con una clase en curso o futura", () => {
+    const clases = [clase("PROGRAMADA", "2026-10-30T16:00:00Z")];
+    expect(novedadActiva({ estado: "ACTIVA", clases }, ahora)).toBe(true);
+  });
+
+  it("pasa a Historial si está finalizada", () => {
+    const clases = [clase("PROGRAMADA", "2026-10-30T16:00:00Z")];
+    expect(novedadActiva({ estado: "FINALIZADA", clases }, ahora)).toBe(false);
+  });
+
+  it("pasa a Historial cuando no le quedan clases por delante", () => {
+    const clases = [
+      clase("SUSPENDIDA", "2026-10-30T14:00:00Z"),
+      clase("FINALIZADA", "2026-10-31T14:00:00Z"),
+    ];
+    expect(novedadActiva({ estado: "ACTIVA", clases }, ahora)).toBe(false);
   });
 });

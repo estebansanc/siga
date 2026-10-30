@@ -4,7 +4,6 @@ import {
   cambiarEstadoIncidenciaSchema,
   crearIncidenciaSchema,
   fotoMaxBytes,
-  listarIncidenciasQuerySchema,
   puedeAvanzarIncidencia,
   siguienteEstadoIncidencia,
   subirFotoIncidenciaSchema,
@@ -94,13 +93,5 @@ describe("estados", () => {
       observaciones: null,
       rehabilitarAula: false,
     });
-  });
-
-  it("el filtro del listado separa los estados por coma", () => {
-    expect(listarIncidenciasQuerySchema.parse({ estados: "ABIERTA,EN_CURSO" }).estados).toEqual([
-      "ABIERTA",
-      "EN_CURSO",
-    ]);
-    expect(listarIncidenciasQuerySchema.parse({}).estados).toEqual([]);
   });
 });

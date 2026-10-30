@@ -4,7 +4,7 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { HistoricoNovedades } from "@/components/historico/historico-novedades";
+import { HistorialNovedades } from "@/components/novedades/historial-novedades";
 import { renderWithProviders } from "@/test/render";
 
 const state = vi.hoisted(() => ({
@@ -12,11 +12,13 @@ const state = vi.hoisted(() => ({
   consultas: [] as (object | null)[],
 }));
 
-vi.mock("@/hooks/use-historico", () => ({
-  useConsultaNovedades: (consulta: ConsultaNovedades | null) => {
+vi.mock("@/hooks/use-novedades", () => ({
+  useHistorialNovedades: (consulta: ConsultaNovedades | null) => {
     state.consultas.push(consulta);
     return { data: consulta ? state.resultado : undefined };
   },
+}));
+vi.mock("@/hooks/use-historico", () => ({
   useOpcionesHistorico: () => ({
     data: {
       docentes: [{ id: "d1", nombre: "Marcos Álvarez" }],
@@ -50,16 +52,27 @@ const conDatos: ConsultaNovedadesResultadoDto = {
   novedades: [
     {
       id: "n1",
-      publicadaEn: "2026-10-14T15:30:00.000Z",
       tipo: "DEMORA",
-      estado: "ACTIVA",
-      materia: "Proyecto Final",
-      comision: "5K2",
-      fechaClaseDesde: "2026-10-15",
-      fechaClaseHasta: "2026-10-22",
-      docentes: ["Marcos Álvarez"],
-      publicadaPor: "Rosa Benítez",
+      estado: "FINALIZADA",
+      minutosDemora: 10,
+      enlaceVirtual: null,
+      aulaNueva: null,
+      mensaje: null,
+      publicadaPor: { id: "u1", nombre: "Rosa Benítez" },
       publicadaPorBedelia: true,
+      createdAt: "2026-10-14T15:30:00.000Z",
+      finalizadaEn: "2026-10-15T15:30:00.000Z",
+      editable: false,
+      comision: { id: "c1", codigo: "5K2", materia: "Proyecto Final" },
+      clases: [
+        {
+          id: "k1",
+          fecha: "2026-10-15",
+          horaInicio: "19:00",
+          horaFin: "23:00",
+          estado: "PROGRAMADA",
+        },
+      ],
     },
   ],
 };
@@ -71,42 +84,39 @@ beforeEach(() => {
   state.consultas = [];
 });
 
-describe("HistoricoNovedades", () => {
+describe("HistorialNovedades", () => {
   it("arranca con los últimos 30 días ya consultados", () => {
-    renderWithProviders(<HistoricoNovedades />);
+    renderWithProviders(<HistorialNovedades />);
     expect(screen.getByLabelText("Desde")).toHaveValue(sumarDias(hoy, -30));
     expect(screen.getByLabelText("Hasta")).toHaveValue(hoy);
     expect(ultimaConsulta()).toMatchObject({ desde: sumarDias(hoy, -30), hasta: hoy, pagina: 1 });
   });
 
-  it("muestra los indicadores y cada fila con todos sus datos", () => {
-    renderWithProviders(<HistoricoNovedades />);
+  it("muestra total, cantidad por tipo y cada novedad finalizada sin acciones", () => {
+    renderWithProviders(<HistorialNovedades />);
     const indicadores = screen.getByLabelText("Indicadores");
     expect(within(indicadores).getByText("Total").nextSibling).toHaveTextContent("25");
     expect(within(indicadores).getByText("Demora").nextSibling).toHaveTextContent("20");
     expect(within(indicadores).getByText("Virtual").nextSibling).toHaveTextContent("0");
-    const fila = screen.getAllByRole("row")[1];
-    expect(fila).toHaveTextContent("14/10/2026 12:30");
-    expect(fila).toHaveTextContent("Demora");
-    expect(fila).toHaveTextContent("Proyecto Final · 5K2");
-    expect(fila).toHaveTextContent("15/10/2026 al 22/10/2026");
-    expect(fila).toHaveTextContent("Marcos Álvarez");
-    expect(fila).toHaveTextContent("Rosa Benítez (bedelía)");
-    expect(fila).toHaveTextContent("Activa");
+    const novedad = screen
+      .getByText("Proyecto Final · 5K2 · 15/10/2026 19:00")
+      .closest("[data-slot=item]");
+    expect(novedad).toHaveTextContent("Finalizada");
+    expect(novedad).toHaveTextContent("Rosa Benítez (bedelía)");
+    expect(screen.queryByRole("button", { name: /Acciones de la novedad/ })).toBeNull();
   });
 
   it("sin datos dice Sin registros para el período", () => {
     state.resultado = vacio;
-    renderWithProviders(<HistoricoNovedades />);
+    renderWithProviders(<HistorialNovedades />);
     expect(screen.getByText("Sin registros para el período")).toBeInTheDocument();
-    expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
   it.each([
     ["Desde", "", "Ingresá la fecha desde"],
     ["Hasta", "", "Ingresá la fecha hasta"],
   ])("el campo %s vacío muestra el error y no consulta", async (campo, valor, mensaje) => {
-    renderWithProviders(<HistoricoNovedades />);
+    renderWithProviders(<HistorialNovedades />);
     const inicial = ultimaConsulta();
     await userEvent.clear(screen.getByLabelText(campo));
     await userEvent.click(screen.getByRole("button", { name: "Consultar" }));
@@ -116,7 +126,7 @@ describe("HistoricoNovedades", () => {
   });
 
   it("muestra el error de rango invertido y de más de 12 meses", async () => {
-    renderWithProviders(<HistoricoNovedades />);
+    renderWithProviders(<HistorialNovedades />);
     const desde = screen.getByLabelText("Desde");
     await userEvent.clear(desde);
     await userEvent.type(desde, "2026-03-02");
@@ -139,7 +149,7 @@ describe("HistoricoNovedades", () => {
   });
 
   it("12 meses justos consulta y limpia el error", async () => {
-    renderWithProviders(<HistoricoNovedades />);
+    renderWithProviders(<HistorialNovedades />);
     await userEvent.clear(screen.getByLabelText("Hasta"));
     await userEvent.type(screen.getByLabelText("Hasta"), "2027-12-31");
     await userEvent.click(screen.getByRole("button", { name: "Consultar" }));
@@ -152,31 +162,18 @@ describe("HistoricoNovedades", () => {
     expect(ultimaConsulta()).toMatchObject({ desde: "2026-12-31", hasta: "2027-12-31" });
   });
 
-  it("envía los filtros combinados al consultar", async () => {
-    renderWithProviders(<HistoricoNovedades />);
-    await userEvent.selectOptions(screen.getByLabelText("Carrera"), "k");
-    await userEvent.selectOptions(screen.getByLabelText("Docente"), "d1");
-    await userEvent.selectOptions(screen.getByLabelText("Aula"), "a1");
+  it("envía el tipo elegido y no ofrece filtros académicos", async () => {
+    renderWithProviders(<HistorialNovedades />);
+    for (const filtro of ["Carrera", "Materia", "Comisión", "Docente", "Aula"]) {
+      expect(screen.queryByLabelText(filtro)).not.toBeInTheDocument();
+    }
     await userEvent.selectOptions(screen.getByLabelText("Tipo de novedad"), "DEMORA");
     await userEvent.click(screen.getByRole("button", { name: "Consultar" }));
-    expect(ultimaConsulta()).toMatchObject({
-      carreraId: "k",
-      docenteId: "d1",
-      aulaId: "a1",
-      tipo: "DEMORA",
-      pagina: 1,
-    });
-  });
-
-  it("cambiar de carrera limpia materia y comisión", async () => {
-    renderWithProviders(<HistoricoNovedades />);
-    await userEvent.selectOptions(screen.getByLabelText("Comisión"), "c1");
-    await userEvent.selectOptions(screen.getByLabelText("Carrera"), "k");
-    expect(screen.getByLabelText("Comisión")).toHaveValue("");
+    expect(ultimaConsulta()).toMatchObject({ tipo: "DEMORA", pagina: 1 });
   });
 
   it("pagina con Siguiente y Anterior", async () => {
-    renderWithProviders(<HistoricoNovedades />);
+    renderWithProviders(<HistorialNovedades />);
     expect(screen.getByText("Página 1 de 2")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Página anterior" })).toHaveAttribute(
       "aria-disabled",

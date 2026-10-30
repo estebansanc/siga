@@ -92,7 +92,7 @@ test.describe("Incidencias de aulas", () => {
 
     await page.keyboard.press("Escape");
     await expect(item).toHaveCount(0);
-    await page.getByRole("button", { name: "Resuelta" }).click();
+    await page.getByRole("tab", { name: "Historial" }).click();
     await expect(item).toContainText("Resuelta");
 
     await page.request.post(`/api/v1/aulas/${aula.id}/baja`);
@@ -125,7 +125,7 @@ test.describe("Incidencias de aulas", () => {
     await page.request.post(`/api/v1/aulas/${aula.id}/baja`);
   });
 
-  for (const perfil of ["docente", "estudiante", "autoridad"] as const) {
+  for (const perfil of ["docente", "estudiante"] as const) {
     test(`${perfil} no ve ni gestiona Incidencias`, async ({ page }) => {
       await loginViaUi(page, seededUsers[perfil]);
       await expect(page.getByRole("link", { name: "Incidencias" })).toHaveCount(0);

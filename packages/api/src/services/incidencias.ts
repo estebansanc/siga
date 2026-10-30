@@ -1,6 +1,9 @@
 import type { AuthContext } from "@repo/auth";
 import { prisma, type Prisma } from "@repo/db";
 import {
+  rangoDelDia,
+  tamanioPaginaHistorico,
+  type ConsultaIncidencias,
   estadoIncidenciaLabels,
   estadosIncidenciaPorDefecto,
   fotoComprimidaMaxBytes,
@@ -21,7 +24,12 @@ import {
   deleteObjects,
   getObjectInfo,
 } from "../integrations/storage";
-import type { FotoSubidaDto, IncidenciaDetalleDto, IncidenciaDto } from "../schemas";
+import type {
+  ConsultaIncidenciasResultadoDto,
+  FotoSubidaDto,
+  IncidenciaDetalleDto,
+  IncidenciaDto,
+} from "../schemas";
 import { toIso } from "../serializers";
 
 import { accesoDenegado, assertPerfil } from "./permisos";
@@ -134,16 +142,11 @@ export const crearIncidencia = async (
   return toIncidenciaDto(incidencia);
 };
 
-export const listarIncidencias = async (
-  auth: AuthContext,
-  estados: EstadoIncidencia[],
-): Promise<IncidenciaDto[]> => {
-  await assertPerfil(auth, "BEDEL");
+// Pestaña Abiertas (RF-15): Abiertas y En curso, sin paginar. La Autoridad solo las consulta.
+export const listarIncidencias = async (auth: AuthContext): Promise<IncidenciaDto[]> => {
+  await assertPerfil(auth, "BEDEL", "AUTORIDAD");
   const incidencias = await prisma.incidencia.findMany({
-    where: {
-      organizationId: auth.organizationId,
-      estado: { in: estados.length > 0 ? estados : estadosIncidenciaPorDefecto },
-    },
+    where: { organizationId: auth.organizationId, estado: { in: estadosIncidenciaPorDefecto } },
     include: incidenciaInclude,
     orderBy: { createdAt: "desc" },
   });
@@ -183,7 +186,7 @@ export const obtenerIncidencia = async (
   auth: AuthContext,
   id: string,
 ): Promise<IncidenciaDetalleDto> => {
-  await assertPerfil(auth, "BEDEL");
+  await assertPerfil(auth, "BEDEL", "AUTORIDAD");
   return toDetalleDto(await buscarIncidencia(auth.organizationId, id));
 };
 
@@ -226,4 +229,62 @@ export const cambiarEstadoIncidencia = async (
     }
   });
   return toDetalleDto(await buscarIncidencia(auth.organizationId, id));
+};
+
+const incidenciaHistoricaInclude = {
+  aula: { select: { codigo: true } },
+  reportadaPor: { select: { name: true } },
+  historial: {
+    orderBy: { createdAt: "asc" },
+    include: { user: { select: { id: true, name: true } } },
+  },
+} satisfies Prisma.IncidenciaInclude;
+
+// Pestaña Historial (RF-09 / CA-06 / EF-5, solo lectura): las Resueltas, con el rango por fecha
+// del reporte (días completos en hora argentina), total del período y el historial de estados,
+// paginado de a 20, la más reciente primero. Bedel y Autoridad.
+export const consultarHistorialIncidencias = async (
+  auth: AuthContext,
+  consulta: ConsultaIncidencias,
+): Promise<ConsultaIncidenciasResultadoDto> => {
+  await assertPerfil(auth, "BEDEL", "AUTORIDAD");
+  const where: Prisma.IncidenciaWhereInput = {
+    organizationId: auth.organizationId,
+    estado: "RESUELTA",
+    aulaId: consulta.aulaId,
+    createdAt: { gte: rangoDelDia(consulta.desde).desde, lt: rangoDelDia(consulta.hasta).hasta },
+  };
+  const [total, incidencias] = await Promise.all([
+    prisma.incidencia.count({ where }),
+    prisma.incidencia.findMany({
+      where,
+      include: incidenciaHistoricaInclude,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (consulta.pagina - 1) * tamanioPaginaHistorico,
+      take: tamanioPaginaHistorico,
+    }),
+  ]);
+
+  return {
+    total,
+    pagina: consulta.pagina,
+    tamanioPagina: tamanioPaginaHistorico,
+    totalPaginas: Math.ceil(total / tamanioPaginaHistorico),
+    incidencias: incidencias.map((incidencia) => ({
+      id: incidencia.id,
+      reportadaEn: toIso(incidencia.createdAt),
+      aula: incidencia.aula.codigo,
+      elemento: incidencia.elemento,
+      gravedad: incidencia.gravedad,
+      estado: incidencia.estado,
+      descripcion: incidencia.descripcion,
+      reportadaPor: incidencia.reportadaPor.name,
+      historial: incidencia.historial.map((cambio) => ({
+        estado: cambio.estado,
+        observaciones: cambio.observaciones,
+        createdAt: toIso(cambio.createdAt),
+        usuario: { id: cambio.user.id, nombre: cambio.user.name },
+      })),
+    })),
+  };
 };

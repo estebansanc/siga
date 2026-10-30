@@ -206,18 +206,16 @@ describe("listado y detalle de bedelía", () => {
       rehabilitarAula: false,
     });
 
-    const descripciones = async (estados: Parameters<typeof listarIncidencias>[1]) =>
-      (await listarIncidencias(bedel(), estados)).map((incidencia) => incidencia.descripcion);
-    expect(await descripciones([])).toEqual(["Tercera", "Primera"]);
-    expect(await descripciones(["RESUELTA"])).toEqual(["Segunda"]);
-    expect(await descripciones(["ABIERTA", "RESUELTA"])).toEqual(["Segunda", "Primera"]);
+    const descripciones = async () =>
+      (await listarIncidencias(bedel())).map((incidencia) => incidencia.descripcion);
+    expect(await descripciones()).toEqual(["Tercera", "Primera"]);
     expect(primera.estado).toBe("ABIERTA");
   });
 
-  it("solo el Bedel lista, ve el detalle y cambia el estado", async () => {
+  it("el Docente no lista ni ve el detalle ni cambia el estado; la Autoridad solo lee", async () => {
     const creada = await crearIncidencia(bedel(), reporte());
     for (const accion of [
-      () => listarIncidencias(docente(), []),
+      () => listarIncidencias(docente()),
       () => obtenerIncidencia(docente(), creada.id),
       () =>
         cambiarEstadoIncidencia(docente(), creada.id, {
@@ -227,6 +225,13 @@ describe("listado y detalle de bedelía", () => {
     ]) {
       await expect(accion()).rejects.toMatchObject({ status: 403 });
     }
+    const autoridad = authOf(institution, await createUserWithPerfil(institution, "AUTORIDAD"));
+    expect(await listarIncidencias(autoridad)).toHaveLength(1);
+    expect((await obtenerIncidencia(autoridad, creada.id)).id).toBe(creada.id);
+    await expect(
+      cambiarEstadoIncidencia(autoridad, creada.id, { estado: "EN_CURSO", rehabilitarAula: false }),
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(crearIncidencia(autoridad, reporte())).rejects.toMatchObject({ status: 403 });
     await expect(obtenerIncidencia(bedel(), "no-existe")).rejects.toMatchObject({ status: 404 });
   });
 
@@ -236,7 +241,7 @@ describe("listado y detalle de bedelía", () => {
     await expect(obtenerIncidencia(authOf(ajena, ajena), creada.id)).rejects.toMatchObject({
       status: 404,
     });
-    expect(await listarIncidencias(authOf(ajena, ajena), [])).toEqual([]);
+    expect(await listarIncidencias(authOf(ajena, ajena))).toEqual([]);
   });
 });
 

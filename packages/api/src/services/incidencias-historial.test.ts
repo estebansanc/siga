@@ -19,7 +19,7 @@ import {
   type TestUser,
 } from "../test/db";
 
-import { consultarIncidencias } from "./historico";
+import { consultarHistorialIncidencias } from "./incidencias";
 
 let institution: TestOrganization;
 let fixture: AcademicFixture;
@@ -29,7 +29,7 @@ const consultar = (
   extra: Partial<ConsultaIncidencias> = {},
   usuario: TestUser | TestOrganization = autoridad,
 ) =>
-  consultarIncidencias(authOf(institution, usuario), {
+  consultarHistorialIncidencias(authOf(institution, usuario), {
     desde: "2026-03-01",
     hasta: "2026-03-31",
     pagina: 1,
@@ -54,7 +54,7 @@ const reportar = (
       elemento: datos.elemento ?? "PROYECTOR",
       descripcion: "No enciende",
       gravedad: "LEVE",
-      estado: datos.estado ?? "ABIERTA",
+      estado: datos.estado ?? "RESUELTA",
       reportadaPorId: datos.userId ?? institution.userId,
       createdAt: instanteArgentino(fecha, hora),
       historial: {
@@ -74,18 +74,17 @@ beforeEach(async () => {
   autoridad = await createUserWithPerfil(institution, "AUTORIDAD");
 });
 
-describe("indicadores y detalle", () => {
-  it("cuenta todo el período por estado actual, con 0 si no hay", async () => {
+describe("detalle", () => {
+  it("lista solo las resueltas y cuenta el total del período", async () => {
     await reportar("2026-03-02", "10:00", { estado: "ABIERTA" });
     await reportar("2026-03-03", "10:00", { estado: "EN_CURSO" });
-    await reportar("2026-03-04", "10:00", { estado: "EN_CURSO" });
+    await reportar("2026-03-04", "10:00", { estado: "RESUELTA" });
+    await reportar("2026-03-05", "10:00", { estado: "RESUELTA" });
 
     const resultado = await consultar();
 
-    expect(resultado).toMatchObject({
-      total: 3,
-      porEstado: { ABIERTA: 1, EN_CURSO: 2, RESUELTA: 0 },
-    });
+    expect(resultado.total).toBe(2);
+    expect(resultado.incidencias.map(({ estado }) => estado)).toEqual(["RESUELTA", "RESUELTA"]);
   });
 
   it("muestra aula, elemento, gravedad, estado y quién reportó, la más reciente primero", async () => {
@@ -100,7 +99,7 @@ describe("indicadores y detalle", () => {
         aula: "Aula 12",
         elemento: "PROYECTOR",
         gravedad: "LEVE",
-        estado: "ABIERTA",
+        estado: "RESUELTA",
         reportadaPor: expect.any(String),
       },
       { aula: "Aula 7", elemento: "OTRO" },
@@ -109,11 +108,11 @@ describe("indicadores y detalle", () => {
 
   it("incluye la descripción y cada estado con usuario, hora y observaciones", async () => {
     const incidencia = await reportar("2026-03-02");
-    await prisma.incidencia.update({ where: { id: incidencia.id }, data: { estado: "EN_CURSO" } });
+    await prisma.incidencia.update({ where: { id: incidencia.id }, data: { estado: "RESUELTA" } });
     await prisma.incidenciaEstado.create({
       data: {
         incidenciaId: incidencia.id,
-        estado: "EN_CURSO",
+        estado: "RESUELTA",
         observaciones: "Técnico avisado",
         userId: institution.userId,
         createdAt: instanteArgentino("2026-03-03", "09:00"),
@@ -126,7 +125,7 @@ describe("indicadores y detalle", () => {
     expect(detalle?.historial).toMatchObject([
       { estado: "ABIERTA", observaciones: null },
       {
-        estado: "EN_CURSO",
+        estado: "RESUELTA",
         observaciones: "Técnico avisado",
         createdAt: instanteArgentino("2026-03-03", "09:00").toISOString(),
         usuario: { id: institution.userId },
@@ -135,13 +134,12 @@ describe("indicadores y detalle", () => {
   });
 
   it("filtra por aula en indicadores y detalle", async () => {
-    await reportar("2026-03-02", "10:00", { estado: "RESUELTA" });
+    await reportar("2026-03-02", "10:00");
     await reportar("2026-03-03", "10:00", { aulaId: fixture.otraAulaId });
 
     const resultado = await consultar({ aulaId: fixture.otraAulaId });
 
     expect(resultado.total).toBe(1);
-    expect(resultado.porEstado).toEqual({ ABIERTA: 1, EN_CURSO: 0, RESUELTA: 0 });
     expect(resultado.incidencias.map(({ aula }) => aula)).toEqual(["Aula 7"]);
   });
 
@@ -156,7 +154,6 @@ describe("indicadores y detalle", () => {
     expect(await consultar()).toMatchObject({
       total: 0,
       totalPaginas: 0,
-      porEstado: { ABIERTA: 0, EN_CURSO: 0, RESUELTA: 0 },
       incidencias: [],
     });
   });
@@ -187,6 +184,7 @@ describe("paginación", () => {
         elemento: "PROYECTOR" as const,
         descripcion: "x",
         gravedad: "LEVE" as const,
+        estado: "RESUELTA" as const,
         reportadaPorId: institution.userId,
         createdAt: new Date(instanteArgentino("2026-03-10", "08:00").getTime() + indice * 60_000),
       })),
@@ -196,7 +194,6 @@ describe("paginación", () => {
     const segunda = await consultar({ pagina: 2 });
 
     expect(primera).toMatchObject({ total: 25, totalPaginas: 2, tamanioPagina: 20 });
-    expect(primera.porEstado.ABIERTA).toBe(25);
     expect(primera.incidencias).toHaveLength(20);
     expect(segunda.incidencias).toHaveLength(5);
     expect(primera.incidencias[0]?.reportadaEn).toBe(
@@ -227,8 +224,7 @@ describe("paginación", () => {
     const resultado = await consultar({ desde: "2025-10-21", hasta: "2026-10-21" });
 
     expect(Date.now() - inicio).toBeLessThan(10_000);
-    expect(resultado.total).toBe(600);
-    expect(resultado.porEstado).toEqual({ ABIERTA: 200, EN_CURSO: 200, RESUELTA: 200 });
+    expect(resultado.total).toBe(200);
   });
 });
 
@@ -245,9 +241,10 @@ describe("permisos y aislamiento", () => {
     expect((await consultar()).total).toBe(0);
   });
 
-  it("el Bedel consulta", async () => {
+  it("el Bedel y la Autoridad consultan", async () => {
     await reportar("2026-03-02");
     expect((await consultar({}, institution)).total).toBe(1);
+    expect((await consultar({}, autoridad)).total).toBe(1);
   });
 
   it.each(["DOCENTE", "ESTUDIANTE"] as const)(

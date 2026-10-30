@@ -175,7 +175,7 @@ describe("resolver la baja desde Usuarios", () => {
     );
     await comoBedel(() => desactivarUsuario(bedelAuth(), fixture.docente.userId));
 
-    expect(await listarNovedades(bedelAuth(), {})).toEqual([
+    expect(await listarNovedades(bedelAuth())).toEqual([
       expect.objectContaining({
         publicadaPor: { id: fixture.docente.userId, nombre: fixture.docente.userName },
       }),
