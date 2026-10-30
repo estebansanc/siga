@@ -61,8 +61,8 @@ test.describe("Avisos institucionales", () => {
       page.getByRole("link", { name: new RegExp(`Aviso urgente: ${titulo}|\\d+ avisos urgentes`) }),
     ).toBeVisible();
     await page.goto("/estado-institucional");
-    const vigentes = page.locator("[data-slot=card]", { hasText: "Avisos vigentes" });
-    await expect(vigentes.getByText(titulo)).toBeVisible();
+    await expect(page.getByText("Avisos vigentes")).toHaveCount(0);
+    await expect(page.getByText(titulo)).toHaveCount(0);
 
     await page.goto("/avisos");
     await page.getByRole("tab", { name: "Publicados" }).click();
