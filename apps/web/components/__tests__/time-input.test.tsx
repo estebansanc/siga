@@ -41,6 +41,13 @@ describe("normalizarHora", () => {
 });
 
 describe("TimeInput", () => {
+  it("sigue los cambios externos del valor aunque el texto ya fuera una hora válida", () => {
+    const { rerender } = render(<TimeInput value="23:55" onChange={vi.fn()} aria-label="Hora" />);
+    expect(screen.getByLabelText("Hora")).toHaveValue("23:55");
+    rerender(<TimeInput value="" onChange={vi.fn()} aria-label="Hora" />);
+    expect(screen.getByLabelText("Hora")).toHaveValue("");
+  });
+
   it("muestra el valor en 24 horas, sin AM/PM", () => {
     render(<Controlado inicial="13:00" onChange={vi.fn()} />);
     expect(screen.getByLabelText("Hora")).toHaveValue("13:00");

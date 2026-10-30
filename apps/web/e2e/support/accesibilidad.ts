@@ -155,7 +155,7 @@ export const medirFoco = async (page: Page, pasos = 25): Promise<Hallazgo[]> => 
         ${utilidadesDeColor}
         const el = document.activeElement;
         if (!el || el === document.body) return [];
-        const marco = el.closest("[data-slot=input-group]") ?? el;
+        const marco = el.matches("[data-slot=input-group-control]") ? el.closest("[data-slot=input-group]") ?? el : el;
         const s = getComputedStyle(marco);
         const fondo = fondoDe(marco.parentElement ?? marco);
         const contorno = s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0 ? rgba(s.outlineColor) : null;

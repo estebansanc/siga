@@ -9,6 +9,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@repo/ui/components/input-group";
+import { Button } from "@repo/ui/components/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@repo/ui/components/popover";
 import { cn } from "@repo/ui/lib/utils";
 
@@ -72,24 +73,22 @@ function OpcionesDeTiempo({
       className="flex max-h-48 w-14 flex-col gap-0.5 overflow-y-auto"
     >
       {opciones.map((opcion) => (
-        <button
+        <Button
           key={opcion}
           type="button"
           role="option"
+          size="sm"
+          variant={opcion === seleccionada ? "default" : "ghost"}
           aria-selected={opcion === seleccionada}
           tabIndex={opcion === (seleccionada ?? opciones[0]) ? 0 : -1}
-          data-opcion-seleccionada={opcion === seleccionada ? "" : undefined}
           ref={(boton) => {
             if (boton && opcion === seleccionada) boton.scrollIntoView?.({ block: "nearest" });
           }}
           onClick={() => onElegir(opcion)}
-          className={cn(
-            "hover:bg-muted focus-visible:ring-ring/50 focus-visible:ring-3 rounded-md px-2 py-1 text-sm tabular-nums outline-none",
-            opcion === seleccionada && "bg-primary text-primary-foreground hover:bg-primary",
-          )}
+          className="tabular-nums"
         >
           {opcion}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -111,7 +110,7 @@ function TimeInput({
   const horasRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    setTexto((actual) => ((normalizarHora(actual) ?? actual === value) ? actual : value));
+    setTexto((actual) => (actual === value || normalizarHora(actual) === value ? actual : value));
   }, [value]);
 
   const hora = normalizarHora(texto);

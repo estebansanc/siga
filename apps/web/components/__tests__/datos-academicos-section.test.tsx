@@ -92,7 +92,17 @@ vi.mock("@/hooks/use-datos-academicos", () => ({
       equipamiento: [],
     },
   ]),
-  useHorariosGestion: mocks.listado([]),
+  useHorariosGestion: mocks.listado([
+    {
+      id: "h1",
+      diaSemana: 1,
+      horaInicio: "07:00",
+      horaFin: "13:00",
+      activo: true,
+      comision: { id: "k1", codigo: "5K1", materia: "Proyecto Final" },
+      aulaHabitual: null,
+    },
+  ]),
   useCrearHorario: mocks.accion(mocks.crear),
   useActualizarHorario: mocks.accion(mocks.crear),
   useDarDeBajaHorario: mocks.accion(mocks.crear),
@@ -237,6 +247,11 @@ describe("comisiones", () => {
 });
 
 describe("horarios", () => {
+  it("lista la franja en 24 h con rango HH:mm – HH:mm", () => {
+    renderWithProviders(<HorariosTab />);
+    expect(screen.getByText(/07:00 – 13:00/)).toBeVisible();
+  });
+
   const completar = async (dialog: HTMLElement, fin: string) => {
     await userEvent.selectOptions(within(dialog).getByLabelText("Comisión"), "k1");
     await userEvent.type(within(dialog).getByLabelText("Desde"), "19:00");

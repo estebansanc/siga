@@ -461,4 +461,19 @@ test.describe("Móvil", () => {
     await page.getByRole("button", { name: "Finalizar" }).click();
     await expect(page.getByText("Novedad finalizada")).toBeVisible();
   });
+
+  test("el selector de hora se abre, permite elegir hora y minutos en 24 h y no scrollea a lo ancho", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, "Solo aplica al viewport de celular");
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/configuracion");
+    await page.getByRole("button", { name: "Elegir hora" }).last().click();
+    await page.getByRole("option", { name: "22", exact: true }).first().click();
+    await page.getByRole("option", { name: "45", exact: true }).click();
+    await expect(page.getByLabel("Noche: fin")).toHaveValue("22:45");
+    await expect(page.getByText(/\b(AM|PM)\b/)).toHaveCount(0);
+    await expectNoHorizontalPageScroll(page);
+  });
 });

@@ -136,4 +136,10 @@ describe("MisClasesHoy", () => {
     expect(screen.getByText("Proyecto Final")).toBeVisible();
     expect(screen.queryByRole("button", { name: /^Acciones de/ })).toBeNull();
   });
+
+  it("el encabezado del Bedel va en minúscula salvo el inicio: Hoy · jueves 29 de octubre", () => {
+    state.clases = { fecha: "2026-10-29", clases: [clase] };
+    renderWithProviders(<ClasesDelDia ambito="todas" emptyTitle="Sin clases" />);
+    expect(screen.getByRole("heading", { name: "Hoy · jueves 29 de octubre" })).toBeVisible();
+  });
 });
