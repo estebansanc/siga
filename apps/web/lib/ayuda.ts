@@ -372,7 +372,7 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
         titulo: "Solicitar un aula",
         pasos: [
           'Entrá a "Solicitudes de aula" y tocá "Nueva solicitud".',
-          'En la lista seguís su estado.',
+          "En la lista seguís su estado.",
         ],
       },
     ],

@@ -117,7 +117,7 @@ test.describe("Solicitudes de aula", () => {
     expect(await cantidadCambiosDeAula(page)).toBe(cambiosAntes);
   });
 
-  test("el estudiante no ve Solicitudes y vuelven a su inicio", async ({ page }) => {
+  test("el estudiante no ve Solicitudes y vuelve a su inicio", async ({ page }) => {
     await loginViaUi(page, seededUsers.estudiante);
     await expect(page.getByRole("link", { name: "Solicitudes" })).toHaveCount(0);
     await page.goto("/solicitudes");

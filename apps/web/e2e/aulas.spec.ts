@@ -130,7 +130,9 @@ test.describe("Aulas", () => {
     for (const ruta of ["/aulas", "/aulas/solicitar", "/aulas/mis-solicitudes"]) {
       await page.goto(ruta);
       await expect(page).toHaveURL(/\/solicitudes$/);
-      await expect(page.getByRole("heading", { name: "Solicitudes de aula", exact: true })).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Solicitudes de aula", exact: true }),
+      ).toBeVisible();
     }
     await expect(page.getByRole("button", { name: "Nueva aula" })).toHaveCount(0);
   });
