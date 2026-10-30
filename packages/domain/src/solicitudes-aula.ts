@@ -77,6 +77,4 @@ export type RechazarSolicitudAula = z.infer<typeof rechazarSolicitudAulaSchema>;
 export const elegirAulaSchema = z.object({ aulaId: z.string().min(1) });
 export type ElegirAula = z.infer<typeof elegirAulaSchema>;
 
-export const listarSolicitudesAulaQuerySchema = z.object({
-  estado: estadoSolicitudAulaSchema,
-});
+export const estadosSolicitudAulaOrden = estadoSolicitudAulaSchema.options;

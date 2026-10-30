@@ -12853,20 +12853,32 @@
         "tags": [
           "Solicitudes de aula"
         ],
-        "summary": "Solicitudes de aula de un estado (Bedel)",
-        "description": "Solo Bedel. Pendientes y Asignadas (inmediatas) por franja más próxima; Aprobadas y Rechazadas, las resueltas más recientes primero.",
+        "summary": "Solicitudes de aula por estado (Bedel)",
+        "description": "Solo Bedel. `estado` admite varios valores separados por coma; la respuesta los agrupa en el orden Pendiente, Asignada, Aprobada, Rechazada. Dentro de cada grupo, Pendientes y Asignadas (inmediatas) por franja más próxima; Aprobadas y Rechazadas, las resueltas más recientes primero.",
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "enum": [
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "PENDIENTE",
+                  "ASIGNADA",
+                  "APROBADA",
+                  "RECHAZADA"
+                ]
+              },
+              "minItems": 1,
+              "description": "Estados separados por coma; la respuesta los agrupa en el orden del enum",
+              "example": [
                 "PENDIENTE",
-                "ASIGNADA",
-                "APROBADA",
-                "RECHAZADA"
+                "ASIGNADA"
               ]
             },
             "required": true,
+            "description": "Estados separados por coma; la respuesta los agrupa en el orden del enum",
+            "style": "form",
+            "explode": false,
             "name": "estado",
             "in": "query"
           }

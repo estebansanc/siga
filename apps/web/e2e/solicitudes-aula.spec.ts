@@ -26,6 +26,26 @@ test.describe("Solicitudes de aula", () => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/solicitudes");
     await expect(page.getByRole("heading", { name: "Solicitudes de aula" })).toBeVisible();
+    await expect(page.getByRole("tab")).toHaveCount(0);
+    await expect(page.getByText(/^Clases sin aula \(\d+\)$/)).toBeVisible();
+    const filtro: [string, string][] = [
+      ["Pendientes", "true"],
+      ["Asignación inmediata", "true"],
+      ["Aprobadas", "false"],
+      ["Rechazadas", "false"],
+    ];
+    for (const [nombre, marcado] of filtro) {
+      await expect(page.getByRole("button", { name: nombre, exact: true })).toHaveAttribute(
+        "aria-pressed",
+        marcado,
+      );
+    }
+    await page.getByText("Qué significa cada estado").click();
+    await expect(page.getByText(/espera tu aprobación/)).toBeVisible();
+    await expect(page.getByText(/empezaba en menos de 30 minutos/)).toBeVisible();
+    await expect(page.getByText(/la clase tomó el aula elegida/)).toBeVisible();
+    await expect(page.getByText(/la clase conservó su aula/)).toBeVisible();
+    await page.getByText("Qué significa cada estado").click();
 
     const proyectoFinal = item(page, /Proyecto Final · 5K2/, "Aula pedida: Laboratorio 3");
     const sistemasDeGestion = item(page, /Sistemas de Gestión · 4K2/, "Aula pedida: Aula 12");
@@ -39,7 +59,7 @@ test.describe("Solicitudes de aula", () => {
     await aprobacion.getByRole("button", { name: "Aprobar" }).click();
     await expect(page.getByText("Solicitud aprobada")).toBeVisible();
     await expect(proyectoFinal).toHaveCount(0);
-    await page.getByRole("tab", { name: "Aprobadas" }).click();
+    await page.getByRole("button", { name: "Aprobadas" }).click();
     await expect(item(page, /Proyecto Final · 5K2/, "Aprobada", "Aula 3 (")).toHaveCount(1);
 
     await page.goto("/novedades");
@@ -53,12 +73,17 @@ test.describe("Solicitudes de aula", () => {
     await rechazo.getByLabel("Motivo").fill("Hay obras en el aula");
     await rechazo.getByRole("button", { name: "Rechazar" }).click();
     await expect(page.getByText("Solicitud rechazada")).toBeVisible();
-    await page.getByRole("tab", { name: "Rechazadas" }).click();
+    await page.getByRole("button", { name: "Rechazadas" }).click();
     await expect(
       item(page, /Sistemas de Gestión · 4K2/, "Motivo del rechazo: Hay obras en el aula"),
     ).toHaveCount(1);
-
-    await page.getByRole("tab", { name: "Asignadas" }).click();
+    await expect(item(page, /Sistemas de Gestión · 4K2/).getByRole("button")).toHaveCount(0);
+    for (const nombre of ["Pendientes", "Asignación inmediata", "Rechazadas"]) {
+      await page.getByRole("button", { name: nombre, exact: true }).click();
+    }
+    await expect(page.getByText("Elegí al menos un estado para ver solicitudes")).toBeVisible();
+    await page.getByRole("button", { name: "Pendientes", exact: true }).click();
+    await page.getByRole("button", { name: "Asignación inmediata" }).click();
     const asignada = item(page, /Administración Gerencial · 5K2/);
     await expect(asignada).toContainText("Asignada (inmediata)");
     await expect(asignada.getByRole("button", { name: "Rechazar" })).toHaveCount(0);
@@ -79,7 +104,8 @@ test.describe("Solicitudes de aula", () => {
   }) => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/solicitudes");
-    await page.getByRole("tab", { name: "Clases sin aula" }).click();
+    const contador = page.getByText(/^Clases sin aula \(\d+\)$/);
+    const antes = Number(/\((\d+)\)/.exec((await contador.textContent()) ?? "")?.[1]);
     const simulacion = item(page, /Simulación · 5K2/);
     await simulacion.getByRole("button", { name: "Asignar aula" }).click();
     const dialog = page.getByRole("dialog", { name: "Asignar aula" });
@@ -114,6 +140,7 @@ test.describe("Solicitudes de aula", () => {
     await dialog.getByRole("button", { name: "Asignar" }).click();
     await expect(page.getByText("Aula asignada")).toBeVisible();
     await expect(simulacion).toHaveCount(0);
+    await expect(contador).toHaveText(`Clases sin aula (${antes - 1})`);
     expect(await cantidadCambiosDeAula(page)).toBe(cambiosAntes);
   });
 

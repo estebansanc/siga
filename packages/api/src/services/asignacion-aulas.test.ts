@@ -382,16 +382,32 @@ describe("listar solicitudes", () => {
     await rechazarSolicitudAula(bedel(), aRechazar.id, { motivo: "Sin lugar" }, ahora);
     const { solicitud: pendiente } = await solicitarPendiente(fixture.otraAulaId, "11:30");
 
-    const pendientes = await listarSolicitudesAulaPorEstado(bedel(), "PENDIENTE");
-    const rechazadas = await listarSolicitudesAulaPorEstado(bedel(), "RECHAZADA");
+    const pendientes = await listarSolicitudesAulaPorEstado(bedel(), ["PENDIENTE"]);
+    const rechazadas = await listarSolicitudesAulaPorEstado(bedel(), ["RECHAZADA"]);
 
     expect(pendientes.map(({ id }) => id)).toEqual([pendiente.id]);
     expect(pendientes[0]?.solicitante.id).toBe(fixture.docente.userId);
     expect(rechazadas[0]).toMatchObject({ id: aRechazar.id, motivoRechazo: "Sin lugar" });
-    expect(await listarSolicitudesAulaPorEstado(bedel(), "APROBADA")).toEqual([]);
-    await expect(listarSolicitudesAulaPorEstado(docente(), "PENDIENTE")).rejects.toMatchObject({
+    expect(await listarSolicitudesAulaPorEstado(bedel(), ["APROBADA"])).toEqual([]);
+    await expect(listarSolicitudesAulaPorEstado(docente(), ["PENDIENTE"])).rejects.toMatchObject({
       status: 403,
     });
+  });
+});
+
+describe("listar solicitudes de varios estados", () => {
+  it("agrupa en el orden Pendiente, Asignada, Aprobada, Rechazada sin importar el pedido", async () => {
+    const { solicitud: aRechazar } = await solicitarPendiente();
+    await rechazarSolicitudAula(bedel(), aRechazar.id, { motivo: "Sin lugar" }, ahora);
+    const { solicitud: pendiente } = await solicitarPendiente(fixture.otraAulaId, "11:30");
+
+    const lista = await listarSolicitudesAulaPorEstado(bedel(), ["RECHAZADA", "PENDIENTE"]);
+
+    expect(lista.map(({ id, estado }) => [id, estado])).toEqual([
+      [pendiente.id, "PENDIENTE"],
+      [aRechazar.id, "RECHAZADA"],
+    ]);
+    expect(await listarSolicitudesAulaPorEstado(bedel(), [])).toEqual([]);
   });
 });
 
@@ -459,7 +475,7 @@ describe("aislamiento y permisos", () => {
     ]) {
       await expect(intento()).rejects.toMatchObject({ status: 404 });
     }
-    expect(await listarSolicitudesAulaPorEstado(ajeno, "PENDIENTE")).toEqual([]);
+    expect(await listarSolicitudesAulaPorEstado(ajeno, ["PENDIENTE"])).toEqual([]);
     expect((await listarClasesSinAula(ajeno, ahora)).clases).toEqual([]);
 
     await expect(

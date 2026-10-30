@@ -126,8 +126,8 @@ test.describe("Novedades: Activas e Historial", () => {
       const enlaces = await page.locator('[data-slot="sidebar-menu-button"]').allTextContents();
       expect(enlaces.map((texto) => texto.trim()).slice(1, 4)).toEqual([
         "Clases",
+        "Estado institucional",
         "Novedades",
-        "Incidencias",
       ]);
 
       await page.getByRole("link", { name: "Novedades" }).click();
