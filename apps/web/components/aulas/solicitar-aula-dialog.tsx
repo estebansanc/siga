@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Dialog,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@repo/ui/components/dialog";
+import { Dialog, DialogDescription, DialogHeader, DialogTitle } from "@repo/ui/components/dialog";
 
 import { FormDialogContent } from "@/components/form-dialog-content";
 
