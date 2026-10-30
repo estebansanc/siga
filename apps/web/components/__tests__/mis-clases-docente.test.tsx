@@ -11,7 +11,7 @@ const reportar = vi.hoisted(() => vi.fn());
 
 vi.mock("@/hooks/use-clases", () => ({
   useClases: () => ({ data: { fecha: "2026-10-14", clases: state.clases } }),
-  useClase: () => ({ data: undefined }),
+  useClase: (id: string | null) => ({ data: state.clases.find((clase) => clase.id === id) }),
 }));
 vi.mock("@/hooks/use-estado-institucional", () => ({
   useEstadoInstitucional: () => ({ data: undefined }),
@@ -111,5 +111,25 @@ describe("MisClasesDocente", () => {
     const item = await screen.findByRole("menuitem", { name: /Publicar novedad/ });
     expect(item).toHaveAttribute("aria-disabled", "true");
     expect(item).toHaveTextContent(`La clase está ${texto}`);
+  });
+
+  it("abrir el menú o elegir una acción no abre el detalle; tocar la tarjeta sí", async () => {
+    renderWithProviders(<MisClasesDocente />);
+    await abrirMenu();
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Publicar novedad" }));
+    await screen.findByRole("dialog", { name: "Publicar novedad" });
+    expect(screen.queryByRole("dialog", { name: /Proyecto Final/ })).toBeNull();
+
+    await userEvent.click(screen.getByText("Proyecto Final"));
+    expect(await screen.findByRole("dialog", { name: /Proyecto Final/ })).toBeVisible();
+  });
+
+  it("el menú se abre con teclado, se recorre con flechas y se elige con Enter", async () => {
+    renderWithProviders(<MisClasesDocente />);
+    screen.getByRole("button", { name: "Acciones de Proyecto Final 5K2" }).focus();
+    await userEvent.keyboard("{Enter}");
+    expect(await screen.findByRole("menuitem", { name: "Reportar incidencia" })).toBeVisible();
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}{Enter}");
+    expect(await screen.findByRole("dialog", { name: "Publicar novedad" })).toBeVisible();
   });
 });

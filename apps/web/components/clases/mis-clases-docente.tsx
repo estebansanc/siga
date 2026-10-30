@@ -9,12 +9,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@repo/ui/components/item";
-import {
-  ChevronRightIcon,
-  DoorOpenIcon,
-  MegaphoneIcon,
-  QrCodeIcon,
-} from "lucide-react";
+import { ChevronRightIcon, DoorOpenIcon, MegaphoneIcon, QrCodeIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 

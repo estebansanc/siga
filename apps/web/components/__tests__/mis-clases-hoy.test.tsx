@@ -2,6 +2,7 @@ import type { ClaseDto, EstadoInstitucionalDto, PreferenciasDto } from "@repo/ap
 import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ClasesDelDia } from "@/components/clases/clases-del-dia";
 import { MisClasesHoy } from "@/components/clases/mis-clases-hoy";
 import { renderWithProviders } from "@/test/render";
 
@@ -122,5 +123,17 @@ describe("MisClasesHoy", () => {
     renderWithProviders(<MisClasesHoy />);
     expect(screen.getByText("Institución cerrada")).toBeInTheDocument();
     expect(screen.getByText("Paro docente nacional")).toBeInTheDocument();
+  });
+
+  it("el Estudiante y la Autoridad no ven el menú de acciones en sus tarjetas", () => {
+    renderWithProviders(<MisClasesHoy />);
+    expect(screen.getByText("Proyecto Final")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Acciones de/ })).toBeNull();
+  });
+
+  it("la Autoridad ve las clases de hoy sin menú de acciones", () => {
+    renderWithProviders(<ClasesDelDia ambito="todas" emptyTitle="Sin clases" />);
+    expect(screen.getByText("Proyecto Final")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Acciones de/ })).toBeNull();
   });
 });

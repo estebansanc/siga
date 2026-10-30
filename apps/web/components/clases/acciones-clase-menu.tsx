@@ -1,6 +1,7 @@
 "use client";
 
 import type { ClaseDto } from "@repo/api/client";
+import { esEstadoClaseFinal } from "@repo/domain";
 import { Button } from "@repo/ui/components/button";
 import {
   DropdownMenu,
@@ -13,13 +14,11 @@ import type { ReactNode } from "react";
 
 import { etiquetaEstadoClase } from "./estado-clase-badge";
 
-const estadosSinNovedad: ClaseDto["estado"][] = ["AUSENTE", "SUSPENDIDA", "FINALIZADA"];
-
-export const motivoSinIncidencia = (clase: ClaseDto) =>
+const motivoSinIncidencia = (clase: ClaseDto) =>
   clase.aula ? null : "La clase no tiene aula asignada";
 
-export const motivoSinNovedad = (clase: ClaseDto) =>
-  estadosSinNovedad.includes(clase.estado) ? `La clase está ${etiquetaEstadoClase(clase)}` : null;
+const motivoSinNovedad = (clase: ClaseDto) =>
+  esEstadoClaseFinal(clase.estado) ? `La clase está ${etiquetaEstadoClase(clase)}` : null;
 
 function AccionItem({
   label,
@@ -31,7 +30,11 @@ function AccionItem({
   onSelect: () => void;
 }): ReactNode {
   return (
-    <DropdownMenuItem disabled={motivo !== null} onClick={onSelect} className="flex-col items-start">
+    <DropdownMenuItem
+      disabled={motivo !== null}
+      onClick={onSelect}
+      className="flex-col items-start"
+    >
       <span>{label}</span>
       {motivo ? <span className="text-muted-foreground text-xs">{motivo}</span> : null}
     </DropdownMenuItem>
