@@ -121,7 +121,7 @@ test.describe("Aulas", () => {
     await expect(page).toHaveURL(/\/aulas\?vista=plano/);
   });
 
-  test("el docente va de Aulas a sus solicitudes y desde su panel a Solicitar aula", async ({
+  test("el docente va de Aulas a sus solicitudes y de sus solicitudes a Solicitar aula", async ({
     page,
   }) => {
     await loginViaUi(page, seededUsers.docente);
@@ -129,7 +129,6 @@ test.describe("Aulas", () => {
     await expect(page).toHaveURL(/\/aulas\/mis-solicitudes$/);
     await expect(page.getByRole("button", { name: "Nueva aula" })).toHaveCount(0);
 
-    await page.goto("/");
     await page.getByRole("link", { name: /Solicitar aula/ }).click();
     await expect(page).toHaveURL(/\/aulas\/solicitar$/);
     await expect(page.getByRole("heading", { name: "Solicitar aula" })).toBeVisible();

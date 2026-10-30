@@ -66,6 +66,8 @@ test.describe("Flujo principal de SiGA", () => {
 
     await loginViaUi(page, seededUsers.docente);
     await expect(page.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Acciones rápidas" })).toHaveCount(0);
+    await page.goto("/novedades");
     await page.getByRole("button", { name: "Publicar novedad" }).click();
     const dialog = page.getByRole("dialog", { name: "Publicar novedad" });
     await dialog.getByLabel("Fecha de las clases").fill(fecha);
