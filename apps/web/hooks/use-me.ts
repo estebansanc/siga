@@ -24,7 +24,6 @@ export const useUpdateProfile = () => {
     mutationFn: (input: UpdateProfileInput) => unwrap<MeDto>(api.me.$patch({ json: input })),
     onSuccess: (me) => {
       queryClient.setQueryData(queryKeys.me, me);
-      // El listado de miembros muestra el nombre de cada cuenta.
       void queryClient.invalidateQueries({ queryKey: queryKeys.members });
     },
   });

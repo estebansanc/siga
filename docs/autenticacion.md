@@ -17,6 +17,8 @@ SiGA tiene una sola institución (CFG-2): la organización `utn-frt` que carga e
 
 `userName` y `userEmail` vienen de la sesión; `GET /me` los lee de la base para que un cambio hecho en Mi perfil (`PATCH /me`) se vea sin depender de la sesión.
 
+Quien pierde el acceso (`lostOrganization`) ve en `LostOrganizationNotice` "Ya no tenés acceso a <institución>." y "Si creés que es un error, consultá en Bedelía."; el acceso no vuelve solo. Los textos hablan de institución y usuarios, no de organización, miembro ni invitación.
+
 ## Autorización
 
 El middleware `ownerOnly` (`packages/api/src/middleware.ts`) protege las escrituras de Configuración (ajustes y quitar miembros por la API) con 403 `FORBIDDEN` en español; las lecturas (`GET /settings`, `GET /members`) siguen abiertas a cualquier miembro. Las rutas de SiGA llevan `perfilOnly(...perfiles)` según la matriz de permisos de `docs/producto/requerimientos.md`, y el servicio vuelve a verificarlo con `assertPerfil` (`packages/api/src/services/permisos.ts`), que registra todo acceso denegado en `audit_log` (`entity: "Permiso"`, `action: "acceso_denegado"`) antes de responder 403 "Acceso denegado" (SEG-6). `GET /me` expone quién es la sesión activa (usuario, rol, perfil) y las organizaciones de la cuenta.

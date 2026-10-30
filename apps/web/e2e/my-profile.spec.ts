@@ -9,6 +9,7 @@ test.describe("Mi perfil", () => {
     await page.getByRole("menuitem", { name: "Mi perfil" }).click();
     await expect(page).toHaveURL(/\/mi-perfil/);
     const nameInput = page.getByLabel("Apellido y nombre");
+    await expect(page.getByText("Así te ven los demás usuarios.")).toBeVisible();
     await expect(nameInput).toHaveValue(user.name);
     await expect(page.getByLabel("Correo")).toHaveValue(user.email);
     await expect(page.getByLabel("Correo")).toBeDisabled();

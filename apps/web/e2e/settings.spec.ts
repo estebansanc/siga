@@ -22,6 +22,31 @@ test.describe("Configuración", () => {
     await expect(page.getByText("Presencia del docente", { exact: true })).toBeVisible();
     await expect(page.getByText("Turnos", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Miembros", { exact: true })).toHaveCount(0);
+    await expect(
+      page.getByText("El nombre que ven todos los usuarios en la barra lateral."),
+    ).toBeVisible();
+    await expect(page.getByLabel("Nombre de la institución")).toBeVisible();
+    await expect(page.getByText(/organizaci|miembro|invitaci/i)).toHaveCount(0);
+  });
+
+  test("renombrar la institución actualiza la barra lateral sin recargar y se restaura", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/configuracion");
+    const nombre = page.getByLabel("Nombre de la institución");
+    const original = await nombre.inputValue();
+    const sidebar = page.locator("[data-sidebar='sidebar']").first();
+    try {
+      await nombre.fill(`${original}.`);
+      await page.getByRole("button", { name: "Guardar", exact: true }).first().click();
+      await expect(page.getByText("Institución actualizada")).toBeVisible();
+      await expect(sidebar.getByText(`${original}.`, { exact: true })).toBeVisible();
+    } finally {
+      await nombre.fill(original);
+      await page.getByRole("button", { name: "Guardar", exact: true }).first().click();
+      await expect(sidebar.getByText(original, { exact: true })).toBeVisible();
+    }
   });
 
   test("un estudiante no ve Configuración y por URL vuelve a Mis clases", async ({
