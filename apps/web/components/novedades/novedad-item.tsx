@@ -3,7 +3,7 @@
 import type { NovedadDto } from "@repo/api/client";
 import { tipoNovedadLabels } from "@repo/domain";
 import { Badge } from "@repo/ui/components/badge";
-import { Button } from "@repo/ui/components/button";
+import { Button, buttonVariants } from "@repo/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,9 +37,11 @@ const finalizable = (novedad: NovedadDto) =>
 const describirDetalle = (novedad: NovedadDto) => {
   if (novedad.tipo === "DEMORA" && novedad.minutosDemora) return `${novedad.minutosDemora} min`;
   if (novedad.tipo === "CAMBIO_AULA" && novedad.aulaNueva) return `a ${novedad.aulaNueva.codigo}`;
-  if (novedad.tipo === "VIRTUAL" && novedad.enlaceVirtual) return novedad.enlaceVirtual;
   return null;
 };
+
+const enlaceDeClaseVirtual = (novedad: NovedadDto) =>
+  novedad.tipo === "VIRTUAL" && novedad.editable ? novedad.enlaceVirtual : null;
 
 export function NovedadItem({
   novedad,
@@ -53,6 +55,7 @@ export function NovedadItem({
   onFinalizar?: () => void;
 }) {
   const detalle = describirDetalle(novedad);
+  const enlace = enlaceDeClaseVirtual(novedad);
   const clases = novedad.clases
     .map((clase) => `${formatFechaCorta(clase.fecha)} ${clase.horaInicio}`)
     .join(", ");
@@ -64,10 +67,21 @@ export function NovedadItem({
           {detalle ? <span className="text-muted-foreground font-normal">{detalle}</span> : null}
           <EstadoBadge novedad={novedad} />
         </ItemTitle>
+        <ItemDescription className="text-foreground font-medium">{clases}</ItemDescription>
         <ItemDescription>
-          {novedad.comision.materia} · {novedad.comision.codigo} · {clases}
+          {novedad.comision.materia} · {novedad.comision.codigo}
         </ItemDescription>
         {novedad.mensaje ? <ItemDescription>“{novedad.mensaje}”</ItemDescription> : null}
+        {enlace ? (
+          <a
+            href={enlace}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonVariants({ variant: "link", className: "min-h-11 w-fit px-0" })}
+          >
+            Entrar a la clase virtual
+          </a>
+        ) : null}
         <ItemDescription className="text-xs">
           {formatFechaHora(novedad.createdAt)} · {novedad.publicadaPor.nombre}
           {novedad.publicadaPorBedelia ? " (bedelía)" : null}
