@@ -22,7 +22,7 @@ const perfiles = {
   Estudiante: { user: seededUsers.estudiante, inicio: "Mis clases de hoy" },
   Docente: { user: seededUsers.docente, inicio: "Mis clases de hoy" },
   Bedel: { user: seededUsers.bedel, inicio: "Estado institucional" },
-  Autoridad: { user: seededUsers.autoridad, inicio: "Clases de hoy" },
+  Autoridad: { user: seededUsers.autoridad, inicio: "Clases" },
 } satisfies Record<string, { user: User; inicio: string }>;
 
 const rutasComunes = ["/", "/mi-perfil", "/avisos", "/clases"];
@@ -138,7 +138,8 @@ test.describe("Teclado", () => {
     }) => {
       test.skip(isMobile, "El menú móvil se prueba con la barra lateral");
       await loginViaUi(page, user);
-      await expect(page.getByRole("heading", { name: inicio })).toBeVisible();
+      await expect(page.getByRole("heading", { name: inicio, exact: true })).toBeVisible();
+      if (perfil === "Autoridad") await expect(page).toHaveURL(/\/clases$/);
       await page.locator('[data-sidebar="sidebar"] a').first().focus();
       let enfocados = 0;
       for (let paso = 0; paso < 12; paso++) {

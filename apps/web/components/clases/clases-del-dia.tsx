@@ -10,7 +10,7 @@ import { formatFechaLarga } from "@/lib/dates";
 
 import { CierreBanner, ClasesEmpty, ClasesList } from "./clases-list";
 
-// Clases de hoy para docente ("mias"), bedel y autoridad ("todas").
+// Clases de hoy del docente (ámbito "mias").
 export function ClasesDelDia({
   ambito,
   emptyTitle,

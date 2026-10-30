@@ -83,6 +83,16 @@ test.describe("Solicitudes de aula", () => {
     const simulacion = item(page, /Simulación · 5K2/);
     await simulacion.getByRole("button", { name: "Asignar aula" }).click();
     const dialog = page.getByRole("dialog", { name: "Asignar aula" });
+    await expect(dialog.getByRole("checkbox")).toHaveCount(7);
+    await dialog.getByLabel("Cantidad de alumnos").fill("0");
+    await expect(dialog.getByText("Ingresá una cantidad de alumnos mayor que 0.")).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Asignar" })).toBeDisabled();
+    await dialog.getByLabel("Cantidad de alumnos").fill("500");
+    await expect(dialog.getByText("Ninguna aula cumple todos los criterios.")).toBeVisible();
+    await expect(
+      dialog.getByRole("option", { name: /Capacidad para 500 alumnos/ }).first(),
+    ).toBeAttached();
+    await dialog.getByLabel("Cantidad de alumnos").fill("");
     await dialog.getByLabel("Aula").selectOption({ value: "aula-12" });
 
     const solicitudes = (await (

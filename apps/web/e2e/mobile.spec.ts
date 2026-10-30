@@ -42,7 +42,7 @@ test.describe("Móvil", () => {
     await expectNoHorizontalPageScroll(page);
 
     await page.goto("/clases");
-    await expect(page.getByRole("heading", { name: "Buscar clases" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Clases", level: 1 })).toBeVisible();
     await expect(page.getByLabel("Comisión")).toBeVisible();
     await expectNoHorizontalPageScroll(page);
 
@@ -86,7 +86,7 @@ test.describe("Móvil", () => {
     test.skip(!isMobile, "Solo aplica al menú lateral móvil");
     await page.getByRole("button", { name: "Alternar menú lateral" }).click();
     const sidebar = page.locator('[data-slot="sidebar"][data-mobile="true"]');
-    await sidebar.getByRole("link", { name: "Buscar" }).click();
+    await sidebar.getByRole("link", { name: "Clases", exact: true }).click();
     await expect(page).toHaveURL(/\/clases/);
     await expect(sidebar).toBeHidden();
   });

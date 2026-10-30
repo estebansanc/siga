@@ -69,7 +69,7 @@ export const useComisiones = (filtro: FiltroComisiones, enabled = true) => {
 
 type Edicion<T> = { id: string; input: T };
 
-// Lo que se carga acá alimenta Buscar clases, Preferencias y las clases generadas.
+// Lo que se carga acá alimenta Clases, Preferencias y las clases generadas.
 const useInvalidarDatosAcademicos = () => {
   const queryClient = useQueryClient();
   return () =>
