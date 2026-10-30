@@ -159,7 +159,8 @@ export function SolicitarAulaForm({
     }
   };
 
-  const cargandoClases = clases.isPending;
+  const cargandoClases = clases.isPending && Boolean(fecha);
+  const hayClases = Boolean(clases.data?.clases.length);
   const sinClases = clases.data?.clases.length === 0;
   const sinCoincidencias = busqueda.data && busqueda.data.aulas.length === 0;
 
@@ -180,7 +181,7 @@ export function SolicitarAulaForm({
               }}
             />
           </Field>
-          {cargandoClases || sinClases ? null : (
+          {!hayClases ? null : (
             <Field>
               <FieldLabel htmlFor="solicitud-clase">Clase</FieldLabel>
               <NativeSelect
@@ -189,11 +190,7 @@ export function SolicitarAulaForm({
                 value={claseId}
                 onChange={(event) => cambiar(setClaseId)(event.target.value)}
               >
-                <NativeSelectOption value="">
-                  {clases.data?.clases.length === 0
-                    ? "No hay clases para pedir aula"
-                    : "Elegí una clase"}
-                </NativeSelectOption>
+                <NativeSelectOption value="">Elegí una clase</NativeSelectOption>
                 {clases.data?.clases.map((candidata) => (
                   <NativeSelectOption key={candidata.id} value={candidata.id}>
                     {describirClase(candidata)}
@@ -224,7 +221,7 @@ export function SolicitarAulaForm({
             </EmptyContent>
           </Empty>
         ) : null}
-        {cargandoClases || sinClases ? null : (
+        {!hayClases ? null : (
           <>
             {clase ? (
               <p className="text-muted-foreground text-sm">
@@ -261,7 +258,7 @@ export function SolicitarAulaForm({
           </>
         )}
       </FieldGroup>
-      {cargandoClases || sinClases ? null : (
+      {!hayClases ? null : (
         <>
           <Button type="button" disabled={!claseId || busqueda.isFetching} onClick={buscar}>
             {busqueda.isFetching ? <Spinner /> : null}

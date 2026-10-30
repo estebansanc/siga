@@ -150,6 +150,19 @@ const proximoDiaHabil = () => {
   return fecha;
 };
 
+const textoSinClases = (fecha: string) =>
+  `El ${new Intl.DateTimeFormat("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  })
+    .format(new Date(`${fecha}T12:00:00Z`))
+    .replace(
+      ",",
+      "",
+    )} no tenés clases que admitan pedir aula. No aparecen las que ya terminaron ni las suspendidas, con ausencia docente o virtuales. Elegí otra fecha.`;
+
 const proximoDomingo = () => {
   let fecha = sumarDias(fechaArgentina(new Date()), 1);
   while (diaSemanaDe(fecha) !== 7) fecha = sumarDias(fecha, 1);
@@ -216,9 +229,16 @@ test.describe("Solicitar aula", () => {
     await page.getByRole("button", { name: "Nueva solicitud" }).click();
     const dialog = page.getByRole("dialog", { name: "Nueva solicitud" });
 
+    await dialog.getByLabel("Fecha").fill(proximoDiaHabil());
+    await dialog.getByLabel("Clase").selectOption({ index: 1 });
+    await dialog.getByLabel("Cantidad de alumnos").fill("10");
+    await dialog.getByRole("button", { name: "Buscar aulas" }).click();
+    await expect(dialog.getByRole("region", { name: "Resultados" })).toBeVisible();
+
     await dialog.getByLabel("Fecha").fill(proximoDomingo());
     await expect(dialog.getByText("No hay clases para pedir aula")).toBeVisible();
-    await expect(dialog.getByText(/no tenés clases que admitan pedir aula/)).toBeVisible();
+    await expect(dialog.getByRole("region", { name: "Resultados" })).toHaveCount(0);
+    await expect(dialog.getByText(textoSinClases(proximoDomingo()))).toBeVisible();
     await expect(dialog.getByLabel("Clase")).toHaveCount(0);
     await expect(dialog.getByRole("button", { name: "Buscar aulas" })).toHaveCount(0);
     await expectNoHorizontalPageScroll(page);
@@ -231,6 +251,28 @@ test.describe("Solicitar aula", () => {
     await dialog.getByRole("button", { name: "Ver mis solicitudes" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page).toHaveURL(/\/solicitudes$/);
+  });
+
+  test("en celular el estado vacío de Solicitar aula se ve completo dentro del diálogo", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await loginViaUi(page, seededUsers.docente);
+    await page.goto("/solicitudes");
+    await page.getByRole("button", { name: "Nueva solicitud" }).click();
+    const dialog = page.getByRole("dialog", { name: "Nueva solicitud" });
+    await dialog.getByLabel("Fecha").fill(proximoDomingo());
+    const vacio = dialog.locator('[data-slot="empty"]');
+    await expect(vacio).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Ver mis solicitudes" })).toBeVisible();
+    const cajaDialogo = await dialog.boundingBox();
+    const cajaVacio = await vacio.boundingBox();
+    expect(cajaVacio!.x).toBeGreaterThanOrEqual(cajaDialogo!.x);
+    expect(cajaVacio!.x + cajaVacio!.width).toBeLessThanOrEqual(
+      cajaDialogo!.x + cajaDialogo!.width,
+    );
+    expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await expectNoHorizontalPageScroll(page);
   });
 
   test("el bedel que abre las URLs viejas de Solicitar aula llega a Solicitudes", async ({

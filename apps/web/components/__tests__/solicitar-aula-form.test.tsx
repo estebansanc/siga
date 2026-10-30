@@ -1,5 +1,5 @@
 import type { BusquedaAulaDto, ClaseDto } from "@repo/api/client";
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -145,8 +145,11 @@ describe("SolicitarAulaForm", () => {
       <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
     );
     expect(screen.getByText("No hay clases para pedir aula")).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Fecha"), { target: { value: "2026-11-01" } });
     expect(
-      screen.getByText(/no tenés clases que admitan pedir aula.*Elegí otra fecha\./),
+      screen.getByText(
+        "El domingo 1 de noviembre no tenés clases que admitan pedir aula. No aparecen las que ya terminaron ni las suspendidas, con ausencia docente o virtuales. Elegí otra fecha.",
+      ),
     ).toBeVisible();
     expect(screen.getByLabelText("Fecha")).toBeVisible();
     for (const etiqueta of ["Clase", "Cantidad de alumnos"]) {
@@ -173,7 +176,18 @@ describe("SolicitarAulaForm", () => {
       <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
     );
     expect(screen.getByLabelText("Fecha")).toBeVisible();
+    expect(document.querySelector('[data-slot="skeleton"]')).toBeInTheDocument();
     expect(screen.queryByLabelText("Clase")).not.toBeInTheDocument();
     expect(screen.queryByText("No hay clases para pedir aula")).not.toBeInTheDocument();
+  });
+
+  it("con la fecha borrada no deja el esqueleto ni el formulario", () => {
+    state.cargando = true;
+    renderWithProviders(
+      <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
+    );
+    fireEvent.change(screen.getByLabelText("Fecha"), { target: { value: "" } });
+    expect(document.querySelector('[data-slot="skeleton"]')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Clase")).not.toBeInTheDocument();
   });
 });
