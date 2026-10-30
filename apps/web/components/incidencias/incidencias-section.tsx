@@ -27,7 +27,7 @@ import {
   ItemTitle,
 } from "@repo/ui/components/item";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui/components/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@repo/ui/components/tabs";
 import { PlusIcon, TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
 
@@ -114,41 +114,44 @@ export function IncidenciasSection({ puedeGestionar }: { puedeGestionar: boolean
             <TabsTrigger value="abiertas">Abiertas</TabsTrigger>
             <TabsTrigger value="historial">Historial</TabsTrigger>
           </TabsList>
-          <TabsContent value="abiertas" className="pt-2">
-            {!incidencias.data ? (
-              <div className="flex flex-col gap-2">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <Skeleton key={index} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : incidencias.data.length === 0 ? (
-              <Empty className="border">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <TriangleAlertIcon />
-                  </EmptyMedia>
-                  <EmptyTitle>Sin incidencias abiertas</EmptyTitle>
-                  <EmptyDescription>
-                    Las incidencias abiertas o en curso aparecen acá.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              <ItemGroup className="gap-2">
-                {incidencias.data.map((incidencia) => (
-                  <IncidenciaItem
-                    key={incidencia.id}
-                    incidencia={incidencia}
-                    onDetalle={() => setAccion({ tipo: "detalle", id: incidencia.id })}
-                  />
-                ))}
-              </ItemGroup>
-            )}
-          </TabsContent>
-          <TabsContent value="historial" className="pt-2">
-            <HistorialIncidencias />
-          </TabsContent>
         </Tabs>
+        <div className="pt-2">
+          {vista === "abiertas" ? (
+            <>
+              {!incidencias.data ? (
+                <div className="flex flex-col gap-2">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton key={index} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : incidencias.data.length === 0 ? (
+                <Empty className="border">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <TriangleAlertIcon />
+                    </EmptyMedia>
+                    <EmptyTitle>Sin incidencias abiertas</EmptyTitle>
+                    <EmptyDescription>
+                      Las incidencias abiertas o en curso aparecen acá.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <ItemGroup className="gap-2">
+                  {incidencias.data.map((incidencia) => (
+                    <IncidenciaItem
+                      key={incidencia.id}
+                      incidencia={incidencia}
+                      onDetalle={() => setAccion({ tipo: "detalle", id: incidencia.id })}
+                    />
+                  ))}
+                </ItemGroup>
+              )}
+            </>
+          ) : (
+            <HistorialIncidencias />
+          )}
+        </div>
       </CardContent>
       {accion?.tipo === "reportar" ? (
         <ReportarIncidenciaDialog onClose={cerrar} onReportada={proponer} />

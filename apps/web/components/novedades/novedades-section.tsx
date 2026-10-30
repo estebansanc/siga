@@ -20,7 +20,7 @@ import {
 } from "@repo/ui/components/empty";
 import { ItemGroup } from "@repo/ui/components/item";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui/components/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@repo/ui/components/tabs";
 import { MegaphoneIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -80,41 +80,44 @@ export function NovedadesSection({ puedePublicar }: { puedePublicar: boolean }) 
             <TabsTrigger value="activas">Activas</TabsTrigger>
             <TabsTrigger value="historial">Historial</TabsTrigger>
           </TabsList>
-          <TabsContent value="activas" className="pt-2">
-            {!novedades.data ? (
-              <div className="flex flex-col gap-2">
-                {Array.from({ length: 2 }).map((_, index) => (
-                  <Skeleton key={index} className="h-20 w-full" />
-                ))}
-              </div>
-            ) : novedades.data.length === 0 ? (
-              <Empty className="border">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <MegaphoneIcon />
-                  </EmptyMedia>
-                  <EmptyTitle>Sin novedades activas</EmptyTitle>
-                  <EmptyDescription>Las novedades que publiques aparecen acá.</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            ) : (
-              <ItemGroup className="gap-2">
-                {novedades.data.map((novedad) => (
-                  <NovedadItem
-                    key={novedad.id}
-                    novedad={novedad}
-                    puedeGestionar={puedePublicar}
-                    onEditar={() => setEditando(novedad)}
-                    onFinalizar={() => setFinalizando(novedad)}
-                  />
-                ))}
-              </ItemGroup>
-            )}
-          </TabsContent>
-          <TabsContent value="historial" className="pt-2">
-            <HistorialNovedades />
-          </TabsContent>
         </Tabs>
+        <div className="pt-2">
+          {vista === "activas" ? (
+            <>
+              {!novedades.data ? (
+                <div className="flex flex-col gap-2">
+                  {Array.from({ length: 2 }).map((_, index) => (
+                    <Skeleton key={index} className="h-20 w-full" />
+                  ))}
+                </div>
+              ) : novedades.data.length === 0 ? (
+                <Empty className="border">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <MegaphoneIcon />
+                    </EmptyMedia>
+                    <EmptyTitle>Sin novedades activas</EmptyTitle>
+                    <EmptyDescription>Las novedades que publiques aparecen acá.</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <ItemGroup className="gap-2">
+                  {novedades.data.map((novedad) => (
+                    <NovedadItem
+                      key={novedad.id}
+                      novedad={novedad}
+                      puedeGestionar={puedePublicar}
+                      onEditar={() => setEditando(novedad)}
+                      onFinalizar={() => setFinalizando(novedad)}
+                    />
+                  ))}
+                </ItemGroup>
+              )}
+            </>
+          ) : (
+            <HistorialNovedades />
+          )}
+        </div>
       </CardContent>
       {publicando ? (
         <PublicarNovedadDialog open onOpenChange={(open) => !open && setPublicando(false)} />
