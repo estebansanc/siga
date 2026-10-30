@@ -1,5 +1,6 @@
 import {
   expect,
+  expectNoHorizontalPageScroll,
   loginViaUi,
   logoutViaUi,
   newUser,
@@ -50,6 +51,21 @@ test.describe("Flujo principal de SiGA", () => {
     await expect(historial.getByRole("row").nth(1)).toContainText("Abierta con novedades");
     await expect(historial.getByRole("row").nth(1)).toContainText("Paro de transporte");
     await expect(historial.getByRole("row").nth(1)).toContainText(seededUsers.bedel.name);
+
+    // Un solo aviso: el indicador con el motivo, sin banner, en una pantalla de clases y en otra que no lo es.
+    const indicador = page.getByRole("link", { name: /Abierta con novedades, Paro de transporte/ });
+    for (const ruta of ["/clases", "/novedades"]) {
+      await page.goto(ruta);
+      await expect(indicador).toBeVisible();
+      await expect(indicador).toContainText("Paro de transporte: las clases se dictan");
+      await expect(page.locator("[data-slot=alert]")).toHaveCount(0);
+    }
+    await page.setViewportSize({ width: 360, height: 740 });
+    await expect(indicador).toBeVisible();
+    await expect(indicador.getByText("Paro de transporte")).toBeHidden();
+    await expectNoHorizontalPageScroll(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/estado-institucional");
 
     // Se deja la institución como estaba para el resto de la suite.
     await page.getByLabel("Nuevo estado").selectOption("ABIERTA");

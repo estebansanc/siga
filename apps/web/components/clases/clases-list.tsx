@@ -1,7 +1,6 @@
 "use client";
 
-import type { ClaseDto, EstadoInstitucionalDto } from "@repo/api/client";
-import { Alert, AlertDescription, AlertTitle } from "@repo/ui/components/alert";
+import type { ClaseDto } from "@repo/api/client";
 import {
   Empty,
   EmptyContent,
@@ -12,7 +11,7 @@ import {
 } from "@repo/ui/components/empty";
 import { ItemGroup } from "@repo/ui/components/item";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { CalendarOffIcon, XIcon } from "lucide-react";
+import { CalendarOffIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { ClaseCard } from "./clase-card";
@@ -48,20 +47,6 @@ export function ClasesEmpty({
       </EmptyHeader>
       {children ? <EmptyContent>{children}</EmptyContent> : null}
     </Empty>
-  );
-}
-
-// Con la institución cerrada, el aviso va destacado antes del listado (RF-07).
-export function CierreBanner({ estado }: { estado: EstadoInstitucionalDto | undefined }) {
-  if (estado?.estado !== "CERRADA") return null;
-  return (
-    <Alert variant="destructive" className="border-red-600/40">
-      <XIcon />
-      <AlertTitle>Institución cerrada</AlertTitle>
-      <AlertDescription>
-        {estado.motivo ?? "Las clases del día quedan suspendidas."}
-      </AlertDescription>
-    </Alert>
   );
 }
 

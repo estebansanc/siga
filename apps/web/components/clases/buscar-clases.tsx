@@ -8,10 +8,9 @@ import { useState } from "react";
 
 import { useClases } from "@/hooks/use-clases";
 import { useCarreras, useComisiones, useMaterias } from "@/hooks/use-datos-academicos";
-import { useEstadoInstitucional } from "@/hooks/use-estado-institucional";
 import { formatFechaLarga } from "@/lib/dates";
 
-import { CierreBanner, ClasesEmpty, ClasesList } from "./clases-list";
+import { ClasesEmpty, ClasesList } from "./clases-list";
 
 const anios = ["1", "2", "3", "4", "5", "6"];
 
@@ -40,7 +39,6 @@ export function BuscarClases() {
     materiaId: filtros.materiaId,
   });
   const clases = useClases({ ambito: "todas", ...filtros });
-  const estado = useEstadoInstitucional();
 
   // Cambiar un filtro de arriba invalida los de abajo que dependen de él.
   const cambiar = (campo: keyof Filtros, value: string) =>
@@ -53,7 +51,6 @@ export function BuscarClases() {
 
   return (
     <div className="flex flex-col gap-4">
-      <CierreBanner estado={estado.data} />
       <FieldGroup className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Field>
           <FieldLabel htmlFor="filtro-fecha">Fecha</FieldLabel>

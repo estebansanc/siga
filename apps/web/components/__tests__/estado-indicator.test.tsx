@@ -47,4 +47,32 @@ describe("EstadoIndicator", () => {
     render(<EstadoIndicator />);
     expect(screen.getByText("Abierta con novedades").className).toContain("yellow");
   });
+
+  it("cerrada suma el motivo junto al badge y lo incluye en el nombre accesible", () => {
+    state.estado = { ...abierta, estado: "CERRADA", motivo: "Corte de energía" };
+    render(<EstadoIndicator />);
+    expect(screen.getByText("Corte de energía")).toBeInTheDocument();
+    expect(screen.getByText("Corte de energía").className).toContain("truncate");
+    expect(
+      screen.getByRole("link", {
+        name: "Institución cerrada, Corte de energía, actualizado 07:30",
+      }),
+    ).toHaveAttribute("href", "/estado-institucional");
+  });
+
+  it("abierta con novedades suma el motivo en amarillo", () => {
+    state.estado = { ...abierta, estado: "ABIERTA_CON_NOVEDADES", motivo: "Sin ascensor" };
+    render(<EstadoIndicator />);
+    expect(screen.getByText("Sin ascensor")).toBeInTheDocument();
+    expect(screen.getByText("Abierta con novedades").className).toContain("yellow");
+  });
+
+  it("abierta no muestra motivo", () => {
+    state.estado = { ...abierta, motivo: "Resto de un motivo anterior" };
+    render(<EstadoIndicator />);
+    expect(screen.queryByText("Resto de un motivo anterior")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Institución abierta, actualizado 07:30" }),
+    ).toBeVisible();
+  });
 });

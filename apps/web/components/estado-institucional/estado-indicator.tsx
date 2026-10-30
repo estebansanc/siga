@@ -45,21 +45,34 @@ export function EstadoInstitucionBadge({
   );
 }
 
+function nombreAccesible(estado: EstadoInstitucionalDto) {
+  const { label } = estadoInstitucionPresentacion[estado.estado];
+  const motivo = estado.estado === "ABIERTA" || !estado.motivo ? "" : `, ${estado.motivo}`;
+  return `${label}${motivo}, actualizado ${formatHora(estado.desde)}`;
+}
+
 // En todas las pantallas (RF-08): estado con color, icono y texto, y la hora de la última
-// actualización; tocarlo lleva al detalle. Se actualiza solo cada 30 s.
+// actualización, y desde 640 px el motivo si no está abierta; tocarlo lleva al detalle. Se actualiza solo cada 30 s.
 export function EstadoIndicator() {
   const estado = useEstadoInstitucional();
 
   if (!estado.data) return <Skeleton className="h-6 w-36" aria-label="Estado institucional" />;
 
+  const motivo = estado.data.estado === "ABIERTA" ? null : estado.data.motivo;
+
   return (
     <Link
       href="/estado-institucional"
       className="focus-visible:ring-ring pointer-coarse:min-h-11 flex min-w-0 items-center gap-2 rounded-full outline-none hover:opacity-80 focus-visible:ring-2"
-      aria-label={`${estadoInstitucionPresentacion[estado.data.estado].label}, actualizado ${formatHora(estado.data.desde)}`}
+      aria-label={nombreAccesible(estado.data)}
     >
       <EstadoInstitucionBadge estado={estado.data} />
-      <span className="text-muted-foreground hidden text-xs sm:inline">
+      {motivo ? (
+        <span className="text-muted-foreground hidden min-w-0 truncate text-xs sm:inline">
+          {motivo}
+        </span>
+      ) : null}
+      <span className="text-muted-foreground hidden shrink-0 text-xs sm:inline">
         Actualizado {formatHora(estado.data.desde)}
       </span>
     </Link>
