@@ -16,7 +16,7 @@ beforeAll(() => {
 });
 
 describe("Botones de solo ícono", () => {
-  it("el botón de Novedades y el del menú lateral tienen nombre accesible con su acción", () => {
+  it("el botón de Qué hay de nuevo y el del menú lateral tienen nombre accesible con su acción", () => {
     render(
       <SidebarProvider>
         <SidebarTrigger />
@@ -24,18 +24,18 @@ describe("Botones de solo ícono", () => {
       </SidebarProvider>,
     );
     expect(screen.getByRole("button", { name: "Alternar menú lateral" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Novedades" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Qué hay de nuevo" })).toBeInTheDocument();
   });
 });
 
 describe("Diálogos con teclado", () => {
-  it("Enter abre las Novedades, Escape las cierra y el foco vuelve al botón que las abrió", async () => {
+  it("Enter abre Qué hay de nuevo, Escape lo cierra y el foco vuelve al botón que lo abrió", async () => {
     render(<AppVersion />);
-    const abrir = screen.getByRole("button", { name: "Novedades" });
+    const abrir = screen.getByRole("button", { name: "Qué hay de nuevo" });
     abrir.focus();
 
     await userEvent.keyboard("{Enter}");
-    expect(await screen.findByRole("dialog", { name: "Novedades" })).toBeVisible();
+    expect(await screen.findByRole("dialog", { name: "Qué hay de nuevo" })).toBeVisible();
 
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
