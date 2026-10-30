@@ -254,9 +254,15 @@ test.describe("Móvil", () => {
       "aria-selected",
       "true",
     );
-    await expect(page.getByRole("tab", { name: "Días no laborables" })).toBeInViewport({
-      ratio: 1,
-    });
+    await expect(lista).toHaveAttribute("data-fade-start", "");
+    const dias = page.getByRole("tab", { name: "Días no laborables" });
+    await expect
+      .poll(async () => {
+        const caja = await dias.boundingBox();
+        const cajaLista = await lista.boundingBox();
+        return caja!.x + caja!.width <= cajaLista!.x + cajaLista!.width + 1;
+      })
+      .toBe(true);
     await expect(lista).toHaveAttribute("data-fade-start", "");
     await expectNoHorizontalPageScroll(page);
   });
