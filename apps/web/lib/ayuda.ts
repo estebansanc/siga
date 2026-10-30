@@ -290,11 +290,7 @@ const datosAcademicos: SeccionManual = {
 
 const configuracion: SeccionManual = {
   titulo: "Configuración",
-<<<<<<< HEAD
-  paraQueSirve: "Administra la organización: nombre, turnos, presencia del docente y versión.",
-=======
   paraQueSirve: "Administra la institución: nombre, turnos, presencia del docente y versión.",
->>>>>>> origin/develop
   comoSeLlega: menu("Configuración"),
   pasos: [
     'Editá el nombre de la institución y tocá "Guardar".',
