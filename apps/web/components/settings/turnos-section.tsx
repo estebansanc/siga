@@ -28,7 +28,7 @@ export function TurnosSection() {
       <CardHeader>
         <CardTitle>Turnos</CardTitle>
         <CardDescription>
-          Los rangos horarios de Mañana, Tarde y Noche. El QR de asistencia los usa para elegir las
+          Los rangos horarios de Mañana, Tarde y Noche. Asistencia docente los usa para elegir las
           clases de cada turno.
         </CardDescription>
       </CardHeader>

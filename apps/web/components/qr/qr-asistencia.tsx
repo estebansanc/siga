@@ -120,7 +120,7 @@ export function QrAsistencia() {
           <CardContent>
             <Button
               type="button"
-              className="w-full md:w-auto"
+              className="w-full md:w-auto md:self-start"
               onClick={() => setRegistroAbierto(true)}
             >
               Registrar asistencia manual

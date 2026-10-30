@@ -1,6 +1,6 @@
 import type { AulaGestionDto } from "@repo/api/client";
 import { fechaArgentina } from "@repo/domain";
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -55,6 +55,14 @@ describe("QrAsistencia", () => {
     vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-30T18:30:00Z") });
     renderWithProviders(<QrAsistencia />);
     expect(screen.getByLabelText("Turno")).toHaveValue("TARDE");
+  });
+
+  it("no pisa el turno elegido a mano al cambiar la fecha", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-30T18:30:00Z") });
+    renderWithProviders(<QrAsistencia />);
+    await userEvent.selectOptions(screen.getByLabelText("Turno"), "NOCHE");
+    fireEvent.change(screen.getByLabelText("Fecha"), { target: { value: "2026-11-02" } });
+    expect(screen.getByLabelText("Turno")).toHaveValue("NOCHE");
   });
 
   it("muestra las dos tarjetas con su descripción y botón principal", () => {

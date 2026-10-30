@@ -14,6 +14,29 @@ const proximaClaseEnAula12 = () => {
 };
 
 test.describe("Asistencia docente", () => {
+  test("en escritorio las tarjetas van lado a lado con el mismo botón principal", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "El apilado en celular se prueba en mobile.spec.ts");
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/qr");
+    const tarjetaGenerar = page
+      .locator('[data-slot="card"]')
+      .filter({ hasText: "Cada código vale" });
+    const tarjetaManual = page
+      .locator('[data-slot="card"]')
+      .filter({ hasText: "no puede escanear" });
+    const generar = await tarjetaGenerar.boundingBox();
+    const manual = await tarjetaManual.boundingBox();
+    expect(manual!.y).toBe(generar!.y);
+    expect(manual!.x).toBeGreaterThan(generar!.x + generar!.width - 1);
+
+    const clases = async (nombre: string) =>
+      page.getByRole("button", { name: nombre, exact: true }).getAttribute("class");
+    expect(await clases("Registrar asistencia manual")).toBe(await clases("Generar QR"));
+  });
+
   test("Turno arranca en el actual según la hora de Argentina y las dos tarjetas conviven", async ({
     page,
   }) => {
@@ -21,6 +44,7 @@ test.describe("Asistencia docente", () => {
     await page.clock.setFixedTime(new Date("2026-10-30T18:30:00Z"));
     await page.goto("/qr");
     await expect(page.getByRole("heading", { name: "Asistencia docente" })).toBeVisible();
+    await expect(page).toHaveTitle(/^Asistencia docente/);
     await expect(page.getByLabel("Turno")).toHaveValue("TARDE");
     await expect(page.getByText("Generar QR", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Registro manual", { exact: true })).toBeVisible();

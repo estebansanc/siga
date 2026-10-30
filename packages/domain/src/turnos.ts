@@ -48,8 +48,7 @@ export const rangoDeTurno = (turnos: Turnos, turno: Turno, fecha: string) => ({
   hasta: instanteArgentino(fecha, turnos[turno].fin),
 });
 
-// Franja que contiene la hora (inicio incluido, fin excluido); en un hueco o antes del primero,
-// el siguiente; después del último, el último.
+// Pasado el último turno se devuelve el último: explica "El turno ya terminó" en vez de dejar vacío.
 export const turnoActual = (turnos: Turnos, hora: string): Turno =>
   turnosEnOrden.find((turno) => hora < turnos[turno].fin) ??
   turnosEnOrden[turnosEnOrden.length - 1]!;
