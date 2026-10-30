@@ -231,15 +231,17 @@ export const crearNovedadesDeHistorial = async () => {
     estado: "ACTIVA" | "FINALIZADA",
     conClase = true,
   ) => {
-    const minuto = 10 + Math.floor(Math.random() * 40);
+    const inicio = new Date(
+      instanteArgentino(fecha, "03:00").getTime() + Math.floor(Math.random() * 7200) * 1000,
+    );
     const clase = conClase
       ? await prisma.claseProgramada.create({
           data: {
             organizationId: comision.organizationId,
             comisionId,
             fecha: toDateColumn(fecha),
-            inicio: instanteArgentino(fecha, `04:${minuto}`),
-            fin: instanteArgentino(fecha, `05:${minuto}`),
+            inicio,
+            fin: new Date(inicio.getTime() + 3_600_000),
           },
         })
       : null;
@@ -258,13 +260,13 @@ export const crearNovedadesDeHistorial = async () => {
     });
   };
 
-  await nueva(comision.id, docente.id, "Activa propia", "ACTIVA");
-  await nueva(comision.id, docente.id, "Finalizada propia", "FINALIZADA");
-  await nueva(ajena.id, bedel.id, "Activa ajena", "ACTIVA");
-  await nueva(ajena.id, bedel.id, "Finalizada ajena", "FINALIZADA");
   for (let numero = 1; numero <= 21; numero++) {
     await nueva(comision.id, docente.id, `Masiva ${numero}`, "FINALIZADA", false);
   }
+  await nueva(comision.id, docente.id, "Finalizada propia", "FINALIZADA");
+  await nueva(ajena.id, bedel.id, "Finalizada ajena", "FINALIZADA");
+  await nueva(ajena.id, bedel.id, "Activa ajena", "ACTIVA");
+  await nueva(comision.id, docente.id, "Activa propia", "ACTIVA");
 
   const limpiar = async () => {
     const novedades = await prisma.novedad.findMany({

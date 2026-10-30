@@ -1,10 +1,5 @@
 import { crearClaseSinAulaProxima, eliminarClaseSinAula } from "./support/clase-de-hoy";
-import {
-  expect,
-  loginViaUi,
-  seededUsers,
-  test,
-} from "./support/fixtures";
+import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
 
 const fechaArgentina = (instante: Date) =>
   new Date(instante.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
