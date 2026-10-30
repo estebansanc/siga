@@ -1,3 +1,4 @@
+import { crearClaseDeHoyConAula, eliminarClaseConAula } from "./support/clase-de-hoy";
 import { publicarPolitica, retirarPolitica, verificarCorreo } from "./support/db";
 import {
   expect,
@@ -220,6 +221,41 @@ test.describe("Móvil", () => {
 
       await page.getByRole("tab", { name: "Guía rápida" }).tap();
       await expect(page.getByRole("tab", { name: "Guía rápida", selected: true })).toBeVisible();
+    });
+  });
+
+  test.describe("Tarjeta de clase del Docente a 360 px", () => {
+    test.use({ viewport: { width: 360, height: 740 }, hasTouch: true });
+
+    test("muestra ⋯ sin botones de texto, sin scroll a lo ancho, y el menú deja publicar con ítems de 44 px", async ({
+      page,
+    }) => {
+      const { aulaId, claseId } = await crearClaseDeHoyConAula(new Date(Date.now() - 5 * 60_000));
+      try {
+        await loginViaUi(page, seededUsers.docente);
+        await page.goto("/");
+        const tarjeta = page.locator(`[data-clase-id="${claseId}"]`);
+        await expect(tarjeta.getByRole("button", { name: /^Acciones de/ })).toBeVisible();
+        await expect(tarjeta.getByRole("button", { name: /^(Incidencia|Novedad)$/ })).toHaveCount(
+          0,
+        );
+        await expectNoHorizontalPageScroll(page);
+
+        await tarjeta.getByRole("button", { name: /^Acciones de/ }).tap();
+        const reportar = page.getByRole("menuitem", { name: "Reportar incidencia" });
+        const publicar = page.getByRole("menuitem", { name: "Publicar novedad" });
+        for (const item of [reportar, publicar]) {
+          await expect(item).toBeEnabled();
+          await expect
+            .poll(async () => (await item.boundingBox())?.height ?? 0)
+            .toBeGreaterThanOrEqual(43.5);
+        }
+        await publicar.tap();
+        await expect(page.getByRole("dialog", { name: "Publicar novedad" })).toBeVisible();
+        await expectNoHorizontalPageScroll(page);
+      } finally {
+        await eliminarClaseConAula(claseId, aulaId);
+      }
     });
   });
 });

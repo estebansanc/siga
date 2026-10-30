@@ -185,7 +185,9 @@ test.describe("Incidencias de aulas", () => {
       await page.getByRole("menuitem", { name: "Publicar novedad" }).click();
       const dialog = page.getByRole("dialog", { name: "Publicar novedad" });
       await expect(page.getByRole("dialog")).toHaveCount(1);
-      await expect(dialog.getByRole("checkbox", { name: /Proyecto Final · 5K2/ })).toBeChecked();
+      await expect(
+        dialog.getByRole("checkbox", { name: /Proyecto Final · 5K2/, checked: true }),
+      ).toHaveCount(1);
       await dialog.getByRole("button", { name: "Demora" }).click();
       await dialog.getByLabel("Minutos estimados de demora").fill("10");
       await dialog.getByRole("button", { name: "Publicar" }).click();
