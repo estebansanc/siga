@@ -28,7 +28,7 @@ describe("ayuda", () => {
     for (const role of roles) {
       const titulos = manualFor(perfil, role).map((seccion) => seccion.titulo);
       for (const item of navigationItemsFor(perfil, role)) expect(titulos).toContain(item.title);
-      expect(titulos).toEqual(expect.arrayContaining(["Mi perfil", "Cerrar sesión"]));
+      expect(titulos).toEqual(expect.arrayContaining(["Mi cuenta", "Cerrar sesión"]));
     }
   });
 

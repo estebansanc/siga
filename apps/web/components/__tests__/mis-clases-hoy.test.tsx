@@ -95,7 +95,7 @@ describe("MisClasesHoy", () => {
     expect(screen.getByText("Todavía no seguís ninguna comisión")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Elegir comisiones" })).toHaveAttribute(
       "href",
-      "/preferencias",
+      "/mi-cuenta/comisiones",
     );
   });
 

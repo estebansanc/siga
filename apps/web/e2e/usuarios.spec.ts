@@ -152,7 +152,7 @@ test.describe("Usuarios", () => {
     await paginaDocente.getByRole("button", { name: /Definir contraseña/ }).click();
     await aceptarPoliticaViaUi(paginaDocente);
 
-    await paginaDocente.goto("/mi-perfil");
+    await paginaDocente.goto("/mi-cuenta");
     await paginaDocente.getByLabel("Apellido y nombre").fill(`${docente.nombre} Editado`);
     await paginaDocente.getByLabel("Legajo").fill("L-BAJA");
     await paginaDocente.getByRole("button", { name: "Guardar" }).click();
@@ -185,7 +185,7 @@ test.describe("Usuarios", () => {
 
     await accionDeFila(page, `${docente.nombre} Editado`, "Reactivar");
     await expect(fila(page, docente.correo)).not.toContainText("Desactivado");
-    await paginaDocente.goto("/mi-perfil");
+    await paginaDocente.goto("/mi-cuenta");
     await expect(
       paginaDocente.getByRole("button", { name: "Solicitar baja de mi cuenta" }),
     ).toBeVisible();

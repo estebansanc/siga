@@ -51,9 +51,9 @@ test.describe("Tipografía", () => {
     expect(await fontFamilyOf(page, '[data-slot="dialog-title"]')).toBe(referenceFont);
     await page.keyboard.press("Escape");
 
-    await page.goto("/mi-perfil");
+    await page.goto("/mi-cuenta");
     expect(await bodyFontFamily(page)).toBe(referenceFont);
-    expect(await fontFamilyOf(page, 'h1:has-text("Mi perfil")')).toBe(referenceFont);
+    expect(await fontFamilyOf(page, 'h1:has-text("Mi cuenta")')).toBe(referenceFont);
   });
 
   test("la tipografía se mantiene en tema oscuro", async ({ authenticatedPage: page }) => {

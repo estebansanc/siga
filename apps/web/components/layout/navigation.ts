@@ -14,7 +14,6 @@ import {
   MegaphoneIcon,
   QrCodeIcon,
   Settings2Icon,
-  SlidersHorizontalIcon,
   TriangleAlertIcon,
   UsersIcon,
   type LucideIcon,
@@ -98,7 +97,6 @@ const navigationByPerfil: Record<
       misClases,
       clases,
       avisos,
-      { title: "Preferencias", href: "/preferencias", icon: SlidersHorizontalIcon },
       ...configuracionItems,
     ]),
   DOCENTE: (configuracionItems) =>

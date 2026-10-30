@@ -14,6 +14,7 @@ const openRoutes = ["/~offline", "/recuperar-contrasena", "/definir-contrasena"]
 const protectedRoutes = [
   "/",
   "/configuracion",
+  "/mi-cuenta",
   "/mi-perfil",
   "/clases",
   "/novedades",

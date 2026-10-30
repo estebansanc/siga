@@ -77,4 +77,19 @@ describe("opciones de correo", () => {
       notificarAvisosPorCorreo: true,
     });
   });
+
+  it("guardar solo opciones no toca las comisiones y al revés", async () => {
+    const auth = authOf(institution, estudiante);
+    await actualizarPreferencias(auth, { comisionIds: [fixture.comisionId] });
+    expect(
+      await actualizarPreferencias(auth, { notificarNovedadesPorCorreo: true }),
+    ).toMatchObject({
+      comisiones: [expect.objectContaining({ id: fixture.comisionId })],
+      notificarNovedadesPorCorreo: true,
+    });
+    expect(await actualizarPreferencias(auth, { comisionIds: [] })).toMatchObject({
+      comisiones: [],
+      notificarNovedadesPorCorreo: true,
+    });
+  });
 });

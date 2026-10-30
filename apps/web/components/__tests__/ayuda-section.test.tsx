@@ -29,6 +29,6 @@ describe("AyudaSection", () => {
     renderWithProviders(<AyudaSection perfil="ESTUDIANTE" role="member" />);
     await user.click(screen.getByRole("tab", { name: "Manual de usuario" }));
     expect(screen.queryByRole("button", { name: "Configuración" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Preferencias" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Comisiones" })).toBeInTheDocument();
   });
 });

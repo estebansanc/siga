@@ -102,7 +102,7 @@ En el MVP hay una sola institución, UTN FRT, precargada al instalar el sistema.
 - Inicio de sesión. Registro de estudiante. Olvidé mi contraseña. Definir contraseña (activación y restablecimiento).
 - Usuarios (Bedel, Autoridad): listado, alta, edición, desactivación, asignación de perfil y de comisiones a docentes.
 - Datos académicos (Bedel): carreras, materias, comisiones, horarios, días no laborables, generación de clases del período.
-- Mi perfil (todos): ver y corregir datos propios, solicitar baja.
+- Mi cuenta (todos), con pestañas Perfil (ver y corregir datos propios, solicitar baja), Comisiones (solo Estudiante) y Notificaciones (el Estudiante elige sus correos; los demás reciben siempre los avisos que los alcanzan).
 
 ## Fuera de alcance
 

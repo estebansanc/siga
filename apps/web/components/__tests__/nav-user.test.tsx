@@ -27,14 +27,14 @@ const renderNavUser = () =>
   );
 
 describe("NavUser", () => {
-  it("muestra nombre y email y ofrece Mi perfil", async () => {
+  it("muestra nombre y email y ofrece Mi cuenta", async () => {
     renderNavUser();
     expect(screen.getByTestId("user-menu-trigger")).toHaveTextContent("Ana Uno");
     expect(screen.getByTestId("user-menu-trigger")).toHaveTextContent("uno@example.com");
     await userEvent.click(screen.getByTestId("user-menu-trigger"));
-    expect(await screen.findByRole("menuitem", { name: "Mi perfil" })).toHaveAttribute(
+    expect(await screen.findByRole("menuitem", { name: "Mi cuenta" })).toHaveAttribute(
       "href",
-      "/mi-perfil",
+      "/mi-cuenta",
     );
   });
 

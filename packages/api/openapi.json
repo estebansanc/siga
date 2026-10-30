@@ -7408,10 +7408,7 @@
                   "notificarAvisosPorCorreo": {
                     "type": "boolean"
                   }
-                },
-                "required": [
-                  "comisionIds"
-                ]
+                }
               }
             }
           }

@@ -126,15 +126,11 @@ describe("AppSidebar", () => {
     );
   });
 
-  it("el estudiante ve Mis clases, Clases, Avisos y Preferencias, sin Configuración", () => {
+  it("el estudiante ve Mis clases, Clases, Avisos, sin Preferencias ni Configuración", () => {
     renderSidebar("member", meOf([ownOrganization], "ESTUDIANTE"));
-    expect(linkNames()).toEqual(["Mis clases", "Clases", "Avisos", "Preferencias", "Ayuda"]);
+    expect(linkNames()).toEqual(["Mis clases", "Clases", "Avisos", "Ayuda"]);
     expect(screen.getByRole("link", { name: "Mis clases" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "Mis clases" })).toHaveAttribute("data-active");
-    expect(screen.getByRole("link", { name: "Preferencias" })).toHaveAttribute(
-      "href",
-      "/preferencias",
-    );
   });
 
   it("el menú plano de Estudiante y Docente no lleva títulos de sección", () => {
