@@ -10,7 +10,8 @@ export const metadata: Metadata = { title: "Mis solicitudes" };
 
 export default async function MisSolicitudesPage() {
   const session = await requireSession();
-  if (session.perfil !== "DOCENTE" && session.perfil !== "BEDEL") redirect("/");
+  if (session.perfil === "BEDEL") redirect("/solicitudes");
+  if (session.perfil !== "DOCENTE") redirect("/");
 
   return (
     <>

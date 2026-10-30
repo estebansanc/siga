@@ -8,7 +8,7 @@ import type {
   SolicitudAulaDto,
 } from "@repo/api/client";
 import type {
-  BuscarAulaSolicitud,
+  BusquedaAulaPedido,
   CrearSolicitudAulaInput,
   EstadoSolicitudAula,
 } from "@repo/domain";
@@ -28,7 +28,7 @@ export const useClasesSolicitables = (fecha: string) =>
     ...realtimeQueryOptions,
   });
 
-export const useBuscarAulas = (pedido: BuscarAulaSolicitud | null) =>
+export const useBuscarAulas = (pedido: BusquedaAulaPedido | null) =>
   useQuery({
     queryKey: queryKeys.busquedaAulas(pedido ?? {}),
     queryFn: () =>
@@ -37,7 +37,7 @@ export const useBuscarAulas = (pedido: BuscarAulaSolicitud | null) =>
             api["solicitudes-aula"].aulas.$get({
               query: {
                 claseId: pedido.claseId,
-                alumnos: String(pedido.alumnos),
+                alumnos: pedido.alumnos === undefined ? "" : String(pedido.alumnos),
                 recursos: pedido.recursos.join(","),
               },
             }),

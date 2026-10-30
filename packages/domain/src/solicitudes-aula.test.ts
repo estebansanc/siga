@@ -83,3 +83,11 @@ describe("rechazarSolicitudAulaSchema", () => {
     expect(rechazarSolicitudAulaSchema.safeParse({ motivo: "x".repeat(281) }).success).toBe(false);
   });
 });
+
+describe("criteriosQueFallan sin cantidad de alumnos", () => {
+  it("solo evalúa los recursos", () => {
+    const aula = { capacidad: 10, equipamiento: ["Pizarra"] };
+    expect(criteriosQueFallan(aula, { recursos: ["Pizarra"] })).toEqual([]);
+    expect(criteriosQueFallan(aula, { recursos: ["Proyector"] })).toEqual(["Sin proyector"]);
+  });
+});

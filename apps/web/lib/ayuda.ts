@@ -211,8 +211,13 @@ const solicitudes: SeccionManual = {
   pasos: [
     "Elegí una solicitud pendiente.",
     'Tocá "Aprobar" y asigná el aula, o "Rechazar" e indicá el motivo.',
+    'En "Clases sin aula" tocá "Asignar aula"; si querés, completá "Cantidad de alumnos" y marcá "Recursos", elegí un aula y tocá "Asignar".',
   ],
-  mensajes: ["No hay aulas libres en esa franja."],
+  mensajes: [
+    "No hay aulas libres en esa franja.",
+    "Ninguna aula cumple todos los criterios: se listan hasta 5 aulas libres con lo que les falta.",
+    "El aula ya está asignada en esa franja: elegí otra.",
+  ],
 };
 
 const incidencias: SeccionManual = {
