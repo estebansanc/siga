@@ -1,7 +1,12 @@
 "use client";
 
 import type { PlanoAulaDto } from "@repo/api/client";
-import { compararPisos, type Perfil } from "@repo/domain";
+import {
+  compararPisos,
+  contarEstadosDelPiso,
+  describirConteoPiso,
+  type Perfil,
+} from "@repo/domain";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
@@ -29,14 +34,7 @@ import { usePlanoAulas } from "@/hooks/use-aulas";
 import { PlanoAulaDialog } from "./plano-aula-dialog";
 import { PlanoEstadoBadge, planoEstadoPresentacion } from "./plano-estado-badge";
 
-const primeraSeleccion = (aulas: PlanoAulaDto[]) => {
-  const edificio = aulas.map((aula) => aula.edificio).sort((a, b) => a.localeCompare(b, "es"))[0];
-  const piso = aulas
-    .filter((aula) => aula.edificio === edificio)
-    .map((aula) => aula.piso)
-    .sort(compararPisos)[0];
-  return edificio && piso ? { edificio, piso } : undefined;
-};
+const porNombre = (a: string, b: string) => a.localeCompare(b, "es");
 
 const unicos = (valores: string[]) => [...new Set(valores)];
 
@@ -87,9 +85,35 @@ function AulaCelda({ aula, onClick }: { aula: PlanoAulaDto; onClick: () => void 
   );
 }
 
-// Plano de aulas (RF-02, RF-07): grilla provisoria por código hasta tener los planos de cada
-// piso. Se actualiza por consulta periódica de 30 s. La elección inicial queda fijada con los
-// primeros datos: si el piso se vacía no salta a otro.
+function PisoSeccion({
+  piso,
+  aulas,
+  onAbrirAula,
+}: {
+  piso: string;
+  aulas: PlanoAulaDto[];
+  onAbrirAula: (aulaId: string) => void;
+}) {
+  const conteo = describirConteoPiso(contarEstadosDelPiso(aulas.map((aula) => aula.estado)));
+  return (
+    <section aria-label={piso} className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h3 className="font-heading text-base font-semibold">{piso}</h3>
+        <p className="text-muted-foreground text-sm">{conteo}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {aulas.map((aula) => (
+          <AulaCelda key={aula.id} aula={aula} onClick={() => onAbrirAula(aula.id)} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// Plano de aulas (RF-02, RF-07): todos los pisos del edificio apilados, cada uno con su conteo
+// y una grilla provisoria por código hasta tener los planos de cada piso. Se actualiza por
+// consulta periódica de 30 s. El edificio inicial queda fijado con los primeros datos: si se
+// queda sin aulas no salta a otro.
 export function PlanoAulas({
   perfil,
   onAbrirAula,
@@ -98,37 +122,21 @@ export function PlanoAulas({
   onAbrirAula?: (aulaId: string) => void;
 }) {
   const plano = usePlanoAulas();
-  const [seleccion, setSeleccion] = useState<{ edificio: string; piso: string }>();
+  const [edificioElegido, setEdificioElegido] = useState<string>();
   const [aulaId, setAulaId] = useState<string | null>(null);
 
   const aulas = plano.data;
-  const primera = aulas ? primeraSeleccion(aulas) : undefined;
-  if (!seleccion && primera) setSeleccion(primera);
+  const edificiosConAulas = aulas ? unicos(aulas.map((aula) => aula.edificio)).sort(porNombre) : [];
+  const primero = edificiosConAulas[0];
+  if (!edificioElegido && primero) setEdificioElegido(primero);
 
-  const edificios = aulas
-    ? unicos([
-        ...aulas.map((aula) => aula.edificio),
-        ...(seleccion ? [seleccion.edificio] : []),
-      ]).sort((a, b) => a.localeCompare(b, "es"))
-    : [];
-  const edificio = seleccion?.edificio;
-  const deEdificio = aulas?.filter((aula) => aula.edificio === edificio) ?? [];
-  const pisos = unicos([
-    ...deEdificio.map((aula) => aula.piso),
-    ...(seleccion ? [seleccion.piso] : []),
-  ]).sort(compararPisos);
-  const piso = seleccion?.piso;
-  const delPiso = deEdificio.filter((aula) => aula.piso === piso);
+  const edificios = edificioElegido
+    ? unicos([...edificiosConAulas, edificioElegido]).sort(porNombre)
+    : edificiosConAulas;
+  const deEdificio = aulas?.filter((aula) => aula.edificio === edificioElegido) ?? [];
+  const pisos = unicos(deEdificio.map((aula) => aula.piso)).sort(compararPisos);
   const aulaAbierta = onAbrirAula ? undefined : aulas?.find((aula) => aula.id === aulaId);
-
-  const elegirEdificio = (valor: string) => {
-    const pisoMasBajo = aulas
-      ?.filter((aula) => aula.edificio === valor)
-      .map((aula) => aula.piso)
-      .sort(compararPisos)[0];
-    if (pisoMasBajo) setSeleccion({ edificio: valor, piso: pisoMasBajo });
-  };
-  const elegirPiso = (valor: string) => seleccion && setSeleccion({ ...seleccion, piso: valor });
+  const abrirAula = onAbrirAula ?? setAulaId;
 
   return (
     <Card>
@@ -153,32 +161,32 @@ export function PlanoAulas({
           </Empty>
         ) : (
           <>
-            <Selector
-              etiqueta="Edificio"
-              opciones={edificios}
-              valor={edificio}
-              onChange={elegirEdificio}
-            />
-            <Selector etiqueta="Piso" opciones={pisos} valor={piso} onChange={elegirPiso} />
-            {delPiso.length === 0 ? (
+            {edificios.length > 1 ? (
+              <Selector
+                etiqueta="Edificio"
+                opciones={edificios}
+                valor={edificioElegido}
+                onChange={setEdificioElegido}
+              />
+            ) : null}
+            {pisos.length === 0 ? (
               <Empty className="border">
                 <EmptyHeader>
                   <EmptyMedia variant="icon">
                     <DoorOpenIcon />
                   </EmptyMedia>
-                  <EmptyTitle>No hay aulas activas en este piso</EmptyTitle>
+                  <EmptyTitle>No hay aulas activas en este edificio</EmptyTitle>
                 </EmptyHeader>
               </Empty>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {delPiso.map((aula) => (
-                  <AulaCelda
-                    key={aula.id}
-                    aula={aula}
-                    onClick={() => (onAbrirAula ? onAbrirAula(aula.id) : setAulaId(aula.id))}
-                  />
-                ))}
-              </div>
+              pisos.map((piso) => (
+                <PisoSeccion
+                  key={piso}
+                  piso={piso}
+                  aulas={deEdificio.filter((aula) => aula.piso === piso)}
+                  onAbrirAula={abrirAula}
+                />
+              ))
             )}
           </>
         )}
