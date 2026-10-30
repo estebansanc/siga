@@ -243,7 +243,10 @@ const usuarios: SeccionManual = {
     'Tocá "Nuevo usuario" para dar de alta una cuenta.',
     'En "Acciones de" cada usuario elegí "Reenviar enlace de activación", "Reactivar" o "Desactivar".',
   ],
-  mensajes: ["Tu propia cuenta no puede desactivarse."],
+  mensajes: [
+    'La cuenta del Administrador de la institución lleva el distintivo "Administrador" y no puede desactivarse.',
+    "Tu propia cuenta no puede desactivarse.",
+  ],
 };
 
 const datosAcademicos: SeccionManual = {
@@ -260,14 +263,16 @@ const datosAcademicos: SeccionManual = {
 const configuracion: SeccionManual = {
   titulo: "Configuración",
   paraQueSirve:
-    "Administra la organización: nombre, miembros, turnos, presencia del docente y versión.",
+    "Administra la organización: nombre, turnos, presencia del docente y versión.",
   comoSeLlega: menu("Configuración"),
   pasos: [
     'Editá el nombre de la organización y tocá "Guardar".',
     'Ajustá "Turnos" y "Presencia del docente" y guardá con "Guardar turnos" o "Guardar presencia".',
-    'Quitá miembros con "Quitar de la organización".',
   ],
-  mensajes: ["Solo el Administrador de la organización ve esta sección."],
+  mensajes: [
+    "Solo el Administrador de la organización ve esta sección.",
+    "Las personas se gestionan en Usuarios.",
+  ],
 };
 
 const miPerfil: SeccionManual = {

@@ -46,6 +46,14 @@ describe("ayuda", () => {
     },
   );
 
+  it("el manual separa Configuración de la gestión de personas", () => {
+    const manual = manualFor("BEDEL", "owner");
+    const texto = (titulo: string) =>
+      JSON.stringify(manual.find((seccion) => seccion.titulo === titulo)).toLowerCase();
+    expect(texto("Configuración")).not.toContain("miembros");
+    expect(texto("Usuarios")).toContain("administrador");
+  });
+
   it("la guía de cada perfil tiene exactamente las tareas del ticket", () => {
     const titulos = (perfil: Perfil) => ayudaPorPerfil[perfil].guia.map((tarea) => tarea.titulo);
     expect(titulos("ESTUDIANTE")).toEqual([

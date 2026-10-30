@@ -50,6 +50,7 @@ const usuario = (cambios: Partial<UsuarioDto>): UsuarioDto => ({
   estado: "ACTIVO",
   comisiones: [],
   esPropio: false,
+  esAdministrador: false,
   bajaSolicitada: null,
   ...cambios,
 });
@@ -158,6 +159,22 @@ describe("UsuariosSection", () => {
     const dialog = await screen.findByRole("dialog", { name: "Editar Bea Bedel" });
     expect(within(dialog).getByLabelText("Perfil")).toBeDisabled();
     expect(within(dialog).getByLabelText("Correo")).toBeDisabled();
+  });
+
+  it("marca solo al Administrador y no le ofrece Desactivar", async () => {
+    const admin = usuario({
+      id: "adm",
+      nombre: "Ada Admin",
+      correo: "ada@example.com",
+      perfil: "AUTORIDAD",
+      esAdministrador: true,
+    });
+    state.usuarios = [admin, pendiente];
+    renderWithProviders(<UsuariosSection />);
+    expect(await screen.findAllByText("Administrador")).toHaveLength(1);
+    await abrirAcciones("Ada Admin");
+    expect(screen.getByRole("menuitem", { name: "Editar" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Desactivar" })).not.toBeInTheDocument();
   });
 
   it("desactiva con confirmación y reactiva sin ella", async () => {

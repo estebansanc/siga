@@ -847,6 +847,9 @@ export const usuarioSchema = z
       .array(z.object({ id: z.string(), codigo: z.string(), materia: z.string() }))
       .openapi({ description: "Comisiones que dicta (solo Docente)" }),
     esPropio: z.boolean().openapi({ description: "Es la cuenta de quien consulta" }),
+    esAdministrador: z
+      .boolean()
+      .openapi({ description: "Es el Administrador de la institución; no se puede desactivar" }),
     bajaSolicitada: z
       .object({ solicitadaEn: z.iso.datetime(), motivo: z.string().nullable() })
       .nullable()

@@ -41,6 +41,24 @@ const completarAlta = async (
 test.describe("Usuarios", () => {
   test.afterEach(() => borrarClaseDeAsistencia());
 
+  for (const perfil of ["bedel", "autoridad"] as const) {
+    test(`${perfil}: el Administrador lleva el distintivo y no se puede desactivar`, async ({
+      page,
+    }) => {
+      await loginViaUi(page, seededUsers[perfil]);
+      await page.goto("/usuarios");
+      await expect(page.getByRole("row").filter({ hasText: "Administrador" })).toHaveCount(1);
+      const admin = fila(page, seededUsers.bedel.email);
+      await expect(admin).toContainText("Administrador");
+      await expectNoHorizontalPageScroll(page);
+      if (perfil === "autoridad") {
+        await admin.getByRole("button", { name: /^Acciones de/ }).click();
+        await expect(page.getByRole("menuitem", { name: "Editar" })).toBeVisible();
+        await expect(page.getByRole("menuitem", { name: "Desactivar" })).toHaveCount(0);
+      }
+    });
+  }
+
   test("el bedel da de alta a un docente, que activa su cuenta; luego lo desactiva y lo reactiva", async ({
     page,
     browser,

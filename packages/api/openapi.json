@@ -437,6 +437,10 @@
             "type": "boolean",
             "description": "Es la cuenta de quien consulta"
           },
+          "esAdministrador": {
+            "type": "boolean",
+            "description": "Es el Administrador de la institución; no se puede desactivar"
+          },
           "bajaSolicitada": {
             "type": [
               "object",
@@ -471,6 +475,7 @@
           "estado",
           "comisiones",
           "esPropio",
+          "esAdministrador",
           "bajaSolicitada"
         ]
       },

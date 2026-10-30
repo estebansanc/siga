@@ -87,7 +87,7 @@ function AccionesUsuario({
         {usuario.estado === "DESACTIVADO" ? (
           <DropdownMenuItem onClick={onReactivar}>Reactivar</DropdownMenuItem>
         ) : null}
-        {usuario.estado !== "DESACTIVADO" && !usuario.esPropio ? (
+        {usuario.estado !== "DESACTIVADO" && !usuario.esPropio && !usuario.esAdministrador ? (
           <DropdownMenuItem variant="destructive" onClick={onDesactivar}>
             Desactivar
           </DropdownMenuItem>
@@ -109,6 +109,11 @@ function FilaUsuario({
       <TableCell className="max-w-48 whitespace-normal">
         <div className="font-medium">
           {usuario.nombre}
+          {usuario.esAdministrador ? (
+            <Badge variant="secondary" className="ml-2 align-middle">
+              Administrador
+            </Badge>
+          ) : null}
           {usuario.esPropio ? (
             <span className="text-muted-foreground text-xs font-normal"> (vos)</span>
           ) : null}

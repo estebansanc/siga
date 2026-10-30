@@ -36,6 +36,7 @@ const usuarioSelect = {
       name: true,
       email: true,
       emailVerified: true,
+      members: { select: { organizationId: true, role: true } },
       comisionesDictadas: {
         select: {
           comision: { select: { id: true, codigo: true, materia: { select: { nombre: true } } } },
@@ -56,7 +57,16 @@ const bajaSolicitadaDe = (perfil: UsuarioConDatos): UsuarioDto["bajaSolicitada"]
     : null;
 };
 
-const toUsuarioDto = (perfil: UsuarioConDatos, solicitanteId: string): UsuarioDto => ({
+const esAdministrador = (perfil: UsuarioConDatos, organizationId: string) =>
+  perfil.user.members.some(
+    (membresia) => membresia.organizationId === organizationId && membresia.role === "owner",
+  );
+
+const toUsuarioDto = (
+  perfil: UsuarioConDatos,
+  solicitanteId: string,
+  organizationId: string,
+): UsuarioDto => ({
   id: perfil.userId,
   nombre: perfil.user.name,
   correo: perfil.user.email,
@@ -72,6 +82,7 @@ const toUsuarioDto = (perfil: UsuarioConDatos, solicitanteId: string): UsuarioDt
     }))
     .sort((a, b) => a.materia.localeCompare(b.materia) || a.codigo.localeCompare(b.codigo)),
   esPropio: perfil.userId === solicitanteId,
+  esAdministrador: esAdministrador(perfil, organizationId),
   bajaSolicitada: bajaSolicitadaDe(perfil),
 });
 
@@ -108,7 +119,7 @@ export const listarUsuarios = async (
     select: usuarioSelect,
     orderBy: { user: { name: "asc" } },
   });
-  return perfiles.map((perfil) => toUsuarioDto(perfil, auth.userId));
+  return perfiles.map((perfil) => toUsuarioDto(perfil, auth.userId, organizationId));
 };
 
 export const assertDatosLibres = async (
@@ -209,7 +220,7 @@ export const crearUsuario = async (auth: AuthContext, input: CrearUsuario): Prom
       after: { perfil: input.perfil, dni: input.dni, legajo: input.legajo ?? null, comisionIds },
     },
   });
-  return toUsuarioDto(await buscarUsuario(organizationId, userId), auth.userId);
+  return toUsuarioDto(await buscarUsuario(organizationId, userId), auth.userId, organizationId);
 };
 
 export const actualizarUsuario = async (
@@ -256,13 +267,16 @@ export const actualizarUsuario = async (
       });
     });
   }
-  return toUsuarioDto(await buscarUsuario(organizationId, id), auth.userId);
+  return toUsuarioDto(await buscarUsuario(organizationId, id), auth.userId, organizationId);
 };
 
 const cambiarActivo = async (auth: AuthContext, id: string, activo: boolean) => {
   const organizationId = await gestor(auth);
   const actual = await buscarUsuario(organizationId, id);
   if (!activo && id === auth.userId) throw unprocessable("No podés desactivar tu propia cuenta");
+  if (!activo && esAdministrador(actual, organizationId)) {
+    throw unprocessable("No se puede desactivar al Administrador de la institución");
+  }
   if (actual.activo === activo) {
     throw fieldConflict(
       "estado",
@@ -275,7 +289,7 @@ const cambiarActivo = async (auth: AuthContext, id: string, activo: boolean) => 
     where: { userId: id },
     data: { activo, ...(resuelveBaja ? { bajaResueltaAt: new Date() } : {}) },
   });
-  return toUsuarioDto(await buscarUsuario(organizationId, id), auth.userId);
+  return toUsuarioDto(await buscarUsuario(organizationId, id), auth.userId, organizationId);
 };
 
 export const desactivarUsuario = (auth: AuthContext, id: string) => cambiarActivo(auth, id, false);
@@ -287,7 +301,7 @@ export const reenviarActivacion = async (auth: AuthContext, id: string): Promise
   const usuario = await buscarUsuario(organizationId, id);
   if (usuario.user.emailVerified) throw fieldConflict("estado", "La cuenta ya está activada");
   await enviarEnlaceDeActivacion(id, usuario.user.email);
-  return toUsuarioDto(usuario, auth.userId);
+  return toUsuarioDto(usuario, auth.userId, organizationId);
 };
 
 // ---------- Dominios permitidos (CFG-1) ----------
