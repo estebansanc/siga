@@ -11,8 +11,13 @@ test.describe("Mi cuenta: Perfil", () => {
     const nameInput = page.getByLabel("Apellido y nombre");
     await expect(page.getByText("Así te ven los demás usuarios.")).toBeVisible();
     await expect(nameInput).toHaveValue(user.name);
-    await expect(page.getByLabel("Correo")).toHaveValue(user.email);
-    await expect(page.getByLabel("Correo")).toBeDisabled();
+    await expect(page.getByTestId("profile-email")).toHaveText(user.email);
+    await expect(page.getByTestId("profile-perfil")).toBeVisible();
+    await expect(page.getByLabel("Legajo (opcional)")).toBeVisible();
+    await page.getByLabel("Legajo (opcional)").focus();
+    await page.keyboard.press("Tab");
+    await expect(page.getByTestId("profile-email")).not.toBeFocused();
+    await expect(page.getByTestId("profile-perfil")).not.toBeFocused();
     await expect(page.getByRole("button", { name: "Guardar" })).toBeDisabled();
 
     await nameInput.fill("   ");
@@ -30,7 +35,7 @@ test.describe("Mi cuenta: Perfil", () => {
 
     const dni = String(10_000_000 + Math.floor(Math.random() * 89_999_999));
     await page.getByLabel("DNI").fill(dni);
-    await page.getByLabel("Legajo").fill("L-QA");
+    await page.getByLabel("Legajo (opcional)").fill("L-QA");
     const guardado = page.waitForResponse(
       (response) =>
         response.url().endsWith("/api/v1/me") && response.request().method() === "PATCH",
@@ -40,7 +45,7 @@ test.describe("Mi cuenta: Perfil", () => {
 
     await page.reload();
     await expect(page.getByLabel("DNI")).toHaveValue(dni);
-    await expect(page.getByLabel("Legajo")).toHaveValue("L-QA");
+    await expect(page.getByLabel("Legajo (opcional)")).toHaveValue("L-QA");
     await expect(page.getByLabel("Apellido y nombre")).toHaveValue("Nombre Nuevo QA");
     await expect(
       page.getByText("Para cambiar el correo o el perfil, pedíselo a Bedelía."),

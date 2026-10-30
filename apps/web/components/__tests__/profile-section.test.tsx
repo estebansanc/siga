@@ -46,10 +46,13 @@ describe("ProfileSection", () => {
     renderWithProviders(<ProfileSection initialMe={me} />);
     expect(screen.getByLabelText("Apellido y nombre")).toHaveValue("Ana Demo");
     expect(screen.getByLabelText("DNI")).toHaveValue("30123456");
-    expect(screen.getByLabelText("Legajo")).toHaveValue("L-10");
-    expect(screen.getByLabelText("Correo")).toBeDisabled();
-    expect(screen.getByLabelText("Perfil")).toHaveValue("Bedel");
-    expect(screen.getByLabelText("Perfil")).toBeDisabled();
+    expect(screen.getByLabelText(/^Legajo/)).toHaveValue("L-10");
+    expect(screen.getByText("Correo")).toBeInTheDocument();
+    expect(screen.getByTestId("profile-email")).toHaveTextContent("ana@example.com");
+    expect(screen.queryByLabelText("Correo")).not.toBeInTheDocument();
+    expect(screen.getByText("Perfil", { selector: "[data-slot=field-label]" })).toBeInTheDocument();
+    expect(screen.getByTestId("profile-perfil")).toHaveTextContent("Bedel");
+    expect(screen.getByText("(opcional)")).toHaveClass("text-muted-foreground");
     expect(
       screen.getByText("Para cambiar el correo o el perfil, pedíselo a Bedelía."),
     ).toBeInTheDocument();
