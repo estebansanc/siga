@@ -3,7 +3,6 @@ import {
   instanteArgentino,
   type EstadoClase,
   type MetodoAsistencia,
-  type TipoNovedad,
 } from "@repo/domain";
 import { beforeEach, describe, expect, it } from "vitest";
 

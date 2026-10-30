@@ -6,7 +6,6 @@ import {
   horasDeClase,
   horasDisponiblesEnRango,
   porcentajeOcupacion,
-  rangoDelDia,
   tamanioPaginaHistorico,
   type ConsultaAsistencias,
   type ConsultaUsoAulas,
