@@ -144,17 +144,6 @@ test.describe("Solicitudes de aula", () => {
     expect(await cantidadCambiosDeAula(page)).toBe(cambiosAntes);
   });
 
-  test("en el celular la pantalla no tiene scroll horizontal", async ({ page }) => {
-    await page.setViewportSize({ width: 412, height: 915 });
-    await loginViaUi(page, seededUsers.bedel);
-    await page.goto("/solicitudes");
-    await expect(page.getByText(/^Clases sin aula \(\d+\)$/)).toBeVisible();
-    const desborda = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    );
-    expect(desborda).toBe(false);
-  });
-
   test("el estudiante no ve Solicitudes y vuelve a su inicio", async ({ page }) => {
     await loginViaUi(page, seededUsers.estudiante);
     await expect(page.getByRole("link", { name: "Solicitudes" })).toHaveCount(0);

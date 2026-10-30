@@ -95,6 +95,15 @@ test.describe("Móvil", () => {
     await page.goto("/qr");
     await expect(page.getByRole("button", { name: "Generar QR" })).toBeVisible();
     await expectNoHorizontalPageScroll(page);
+
+    await page.goto("/solicitudes");
+    await expect(page.getByText(/^Clases sin aula \(\d+\)$/)).toBeVisible();
+    for (const estado of ["Aprobadas", "Rechazadas"]) {
+      await page.getByRole("button", { name: estado, exact: true }).click();
+    }
+    await page.getByRole("button", { name: "Qué significa cada estado" }).click();
+    await expect(page.getByText(/la clase conservó su aula/)).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
   });
 
   test("elegir una sección en el menú lateral navega y lo cierra", async ({

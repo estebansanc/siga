@@ -2,7 +2,6 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import {
   crearSolicitudAulaSchema,
   elegirAulaSchema,
-  listarSolicitudesAulaQuerySchema,
   rechazarSolicitudAulaSchema,
 } from "@repo/domain";
 
@@ -14,6 +13,7 @@ import {
   clasesDelDiaSchema,
   clasesSolicitablesQuerySchema,
   idParamSchema,
+  listarSolicitudesAulaQuerySchema,
   solicitudAulaSchema,
 } from "../schemas";
 import * as asignacion from "../services/asignacion-aulas";

@@ -65,7 +65,6 @@ test.describe("Consultas históricas", () => {
     try {
       await loginViaUi(page, seededUsers.bedel);
       await page.goto("/solicitudes");
-      await page.getByRole("tab", { name: "Clases sin aula" }).click();
       const clase = page
         .locator('[data-slot="item"]')
         .filter({ hasText: /Proyecto Final · 5K2/ })

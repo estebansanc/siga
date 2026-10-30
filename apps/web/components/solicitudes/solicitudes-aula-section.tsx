@@ -175,9 +175,17 @@ function SolicitudesLista({
 function SignificadoDeEstados() {
   return (
     <Collapsible>
-      <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium underline-offset-4 hover:underline">
+      <CollapsibleTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="pointer-coarse:min-h-11 group -ml-2 justify-start"
+          />
+        }
+      >
         Qué significa cada estado
-        <ChevronDownIcon className="size-4" />
+        <ChevronDownIcon className="group-data-panel-open:rotate-180 transition-transform" />
       </CollapsibleTrigger>
       <CollapsibleContent>
         <ul className="text-muted-foreground flex flex-col gap-2 pt-2 text-sm">

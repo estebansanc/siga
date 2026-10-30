@@ -494,6 +494,19 @@ export const buscarAulasQuerySchema = z.object({
     }),
 });
 
+export const listarSolicitudesAulaQuerySchema = z.object({
+  estado: z
+    .preprocess(
+      (value) => (typeof value === "string" ? value.split(",").filter(Boolean) : value),
+      z.array(estadoSolicitudAulaSchema).min(1),
+    )
+    .openapi({
+      description: "Estados separados por coma; la respuesta los agrupa en el orden del enum",
+      param: { style: "form", explode: false },
+      example: ["PENDIENTE", "ASIGNADA"],
+    }),
+});
+
 export const clasesSolicitablesQuerySchema = z.object({
   fecha: z.iso.date().optional().openapi({ description: "yyyy-mm-dd; por defecto hoy" }),
 });

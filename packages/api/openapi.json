@@ -12861,12 +12861,27 @@
         "parameters": [
           {
             "schema": {
-              "type": "string",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "PENDIENTE",
+                  "ASIGNADA",
+                  "APROBADA",
+                  "RECHAZADA"
+                ]
+              },
+              "minItems": 1,
               "description": "Estados separados por coma; la respuesta los agrupa en el orden del enum",
-              "example": "PENDIENTE,ASIGNADA"
+              "example": [
+                "PENDIENTE",
+                "ASIGNADA"
+              ]
             },
             "required": true,
             "description": "Estados separados por coma; la respuesta los agrupa en el orden del enum",
+            "style": "form",
+            "explode": false,
             "name": "estado",
             "in": "query"
           }
