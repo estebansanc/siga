@@ -238,43 +238,52 @@ test.describe("Usuarios", () => {
     await anonimo.close();
   });
 
-  for (const ancho of [1366, 768]) {
-    test(`a ${ancho} px los filtros muestran completa la opción elegida y no cambian de ancho`, async ({
+  for (const { ancho, enUnaFila } of [
+    { ancho: 1366, enUnaFila: true },
+    { ancho: 768, enUnaFila: false },
+  ]) {
+    test(`a ${ancho} px los filtros y el placeholder se leen completos y los filtros no cambian de ancho`, async ({
       page,
     }) => {
       await page.setViewportSize({ width: ancho, height: 850 });
       await loginViaUi(page, seededUsers.bedel);
       await page.goto("/usuarios");
       const buscador = page.getByLabel("Buscar usuarios");
+      const perfil = page.getByLabel("Filtrar por perfil");
+      const baja = page.getByLabel("Filtrar por solicitud de baja");
       const cajaBuscador = await buscador.boundingBox();
-      expect(cajaBuscador?.width).toBeGreaterThanOrEqual(96);
-      const filtros = [
-        {
-          selector: page.getByLabel("Filtrar por perfil"),
-          opciones: ["Todos los perfiles", "Autoridad académica"],
-        },
-        {
-          selector: page.getByLabel("Filtrar por solicitud de baja"),
-          opciones: ["Todas las cuentas", "Baja solicitada"],
-        },
-      ];
-      const holguraDelTexto = (selector: (typeof filtros)[number]["selector"]) =>
-        selector.evaluate((el) => {
-          const select = el as HTMLSelectElement;
-          const estilo = getComputedStyle(select);
+      const cajaPerfil = await perfil.boundingBox();
+      const cajaBaja = await baja.boundingBox();
+      expect(cajaPerfil?.y).toBe(cajaBaja?.y);
+      if (enUnaFila) {
+        expect(cajaBuscador?.y).toBe(cajaPerfil?.y);
+      } else {
+        expect(cajaPerfil!.y).toBeGreaterThan(cajaBuscador!.y + cajaBuscador!.height - 1);
+      }
+
+      const holguraDelTexto = (selector: typeof buscador, usaPlaceholder: boolean) =>
+        selector.evaluate((el, placeholder) => {
+          const campo = el as HTMLInputElement | HTMLSelectElement;
+          const estilo = getComputedStyle(campo);
           const contexto = document.createElement("canvas").getContext("2d")!;
           contexto.font = `${estilo.fontWeight} ${estilo.fontSize} ${estilo.fontFamily}`;
-          const texto = select.selectedOptions[0]!.text;
+          const texto = placeholder
+            ? (campo as HTMLInputElement).placeholder
+            : (campo as HTMLSelectElement).selectedOptions[0].text;
           const disponible =
-            select.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
+            campo.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
           return disponible - contexto.measureText(texto).width;
-        });
-      for (const { selector, opciones } of filtros) {
+        }, usaPlaceholder);
+
+      expect(await holguraDelTexto(buscador, true)).toBeGreaterThanOrEqual(0);
+      for (const { selector, opciones } of [
+        { selector: perfil, opciones: ["Todos los perfiles", "Autoridad académica"] },
+        { selector: baja, opciones: ["Todas las cuentas", "Baja solicitada"] },
+      ]) {
         const caja = await selector.boundingBox();
-        expect(caja?.y).toBe(cajaBuscador?.y);
         for (const opcion of opciones) {
           await selector.selectOption({ label: opcion });
-          expect(await holguraDelTexto(selector)).toBeGreaterThanOrEqual(0);
+          expect(await holguraDelTexto(selector, false)).toBeGreaterThanOrEqual(0);
           expect((await selector.boundingBox())?.width).toBe(caja?.width);
         }
         await selector.selectOption({ index: 0 });

@@ -186,11 +186,11 @@ export function UsuariosSection() {
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Input
             type="search"
             aria-label="Buscar usuarios"
-            className="sm:min-w-0 sm:flex-1"
+            className="sm:basis-full lg:min-w-0 lg:flex-1 lg:basis-0"
             placeholder="Buscar por nombre, correo o DNI"
             value={busqueda}
             onChange={(event) => setBusqueda(event.target.value)}
