@@ -1,21 +1,26 @@
 import type { AuthContext } from "@repo/auth";
 import { fromDateColumn, prisma, type DbTransaction, type Prisma } from "@repo/db";
 import {
+  claseTerminada,
   esEstadoClaseFinal,
   estadoClaseLabels,
   estadoClasePorNovedad,
   horaArgentina,
+  novedadActiva,
+  rangoDelDia,
+  tamanioPaginaHistorico,
+  tipoNovedadSchema,
   tipoNovedadLabels,
   editarNovedadSchemaPara,
   type EditarNovedadInput,
   type EstadoClase,
-  type ListarNovedadesQuery,
+  type ConsultaNovedades,
   type PublicarNovedad,
   type TipoNovedad,
 } from "@repo/domain";
 
 import { conflict, notFound, unprocessable } from "../errors";
-import type { NovedadDto } from "../schemas";
+import type { ConsultaNovedadesResultadoDto, NovedadDto } from "../schemas";
 import { toIso, toIsoOrNull } from "../serializers";
 
 import { registrarCambioMasivo } from "./auditoria";
@@ -34,13 +39,6 @@ const novedadInclude = {
 
 type NovedadConDatos = Prisma.NovedadGetPayload<{ include: typeof novedadInclude }>;
 
-type ClaseConFin = { estado: EstadoClase; fin: Date };
-
-// Una clase terminó cuando su franja pasó; las Ausentes y Suspendidas no pasan a Finalizada
-// por horario, por eso se mira también el fin.
-const claseTerminada = (clase: ClaseConFin, ahora: Date) =>
-  clase.estado === "FINALIZADA" || clase.fin < ahora;
-
 const toNovedadDto = (novedad: NovedadConDatos, ahora = new Date()): NovedadDto => ({
   id: novedad.id,
   tipo: novedad.tipo,
@@ -53,8 +51,10 @@ const toNovedadDto = (novedad: NovedadConDatos, ahora = new Date()): NovedadDto 
   publicadaPorBedelia: novedad.publicadaPorBedelia,
   createdAt: toIso(novedad.createdAt),
   finalizadaEn: toIsoOrNull(novedad.finalizadaEn),
-  editable:
-    novedad.estado === "ACTIVA" && novedad.clases.some(({ clase }) => !claseTerminada(clase, ahora)),
+  editable: novedadActiva(
+    { estado: novedad.estado, clases: novedad.clases.map(({ clase }) => clase) },
+    ahora,
+  ),
   comision: {
     id: novedad.comision.id,
     codigo: novedad.comision.codigo,
@@ -408,22 +408,84 @@ const mudarClasesAAula = async (
 };
 
 // El docente ve las de sus comisiones; bedel y autoridad, todas.
+const alcanceDe = (auth: AuthContext): Prisma.NovedadWhereInput => ({
+  organizationId: auth.organizationId,
+  ...(auth.perfil === "DOCENTE"
+    ? { comision: { docentes: { some: { docenteId: auth.userId } } } }
+    : {}),
+});
+
+// Misma regla que `novedadActiva` del dominio, expresada para la base.
+const novedadActivaWhere = (ahora: Date): Prisma.NovedadWhereInput => ({
+  estado: "ACTIVA",
+  clases: { some: { clase: { estado: { not: "FINALIZADA" }, fin: { gte: ahora } } } },
+});
+
+// Pestaña Activas (RF-05): sin paginar, la más reciente primero. El docente ve las de sus
+// comisiones; bedel y autoridad, todas.
 export const listarNovedades = async (
   auth: AuthContext,
-  query: ListarNovedadesQuery,
+  ahora = new Date(),
 ): Promise<NovedadDto[]> => {
   await assertPerfil(auth, "DOCENTE", "BEDEL", "AUTORIDAD");
   const novedades = await prisma.novedad.findMany({
-    where: {
-      organizationId: auth.organizationId,
-      estado: query.estado,
-      ...(auth.perfil === "DOCENTE"
-        ? { comision: { docentes: { some: { docenteId: auth.userId } } } }
-        : {}),
-    },
+    where: { AND: [alcanceDe(auth), novedadActivaWhere(ahora)] },
     include: novedadInclude,
     orderBy: { createdAt: "desc" },
     take: 100,
   });
-  return novedades.map((novedad) => toNovedadDto(novedad));
+  return novedades.map((novedad) => toNovedadDto(novedad, ahora));
+};
+
+const contarPorTipo = async (where: Prisma.NovedadWhereInput) => {
+  const grupos = await prisma.novedad.groupBy({ by: ["tipo"], where, _count: { _all: true } });
+  const cantidades = Object.fromEntries(
+    tipoNovedadSchema.options.map((tipo) => [tipo, 0]),
+  ) as Record<TipoNovedad, number>;
+  for (const grupo of grupos) cantidades[grupo.tipo] = grupo._count._all;
+  return cantidades;
+};
+
+// Pestaña Historial (RF-09 / CA-06, solo lectura): las finalizadas o sin clases por delante,
+// con el rango por fecha de publicación (días completos en hora argentina), total y cantidad
+// por tipo sobre todo el período, paginado de a 20.
+export const consultarHistorialNovedades = async (
+  auth: AuthContext,
+  consulta: ConsultaNovedades,
+  ahora = new Date(),
+): Promise<ConsultaNovedadesResultadoDto> => {
+  await assertPerfil(auth, "DOCENTE", "BEDEL", "AUTORIDAD");
+  const where: Prisma.NovedadWhereInput = {
+    AND: [
+      alcanceDe(auth),
+      { NOT: novedadActivaWhere(ahora) },
+      {
+        createdAt: {
+          gte: rangoDelDia(consulta.desde).desde,
+          lt: rangoDelDia(consulta.hasta).hasta,
+        },
+        tipo: consulta.tipo,
+      },
+    ],
+  };
+  const [porTipo, novedades] = await Promise.all([
+    contarPorTipo(where),
+    prisma.novedad.findMany({
+      where,
+      include: novedadInclude,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (consulta.pagina - 1) * tamanioPaginaHistorico,
+      take: tamanioPaginaHistorico,
+    }),
+  ]);
+  const total = Object.values(porTipo).reduce((suma, cantidad) => suma + cantidad, 0);
+
+  return {
+    total,
+    porTipo,
+    pagina: consulta.pagina,
+    tamanioPagina: tamanioPaginaHistorico,
+    totalPaginas: Math.ceil(total / tamanioPaginaHistorico),
+    novedades: novedades.map((novedad) => toNovedadDto(novedad, ahora)),
+  };
 };

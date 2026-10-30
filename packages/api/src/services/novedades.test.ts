@@ -224,14 +224,13 @@ describe("finalizar y listar novedades", () => {
     const clase = await createClase(institution, fixture, manana());
     const docente = authOf(institution, fixture.docente);
     await publicarNovedad(docente, { claseIds: [clase.id], tipo: "DEMORA", minutosDemora: 5 });
-    expect(await listarNovedades(docente, {})).toHaveLength(1);
-    expect(await listarNovedades(docente, { estado: "FINALIZADA" })).toHaveLength(0);
+    expect(await listarNovedades(docente)).toHaveLength(1);
     const otro = await createUserWithPerfil(institution, "DOCENTE");
-    expect(await listarNovedades(authOf(institution, otro), {})).toHaveLength(0);
+    expect(await listarNovedades(authOf(institution, otro))).toHaveLength(0);
     const autoridad = await createUserWithPerfil(institution, "AUTORIDAD");
-    expect(await listarNovedades(authOf(institution, autoridad), {})).toHaveLength(1);
+    expect(await listarNovedades(authOf(institution, autoridad))).toHaveLength(1);
     const estudiante = await createUserWithPerfil(institution, "ESTUDIANTE");
-    await expect(listarNovedades(authOf(institution, estudiante), {})).rejects.toMatchObject({
+    await expect(listarNovedades(authOf(institution, estudiante))).rejects.toMatchObject({
       status: 403,
     });
   });
@@ -350,9 +349,7 @@ describe("editar novedades", () => {
     await expect(editarNovedad(bedel, terminada.id, { minutosDemora: 5 })).rejects.toMatchObject({
       status: 422,
     });
-    expect((await listarNovedades(bedel, {})).find(({ id }) => id === terminada.id)?.editable).toBe(
-      false,
-    );
+    expect((await listarNovedades(bedel)).some(({ id }) => id === terminada.id)).toBe(false);
   });
 
   it("Cambio de aula: mueve la clase, libera la anterior, rechaza una ocupada y finalizar vuelve al aula previa a la novedad", async () => {
