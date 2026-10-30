@@ -100,7 +100,7 @@ test.describe("Política de privacidad", () => {
     try {
       await loginViaUi(page, seededUsers.estudiante);
       await expect(page).toHaveURL(/\/politica-de-privacidad/);
-      await expect(page.getByText("Versión 2")).toBeVisible();
+      await expect(page.getByText("Versión 3")).toBeVisible();
     } finally {
       retirarPolitica(3);
     }

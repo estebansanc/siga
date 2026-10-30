@@ -208,8 +208,8 @@ test.describe("Móvil", () => {
     const user = newUser();
     await request.post("/api/auth/sign-up/email", { data: user });
     verificarCorreo(user.email);
-    const parrafo = "Texto de la versión dos de la política de privacidad. ".repeat(12);
-    publicarPolitica(2, Array.from({ length: 15 }, () => parrafo).join("\n\n"));
+    const parrafo = "Texto de la versión tres de la política de privacidad. ".repeat(12);
+    publicarPolitica(3, Array.from({ length: 15 }, () => parrafo).join("\n\n"));
     try {
       await loginViaUi(page, user);
       await expect(page).toHaveURL(/\/politica-de-privacidad/);
@@ -223,7 +223,7 @@ test.describe("Móvil", () => {
       expect(await texto.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
       await expect(page.getByRole("button", { name: "Aceptar y continuar" })).toBeInViewport();
     } finally {
-      retirarPolitica(2);
+      retirarPolitica(3);
     }
   });
 
