@@ -1,3 +1,5 @@
+import type { Page } from "@playwright/test";
+
 import {
   crearClaseDeHoyConAula,
   crearNovedadesDeHistorial,
@@ -475,5 +477,58 @@ test.describe("Móvil", () => {
     await expect(page.getByLabel("Noche: fin")).toHaveValue("22:45");
     await expect(page.getByText(/\b(AM|PM)\b/)).toHaveCount(0);
     await expectNoHorizontalPageScroll(page);
+  });
+
+  test.describe("Estado institucional a 360 px", () => {
+    test.use({ viewport: { width: 360, height: 740 }, hasTouch: true });
+
+    const expectCardsInsideViewport = async (page: Page) => {
+      const clipped = await page.evaluate(() => {
+        const width = document.documentElement.clientWidth;
+        return [...document.querySelectorAll<HTMLElement>("[data-slot=card]")]
+          .filter((card) => {
+            const outside = card.getBoundingClientRect().right > width + 0.5;
+            const clippedInside = [...card.querySelectorAll<HTMLElement>("*")].some((el) => {
+              const scroller = el.closest(".overflow-x-auto");
+              return (
+                !scroller &&
+                el.getBoundingClientRect().right > card.getBoundingClientRect().right + 0.5
+              );
+            });
+            return outside || card.scrollWidth > card.clientWidth || clippedInside;
+          })
+          .map((card) => card.textContent?.slice(0, 30));
+      });
+      expect(clipped).toEqual([]);
+    };
+
+    for (const perfil of ["bedel", "autoridad", "docente", "estudiante"] as const) {
+      test(`${perfil}: ninguna tarjeta se corta por la derecha`, async ({ page }) => {
+        await loginViaUi(page, seededUsers[perfil]);
+        await page.goto("/estado-institucional");
+        await expect(page.getByText("Historial")).toBeVisible();
+        await expectNoHorizontalPageScroll(page);
+        await expectCardsInsideViewport(page);
+      });
+    }
+
+    test("el Bedel ve completo el botón Cambiar estado, la ayuda del Motivo con su contador", async ({
+      page,
+    }) => {
+      await loginViaUi(page, seededUsers.bedel);
+      await page.goto("/estado-institucional");
+      await expect(page.getByLabel("Motivo", { exact: true })).toBeVisible();
+      await expect(
+        page.getByText("Obligatorio para Cerrada y Abierta con novedades. Máximo 280 caracteres."),
+      ).toBeInViewport({ ratio: 1 });
+      await page.getByRole("button", { name: "Cambiar estado" }).scrollIntoViewIfNeeded();
+      await expect(page.getByRole("button", { name: "Cambiar estado" })).toBeInViewport({
+        ratio: 1,
+      });
+      await expectCardsInsideViewport(page);
+
+      await page.getByLabel("Motivo", { exact: true }).fill("Prueba móvil");
+      await expect(page.getByText("12 / 280")).toBeVisible();
+    });
   });
 });

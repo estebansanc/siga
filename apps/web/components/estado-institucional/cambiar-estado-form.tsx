@@ -107,16 +107,15 @@ export function CambiarEstadoForm() {
               <FieldError>{form.formState.errors.estado?.message}</FieldError>
             </Field>
             <Field data-invalid={Boolean(form.formState.errors.motivo)}>
-              <FieldLabel htmlFor="estado-motivo">
-                Motivo{" "}
-                <span className="text-muted-foreground font-normal">
-                  (obligatorio para Cerrada y Abierta con novedades, máx. {motivoMax})
-                </span>
-              </FieldLabel>
+              <FieldLabel htmlFor="estado-motivo">Motivo</FieldLabel>
+              <FieldDescription id="estado-motivo-ayuda">
+                Obligatorio para Cerrada y Abierta con novedades. Máximo {motivoMax} caracteres.
+              </FieldDescription>
               <Textarea
                 id="estado-motivo"
                 rows={3}
                 maxLength={motivoMax}
+                aria-describedby="estado-motivo-ayuda"
                 {...form.register("motivo")}
               />
               <FieldDescription>
