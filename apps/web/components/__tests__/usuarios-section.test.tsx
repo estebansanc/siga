@@ -173,7 +173,7 @@ describe("UsuariosSection", () => {
     renderWithProviders(<UsuariosSection />);
     expect(await screen.findAllByText("Administrador")).toHaveLength(1);
     await abrirAcciones("Ada Admin");
-    expect(screen.getByRole("menuitem", { name: "Editar" })).toBeInTheDocument();
+    expect(await screen.findByRole("menuitem", { name: "Editar" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Desactivar" })).not.toBeInTheDocument();
   });
 
