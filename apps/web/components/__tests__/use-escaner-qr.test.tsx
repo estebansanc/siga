@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useEscanerQr } from "@/components/asistencia/use-escaner-qr";
@@ -105,5 +105,30 @@ describe("useEscanerQr", () => {
     await waitFor(() => expect(result.current.estado).toBe("activa"));
     unmount();
     expect(pista.stop).toHaveBeenCalled();
+  });
+
+  it("reintentar vuelve a pedir la cámara y pasa a activa si ahora abre", async () => {
+    getUserMedia.mockRejectedValueOnce(new DOMException("sin cámara", "NotFoundError"));
+    const { result } = renderHook(() => {
+      const escaner = useEscanerQr(vi.fn(), false);
+      if (!escaner.videoRef.current) conVideo(escaner);
+      return escaner;
+    });
+    await waitFor(() => expect(result.current.estado).toBe("no-disponible"));
+
+    act(() => result.current.reintentar());
+    expect(result.current.estado).toBe("iniciando");
+    await waitFor(() => expect(result.current.estado).toBe("activa"));
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+  });
+
+  it("reintentar con el permiso aún denegado vuelve a informar la cámara denegada", async () => {
+    getUserMedia.mockRejectedValue(new DOMException("denegado", "NotAllowedError"));
+    const { result } = renderHook(() => useEscanerQr(vi.fn(), false));
+    await waitFor(() => expect(result.current.estado).toBe("denegada"));
+
+    act(() => result.current.reintentar());
+    await waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.estado).toBe("denegada"));
   });
 });

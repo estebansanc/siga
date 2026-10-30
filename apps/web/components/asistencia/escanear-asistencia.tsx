@@ -18,6 +18,7 @@ import { useState } from "react";
 
 import { useRegistrarAsistenciaQr } from "@/hooks/use-asistencias";
 import { RequestError } from "@/lib/api-client";
+import { textoRegistroManual, textoSinCamara, tituloSinCamara } from "@/lib/asistencia-sin-camara";
 import { leerUbicacion } from "@/lib/ubicacion";
 
 import { useEscanerQr } from "./use-escaner-qr";
@@ -97,20 +98,12 @@ function CamaraEscaner({
   validando: boolean;
   alDetectar: (token: string) => void;
 }) {
-  const { videoRef, estado } = useEscanerQr(alDetectar, pausada);
+  const { videoRef, estado, reintentar } = useEscanerQr(alDetectar, pausada);
 
   return (
     <>
-      {estado === "denegada" ? <CamaraDenegada /> : null}
-      {estado === "no-disponible" ? (
-        <Alert variant="destructive">
-          <AlertTitle>No pudimos abrir la cámara</AlertTitle>
-          <AlertDescription>
-            Probá desde otro navegador o dispositivo, o pedí el registro manual al bedel: puede
-            cargar tu asistencia desde bedelía.
-          </AlertDescription>
-        </Alert>
-      ) : null}
+      {estado === "denegada" ? <CamaraDenegada alReintentar={reintentar} /> : null}
+      {estado === "no-disponible" ? <CamaraNoDisponible alReintentar={reintentar} /> : null}
       <Card className={estado === "denegada" || estado === "no-disponible" ? "hidden" : undefined}>
         <CardHeader>
           <CardTitle>Escaneá el QR del aula</CardTitle>
@@ -157,16 +150,32 @@ function AsistenciaRegistrada({ resultado }: { resultado: RegistroQrResultadoDto
   );
 }
 
-function CamaraDenegada() {
+function CamaraDenegada({ alReintentar }: { alReintentar: () => void }) {
   return (
-    <Alert variant="destructive">
+    <Alert>
       <AlertTitle>La cámara está bloqueada</AlertTitle>
       <AlertDescription className="flex flex-col items-start gap-3">
         <span>
           Para escanear el QR, permití el acceso a la cámara: tocá el candado o el ícono de ajustes
-          junto a la dirección del sitio, elegí Cámara &gt; Permitir y volvé a cargar la página.
+          junto a la dirección del sitio y elegí Cámara &gt; Permitir.
         </span>
-        <Button variant="outline" onClick={() => window.location.reload()}>
+        <span>{textoRegistroManual}</span>
+        <Button variant="outline" onClick={alReintentar}>
+          Volver a intentar
+        </Button>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+function CamaraNoDisponible({ alReintentar }: { alReintentar: () => void }) {
+  return (
+    <Alert>
+      <AlertTitle>{tituloSinCamara}</AlertTitle>
+      <AlertDescription className="flex flex-col items-start gap-3">
+        <span>{textoSinCamara}</span>
+        <span>{textoRegistroManual}</span>
+        <Button variant="outline" onClick={alReintentar}>
           Volver a intentar
         </Button>
       </AlertDescription>

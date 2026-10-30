@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   registrar: vi.fn(),
   leerUbicacion: vi.fn(),
   camara: { estado: "activa" },
+  reintentar: vi.fn(),
   alDetectar: { actual: undefined as ((codigo: string) => void) | undefined },
 }));
 
@@ -21,7 +22,11 @@ vi.mock("@/lib/ubicacion", () => ({ leerUbicacion: mocks.leerUbicacion }));
 vi.mock("@/components/asistencia/use-escaner-qr", () => ({
   useEscanerQr: (alDetectar: (codigo: string) => void) => {
     mocks.alDetectar.actual = alDetectar;
-    return { videoRef: { current: null }, estado: mocks.camara.estado };
+    return {
+      videoRef: { current: null },
+      estado: mocks.camara.estado,
+      reintentar: mocks.reintentar,
+    };
   },
 }));
 
@@ -143,19 +148,34 @@ describe("EscanearAsistencia", () => {
     expect(screen.queryByText("Escaneá el QR del aula")).not.toBeInTheDocument();
   });
 
-  it("con la cámara denegada explica cómo habilitarla", () => {
+  it("con la cámara denegada explica cómo habilitarla, sin estilo de error, y reintenta sin recargar", async () => {
     mocks.camara.estado = "denegada";
     renderWithProviders(<EscanearAsistencia />);
 
     expect(screen.getByText("La cámara está bloqueada")).toBeInTheDocument();
     expect(screen.getByText(/Cámara > Permitir/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Volver a intentar" })).toBeInTheDocument();
+    expect(
+      screen.getByText(/pedile al bedel que registre tu asistencia a mano/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).not.toHaveAttribute(
+      "class",
+      expect.stringContaining("destructive"),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Volver a intentar" }));
+    expect(mocks.reintentar).toHaveBeenCalledTimes(1);
   });
 
-  it("sin cámara disponible sugiere otro dispositivo o el registro manual", () => {
+  it("sin cámara disponible guía a escanear desde el celular y ofrece reintentar", async () => {
     mocks.camara.estado = "no-disponible";
     renderWithProviders(<EscanearAsistencia />);
 
-    expect(screen.getByText("No pudimos abrir la cámara")).toBeInTheDocument();
+    expect(screen.getByText("Escaneá el QR desde tu celular")).toBeInTheDocument();
+    expect(screen.getByText(/abrí SiGA en tu teléfono y entrá a Asistencia/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/pedile al bedel que registre tu asistencia a mano/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("No pudimos abrir la cámara")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Volver a intentar" }));
+    expect(mocks.reintentar).toHaveBeenCalledTimes(1);
   });
 });

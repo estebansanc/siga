@@ -1,5 +1,7 @@
 import type { MemberRole, Perfil } from "@repo/domain";
 
+import { textoRegistroManual, textoSinCamara } from "./asistencia-sin-camara";
+
 export type TareaGuia = { titulo: string; pasos: string[] };
 
 export type SeccionManual = {
@@ -113,7 +115,8 @@ const asistencia: SeccionManual = {
   ],
   mensajes: [
     'Si falla la lectura, tocá "Volver a escanear".',
-    "Si denegaste la cámara, habilitala desde los permisos del navegador.",
+    'Si denegaste la cámara, habilitala desde los permisos del navegador y tocá "Volver a intentar".',
+    `${textoSinCamara} ${textoRegistroManual}`,
   ],
 };
 
@@ -386,6 +389,7 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
           'Entrá a "Asistencia" y permití el uso de la cámara.',
           "Apuntá al QR que muestra bedelía en el aula.",
           'Esperá "Asistencia registrada". Si falla, tocá "Volver a escanear".',
+          "Si tu dispositivo no tiene cámara, abrí SiGA en tu celular; también podés pedirle al bedel que registre tu asistencia a mano.",
         ],
       },
       {

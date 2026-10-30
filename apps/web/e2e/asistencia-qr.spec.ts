@@ -136,6 +136,40 @@ test.describe("Asistencia docente por QR", () => {
 
     await expect(docente.getByText("La cámara está bloqueada")).toBeVisible({ timeout: 30_000 });
     await expect(docente.getByText(/Cámara > Permitir/)).toBeVisible();
+    await expect(
+      docente.getByText(/pedile al bedel que registre tu asistencia a mano/),
+    ).toBeVisible();
+    await context.close();
+  });
+
+  test("sin cámara guía a escanear desde el celular y reintenta sin recargar", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext();
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+        configurable: true,
+        value: () => Promise.reject(new DOMException("sin cámara", "NotFoundError")),
+      });
+    });
+    const docente = await context.newPage();
+    await loginViaUi(docente, seededUsers.docente);
+    await docente.goto("/asistencia");
+
+    await expect(docente.getByText("Escaneá el QR desde tu celular")).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(
+      docente.getByText(/pedile al bedel que registre tu asistencia a mano/),
+    ).toBeVisible();
+    await docente.evaluate(() => {
+      (window as unknown as { marca: boolean }).marca = true;
+    });
+    await docente.getByRole("button", { name: "Volver a intentar" }).click();
+    await expect(docente.getByText("Escaneá el QR desde tu celular")).toBeVisible();
+    expect(await docente.evaluate(() => (window as unknown as { marca?: boolean }).marca)).toBe(
+      true,
+    );
     await context.close();
   });
 
