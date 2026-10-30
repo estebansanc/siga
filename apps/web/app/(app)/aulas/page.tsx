@@ -10,15 +10,15 @@ import { requireSession } from "@/lib/session";
 export const metadata: Metadata = { title: "Aulas" };
 
 // Solo el bedel gestiona aulas (RF-02) y alterna Lista / Plano; el docente va a sus solicitudes de
-// aula (RF-06); el resto consulta el Plano.
+// aula (RF-06) salvo que pida el Plano; el resto consulta el Plano.
 export default async function Page({
   searchParams,
 }: {
   searchParams: Promise<{ vista?: string }>;
 }) {
   const session = await requireSession();
-  if (session.perfil === "DOCENTE") redirect("/aulas/mis-solicitudes");
   const { vista } = await searchParams;
+  if (session.perfil === "DOCENTE" && vista !== "plano") redirect("/aulas/mis-solicitudes");
 
   return (
     <>
