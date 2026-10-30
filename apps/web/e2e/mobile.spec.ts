@@ -249,22 +249,71 @@ test.describe("Móvil", () => {
       expect(caja.left).toBeGreaterThanOrEqual(cajas[indice].right - 1);
     });
 
+    const fueraDelDesvanecido = async (nombre: string) => {
+      const tab = page.getByRole("tab", { name: nombre });
+      const desvanecido = await lista.evaluate(
+        (el) => 2 * parseFloat(getComputedStyle(el).fontSize),
+      );
+      await expect
+        .poll(async () => {
+          const caja = (await tab.boundingBox())!;
+          const cajaLista = (await lista.boundingBox())!;
+          const alInicio = (await lista.evaluate((el) => el.scrollLeft)) < 1;
+          const alFinal = await lista.evaluate(
+            (el) => el.scrollLeft + el.clientWidth >= el.scrollWidth - 1,
+          );
+          const izquierda = alInicio || caja.x >= cajaLista.x + desvanecido - 1;
+          const derecha =
+            alFinal || caja.x + caja.width <= cajaLista.x + cajaLista.width - desvanecido + 1;
+          return izquierda && derecha;
+        })
+        .toBe(true);
+    };
+
     await page.getByRole("tab", { name: "Días no laborables" }).click();
     await expect(page.getByRole("tab", { name: "Días no laborables" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
     await expect(lista).toHaveAttribute("data-fade-start", "");
-    const dias = page.getByRole("tab", { name: "Días no laborables" });
-    await expect
-      .poll(async () => {
-        const caja = await dias.boundingBox();
-        const cajaLista = await lista.boundingBox();
-        return caja!.x + caja!.width <= cajaLista!.x + cajaLista!.width + 1;
-      })
-      .toBe(true);
-    await expect(lista).toHaveAttribute("data-fade-start", "");
+    await expect(lista).not.toHaveAttribute("data-fade-end", "");
+    await fueraDelDesvanecido("Días no laborables");
     await expectNoHorizontalPageScroll(page);
+
+    await page.getByRole("tab", { name: "Carreras" }).click();
+    await expect(lista).toHaveAttribute("data-fade-end", "");
+    await expect(lista).not.toHaveAttribute("data-fade-start", "");
+    await fueraDelDesvanecido("Carreras");
+
+    await page.getByRole("tab", { name: "Horarios" }).click();
+    await fueraDelDesvanecido("Horarios");
+  });
+
+  test("con teclado las flechas mueven el foco entre pestañas y la enfocada queda a la vista", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, "Solo aplica al viewport de celular");
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/datos-academicos");
+    const lista = page.getByRole("tablist");
+    await page.getByRole("tab", { name: "Carreras" }).focus();
+    for (const nombre of ["Materias", "Períodos", "Comisiones", "Horarios", "Días no laborables"]) {
+      await page.keyboard.press("ArrowRight");
+      const tab = page.getByRole("tab", { name: nombre });
+      await expect(tab).toBeFocused();
+      await expect
+        .poll(async () => {
+          const caja = (await tab.boundingBox())!;
+          const cajaLista = (await lista.boundingBox())!;
+          return (
+            caja.x >= cajaLista.x - 1 && caja.x + caja.width <= cajaLista.x + cajaLista.width + 1
+          );
+        })
+        .toBe(true);
+    }
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.getByRole("tab", { name: "Horarios" })).toBeFocused();
   });
 
   test.describe("Historiales a 360 px", () => {

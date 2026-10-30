@@ -18,7 +18,7 @@ function Tabs({ className, orientation = "horizontal", ...props }: TabsPrimitive
 }
 
 const tabsListVariants = cva(
-  "group/tabs-list inline-flex w-fit items-center justify-start rounded-lg group-data-horizontal/tabs:max-w-full group-data-horizontal/tabs:overflow-x-auto group-data-horizontal/tabs:[scrollbar-width:none] group-data-horizontal/tabs:[&::-webkit-scrollbar]:hidden p-[3px] text-muted-foreground group-data-horizontal/tabs:h-8 pointer-coarse:group-data-horizontal/tabs:h-12 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
+  "group/tabs-list inline-flex w-fit items-center justify-start rounded-lg group-data-horizontal/tabs:max-w-full group-data-horizontal/tabs:overflow-x-auto group-data-horizontal/tabs:scroll-px-8 group-data-horizontal/tabs:[scrollbar-width:none] group-data-horizontal/tabs:[&::-webkit-scrollbar]:hidden p-[3px] text-muted-foreground group-data-horizontal/tabs:h-8 pointer-coarse:group-data-horizontal/tabs:h-12 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
   {
     variants: {
       variant: {
@@ -46,8 +46,10 @@ function TabsList({
   className,
   variant = "default",
   style,
+  ref,
   onClick,
   onFocus,
+  onScroll,
   ...props
 }: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
   const listRef = React.useRef<HTMLDivElement>(null);
@@ -66,11 +68,20 @@ function TabsList({
   React.useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    updateHidden();
-    const observer = new ResizeObserver(updateHidden);
-    observer.observe(list);
-    Array.from(list.children).forEach((child) => observer.observe(child));
-    return () => observer.disconnect();
+    const resizeObserver = new ResizeObserver(updateHidden);
+    const observeTabs = () => {
+      resizeObserver.disconnect();
+      resizeObserver.observe(list);
+      Array.from(list.children).forEach((child) => resizeObserver.observe(child));
+      updateHidden();
+    };
+    const mutationObserver = new MutationObserver(observeTabs);
+    mutationObserver.observe(list, { childList: true });
+    observeTabs();
+    return () => {
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
   }, [updateHidden]);
 
   const revealTab = (target: EventTarget) => {
@@ -80,14 +91,21 @@ function TabsList({
 
   return (
     <TabsPrimitive.List
-      ref={listRef}
+      ref={(node) => {
+        listRef.current = node;
+        if (typeof ref === "function") ref(node);
+        else if (ref) ref.current = node;
+      }}
       data-slot="tabs-list"
       data-variant={variant}
       data-fade-start={hidden.start ? "" : undefined}
       data-fade-end={hidden.end ? "" : undefined}
       className={cn(tabsListVariants({ variant }), className)}
       style={{ ...fadeMask(hidden.start, hidden.end), ...style }}
-      onScroll={updateHidden}
+      onScroll={(event) => {
+        onScroll?.(event);
+        updateHidden();
+      }}
       onClick={(event) => {
         onClick?.(event);
         revealTab(event.target);
