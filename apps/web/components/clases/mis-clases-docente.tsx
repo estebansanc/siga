@@ -1,33 +1,17 @@
 "use client";
 
 import type { ClaseDto } from "@repo/api/client";
-import { Button } from "@repo/ui/components/button";
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@repo/ui/components/item";
-import {
-  ChevronRightIcon,
-  DoorOpenIcon,
-  MegaphoneIcon,
-  QrCodeIcon,
-  TriangleAlertIcon,
-} from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 
 import { ReportarIncidenciaDialog } from "@/components/incidencias/reportar-incidencia-dialog";
 import { PublicarNovedadDialog } from "@/components/novedades/publicar-novedad-dialog";
 
+import { AccionesClaseMenu } from "./acciones-clase-menu";
 import { ClasesDelDia } from "./clases-del-dia";
 
-// Panel del docente (CUR-05): sus clases de hoy y las acciones rápidas.
+// Panel del docente (CUR-05): sus clases de hoy con las acciones de cada una.
 export function MisClasesDocente() {
-  const [publicando, setPublicando] = useState<{ clase?: ClaseDto } | null>(null);
+  const [publicando, setPublicando] = useState<ClaseDto | null>(null);
   const [reportando, setReportando] = useState<ClaseDto | null>(null);
 
   return (
@@ -35,77 +19,13 @@ export function MisClasesDocente() {
       ambito="mias"
       emptyTitle="No tenés clases hoy"
       renderActions={(clase) => (
-        <div className="flex flex-wrap justify-end gap-2">
-          {clase.aula ? (
-            <Button
-              variant="outline"
-              size="sm"
-              aria-label={`Reportar incidencia en ${clase.materia.nombre} ${clase.comision.codigo}`}
-              onClick={(event) => {
-                event.stopPropagation();
-                setReportando(clase);
-              }}
-            >
-              <TriangleAlertIcon />
-              Incidencia
-            </Button>
-          ) : null}
-          {["AUSENTE", "SUSPENDIDA", "FINALIZADA"].includes(clase.estado) ? null : (
-            <Button
-              variant="outline"
-              size="sm"
-              aria-label={`Publicar novedad sobre ${clase.materia.nombre} ${clase.comision.codigo}`}
-              onClick={(event) => {
-                event.stopPropagation();
-                setPublicando({ clase });
-              }}
-            >
-              <MegaphoneIcon />
-              Novedad
-            </Button>
-          )}
-        </div>
+        <AccionesClaseMenu
+          clase={clase}
+          onReportarIncidencia={() => setReportando(clase)}
+          onPublicarNovedad={() => setPublicando(clase)}
+        />
       )}
     >
-      <h2 className="font-medium">Acciones rápidas</h2>
-      <ItemGroup className="gap-2">
-        <Item variant="outline" render={<Link href="/asistencia" />}>
-          <ItemMedia variant="icon">
-            <QrCodeIcon />
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle>Registrar asistencia</ItemTitle>
-            <ItemDescription>Escaneá el QR de bedelía al llegar al aula</ItemDescription>
-          </ItemContent>
-          <ChevronRightIcon className="text-muted-foreground size-4" />
-        </Item>
-        <Item
-          variant="outline"
-          render={<button type="button" onClick={() => setPublicando({})} />}
-          className="w-full text-left"
-        >
-          <ItemMedia variant="icon">
-            <MegaphoneIcon />
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle>Publicar novedad</ItemTitle>
-            <ItemDescription>
-              Ausencia, demora, virtual, suspensión o cambio de aula
-            </ItemDescription>
-          </ItemContent>
-          <ChevronRightIcon className="text-muted-foreground size-4" />
-        </Item>
-        <Item variant="outline" render={<Link href="/aulas/solicitar" />}>
-          <ItemMedia variant="icon">
-            <DoorOpenIcon />
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle>Solicitar aula</ItemTitle>
-            <ItemDescription>Buscá un aula por capacidad y recursos</ItemDescription>
-          </ItemContent>
-          <ChevronRightIcon className="text-muted-foreground size-4" />
-        </Item>
-      </ItemGroup>
       {reportando?.aula ? (
         <ReportarIncidenciaDialog
           aula={reportando.aula}
@@ -116,7 +36,7 @@ export function MisClasesDocente() {
       {publicando ? (
         <PublicarNovedadDialog
           open
-          claseInicial={publicando.clase}
+          claseInicial={publicando}
           onOpenChange={(open) => !open && setPublicando(null)}
         />
       ) : null}
