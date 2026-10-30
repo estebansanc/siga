@@ -109,6 +109,14 @@ test.describe("Aulas", () => {
       "true",
     );
 
+    await page.getByRole("link", { name: "Aulas", exact: true }).click();
+    await expect(page).toHaveURL(/\/aulas$/);
+    await expect(page.getByRole("button", { name: "Lista" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByRole("button", { name: "Edificio A" })).toHaveCount(0);
+
     await page.goto("/plano-de-aulas");
     await expect(page).toHaveURL(/\/aulas\?vista=plano/);
   });

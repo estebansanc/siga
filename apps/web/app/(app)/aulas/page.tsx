@@ -26,10 +26,7 @@ export default async function Page({
       <PageBody>
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 p-4">
           {session.perfil === "BEDEL" ? (
-            <AulasBedel
-              vistaInicial={vista === "plano" ? "plano" : "lista"}
-              perfil={session.perfil}
-            />
+            <AulasBedel perfil={session.perfil} />
           ) : (
             <PlanoAulas perfil={session.perfil} />
           )}

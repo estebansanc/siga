@@ -41,7 +41,8 @@ export function AulaDetalleDialog({
 }) {
   const aula = useAula(aulaId);
   const detalle = aula.data;
-  const delPlano = usePlanoAulas().data?.find((item) => item.id === aulaId);
+  const plano = usePlanoAulas().data;
+  const delPlano = plano?.find((item) => item.id === aulaId);
   const [accion, setAccion] = useState<Accion | null>(null);
   const cerrarAccion = () => setAccion(null);
 
@@ -54,7 +55,7 @@ export function AulaDetalleDialog({
             {detalle ? `${detalle.edificio}, ${detalle.piso} · ${detalle.capacidad} lugares` : " "}
           </DialogDescription>
         </DialogHeader>
-        {!detalle ? (
+        {!detalle || !plano ? (
           <Skeleton className="h-32 w-full" />
         ) : (
           <div className="flex flex-col gap-4">

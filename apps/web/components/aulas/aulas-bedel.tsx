@@ -4,7 +4,7 @@ import type { Perfil } from "@repo/domain";
 import { Button } from "@repo/ui/components/button";
 import { ToggleGroup, ToggleGroupItem } from "@repo/ui/components/toggle-group";
 import { PlusIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { AulaDetalleDialog } from "./aula-detalle-dialog";
@@ -18,16 +18,15 @@ const rutaDeVista = { lista: "/aulas", plano: "/aulas?vista=plano" } as const;
 
 // Gestión de aulas del Bedel (RF-02): Lista y Plano comparten alta y detalle. La vista vive en la
 // URL para que sobreviva a recargar.
-export function AulasBedel({ vistaInicial, perfil }: { vistaInicial: VistaAulas; perfil: Perfil }) {
+export function AulasBedel({ perfil }: { perfil: Perfil }) {
   const router = useRouter();
-  const [vista, setVista] = useState(vistaInicial);
+  const vista: VistaAulas = useSearchParams().get("vista") === "plano" ? "plano" : "lista";
   const [creando, setCreando] = useState(false);
   const [detalleId, setDetalleId] = useState<string | null>(null);
 
   const cambiarVista = (valores: string[]) => {
     const elegida = valores.at(-1);
     if (elegida !== "lista" && elegida !== "plano") return;
-    setVista(elegida);
     router.replace(rutaDeVista[elegida]);
   };
 
