@@ -246,6 +246,8 @@ test.describe("Usuarios", () => {
       await loginViaUi(page, seededUsers.bedel);
       await page.goto("/usuarios");
       const buscador = page.getByLabel("Buscar usuarios");
+      const cajaBuscador = await buscador.boundingBox();
+      expect(cajaBuscador?.width).toBeGreaterThanOrEqual(96);
       const filtros = [
         {
           selector: page.getByLabel("Filtrar por perfil"),
@@ -256,16 +258,24 @@ test.describe("Usuarios", () => {
           opciones: ["Todas las cuentas", "Baja solicitada"],
         },
       ];
-      const cortado = (selector: (typeof filtros)[number]["selector"]) =>
-        selector.evaluate((el) => el.scrollWidth > el.clientWidth);
-      const [primero] = await Promise.all([buscador.boundingBox()]);
+      const holguraDelTexto = (selector: (typeof filtros)[number]["selector"]) =>
+        selector.evaluate((el) => {
+          const select = el as HTMLSelectElement;
+          const estilo = getComputedStyle(select);
+          const contexto = document.createElement("canvas").getContext("2d")!;
+          contexto.font = `${estilo.fontWeight} ${estilo.fontSize} ${estilo.fontFamily}`;
+          const texto = select.selectedOptions[0]!.text;
+          const disponible =
+            select.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
+          return disponible - contexto.measureText(texto).width;
+        });
       for (const { selector, opciones } of filtros) {
-        const anchoInicial = (await selector.boundingBox())?.width;
-        expect((await selector.boundingBox())?.y).toBe(primero?.y);
+        const caja = await selector.boundingBox();
+        expect(caja?.y).toBe(cajaBuscador?.y);
         for (const opcion of opciones) {
           await selector.selectOption({ label: opcion });
-          expect(await cortado(selector)).toBe(false);
-          expect((await selector.boundingBox())?.width).toBe(anchoInicial);
+          expect(await holguraDelTexto(selector)).toBeGreaterThanOrEqual(0);
+          expect((await selector.boundingBox())?.width).toBe(caja?.width);
         }
         await selector.selectOption({ index: 0 });
       }
