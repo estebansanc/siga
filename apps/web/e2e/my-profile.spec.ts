@@ -1,13 +1,13 @@
 import { expect, test } from "./support/fixtures";
 
-test.describe("Mi perfil", () => {
+test.describe("Mi cuenta: Perfil", () => {
   test("cambia el nombre con validación, persiste al recargar y se refleja en la barra lateral", async ({
     authenticatedPage: page,
     user,
   }) => {
     await page.getByTestId("user-menu-trigger").click();
-    await page.getByRole("menuitem", { name: "Mi perfil" }).click();
-    await expect(page).toHaveURL(/\/mi-perfil/);
+    await page.getByRole("menuitem", { name: "Mi cuenta" }).click();
+    await expect(page).toHaveURL(/\/mi-cuenta$/);
     const nameInput = page.getByLabel("Apellido y nombre");
     await expect(page.getByText("Así te ven los demás usuarios.")).toBeVisible();
     await expect(nameInput).toHaveValue(user.name);

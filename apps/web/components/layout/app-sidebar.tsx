@@ -7,6 +7,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -17,13 +18,13 @@ import {
 import { LayoutGridIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ComponentProps } from "react";
+import { useId, type ComponentProps } from "react";
 
 import { useMe } from "@/hooks/use-me";
 import { productName } from "@/lib/product";
 
 import { NavUser } from "./nav-user";
-import { navigationFor } from "./navigation";
+import { navigationFor, type NavigationSection } from "./navigation";
 
 // La sesión está fija en la institución: la barra muestra la marca del producto y su nombre,
 // con link al inicio.
@@ -48,6 +49,44 @@ function AppIdentity({ institutionName }: { institutionName: string }) {
 const isActivePath = (pathname: string, href: string) =>
   href === "/" ? pathname === href : pathname.startsWith(href);
 
+function NavSection({
+  section,
+  pathname,
+  onNavigate,
+}: {
+  section: NavigationSection;
+  pathname: string;
+  onNavigate: () => void;
+}) {
+  const labelId = useId();
+  return (
+    <SidebarGroup {...(section.title ? { role: "group", "aria-labelledby": labelId } : {})}>
+      {section.title ? (
+        <SidebarGroupLabel
+          id={labelId}
+          className="group-data-[collapsible=icon]:pointer-events-none"
+        >
+          {section.title}
+        </SidebarGroupLabel>
+      ) : null}
+      <SidebarMenu>
+        {section.items.map((item) => (
+          <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+              tooltip={item.title}
+              isActive={isActivePath(pathname, item.href)}
+              render={<Link href={item.href} onClick={onNavigate} />}
+            >
+              <item.icon />
+              <span>{item.title}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+      </SidebarMenu>
+    </SidebarGroup>
+  );
+}
+
 export function AppSidebar({
   role,
   me,
@@ -69,22 +108,14 @@ export function AppSidebar({
         <AppIdentity institutionName={institutionName} />
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarMenu>
-            {visibleNavigation.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  tooltip={item.title}
-                  isActive={isActivePath(pathname, item.href)}
-                  render={<Link href={item.href} onClick={() => setOpenMobile(false)} />}
-                >
-                  <item.icon />
-                  <span>{item.title}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
+        {visibleNavigation.map((section, index) => (
+          <NavSection
+            key={section.title ?? `sin-titulo-${index}`}
+            section={section}
+            pathname={pathname}
+            onNavigate={() => setOpenMobile(false)}
+          />
+        ))}
       </SidebarContent>
       <SidebarFooter>
         {/* `activeMe` viene de la base, no de la cookie de sesión: un cambio hecho en Mi perfil

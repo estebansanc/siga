@@ -96,7 +96,6 @@ test.describe("Aulas", () => {
     await expect(page).toHaveURL(/vista=plano/);
     await expect(page.getByRole("button", { name: "Nueva aula" })).toBeVisible();
     await page.getByRole("button", { name: "Edificio A" }).click();
-    await page.getByRole("button", { name: "1.º piso" }).click();
     await page.getByRole("button", { name: /^Aula 12/ }).click();
     const detallePlano = page.getByRole("dialog", { name: "Aula 12" });
     await expect(detallePlano.getByText("Reportar incidencia")).toBeVisible();

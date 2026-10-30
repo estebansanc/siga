@@ -25,9 +25,9 @@ const perfiles = {
   Autoridad: { user: seededUsers.autoridad, inicio: "Clases" },
 } satisfies Record<string, { user: User; inicio: string }>;
 
-const rutasComunes = ["/", "/mi-perfil", "/avisos", "/clases"];
+const rutasComunes = ["/", "/mi-cuenta", "/mi-cuenta/notificaciones", "/avisos", "/clases"];
 const rutasPorPerfil: Record<keyof typeof perfiles, string[]> = {
-  Estudiante: ["/preferencias", "/aulas?vista=plano"],
+  Estudiante: ["/mi-cuenta/comisiones", "/aulas?vista=plano"],
   Docente: ["/asistencia", "/novedades", "/solicitudes"],
   Bedel: [
     "/novedades",
@@ -89,7 +89,7 @@ test.describe("Accesibilidad por perfil", () => {
       await loginViaUi(page, user);
       const rutas = [
         "/",
-        "/mi-perfil",
+        "/mi-cuenta",
         "/avisos",
         ...rutasPorPerfil[perfil as keyof typeof perfiles],
       ];
@@ -249,7 +249,7 @@ test.describe("Contraste de estados y foco", () => {
       await page.emulateMedia({ colorScheme: tema });
       await loginViaUi(page, seededUsers.bedel);
       const hallazgos: string[] = [];
-      for (const ruta of ["/estado-institucional", "/novedades", "/configuracion", "/mi-perfil"]) {
+      for (const ruta of ["/estado-institucional", "/novedades", "/configuracion", "/mi-cuenta"]) {
         await page.goto(ruta);
         await esperarPantalla(page);
         for (const h of await medirFoco(page)) hallazgos.push(`${ruta} ${h.selector} ${h.detalle}`);

@@ -95,7 +95,8 @@ test.describe("Plano de aulas", () => {
       await page.goto("/aulas?vista=plano");
       await page.getByRole("button", { name: edificio }).click();
       await expect(page.getByRole("button", { name: new RegExp(aulaCodigo) })).toBeVisible();
-      await expect(page.getByRole("group", { name: "Piso" })).toBeVisible();
+      await expect(page.getByRole("group", { name: "Piso" })).toHaveCount(0);
+      await expect(page.getByRole("heading", { level: 3, name: "PB" })).toBeVisible();
       await expectNoHorizontalPageScroll(page);
     } finally {
       await eliminarClaseConAula(claseId, aulaId);

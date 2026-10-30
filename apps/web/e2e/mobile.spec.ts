@@ -64,17 +64,18 @@ test.describe("Móvil", () => {
     await expect(page.getByLabel("Comisión")).toBeVisible();
     await expectNoHorizontalPageScroll(page);
 
-    await page.goto("/preferencias");
+    await page.goto("/mi-cuenta/comisiones");
     await expect(page.getByText("Comisiones que seguís")).toBeVisible();
     await expect(page.getByText("Proyecto Final").first()).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Notificaciones" })).toBeInViewport();
     await expectNoHorizontalPageScroll(page);
 
     await page.goto("/estado-institucional");
     await expect(page.getByText("Historial")).toBeVisible();
     await expectNoHorizontalPageScroll(page);
 
-    await page.goto("/mi-perfil");
-    await expect(page.getByRole("heading", { name: "Mi perfil" })).toBeVisible();
+    await page.goto("/mi-cuenta");
+    await expect(page.getByRole("heading", { name: "Mi cuenta" })).toBeVisible();
     await expectNoHorizontalPageScroll(page);
   });
 

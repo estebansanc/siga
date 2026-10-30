@@ -4,7 +4,7 @@ import { anioCarreraSchema } from "./clases";
 import { idSchema } from "./common";
 
 export const actualizarPreferenciasSchema = z.object({
-  comisionIds: z.array(idSchema).max(50, "Podés seguir hasta 50 comisiones"),
+  comisionIds: z.array(idSchema).max(50, "Podés seguir hasta 50 comisiones").optional(),
   notificarNovedadesPorCorreo: z.boolean().optional(),
   notificarAvisosPorCorreo: z.boolean().optional(),
 });

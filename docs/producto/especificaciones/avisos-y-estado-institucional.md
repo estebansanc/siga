@@ -87,7 +87,7 @@ Requisitos cubiertos: RF-01, RF-08, RF-14, RF-17. Criterios de aceptación: CA-0
 - **Todos**: indicador de estado institucional en la parte superior; detalle del estado; sección Avisos con los avisos vigentes.
 - **Bedel**: Estado institucional (cambio de estado con motivo y vigencia; historial); Avisos (redactar, segmentar, publicar, enviar por correo, ver resultado de envíos).
 - **Autoridad académica**: Avisos (igual que Bedel).
-- **Estudiante**: Preferencias (comisiones seguidas, notificaciones por correo).
+- **Estudiante**: Mi cuenta → Comisiones (comisiones seguidas) y Notificaciones (correo), desde el menú de usuario.
 
 ## Fuera de alcance
 

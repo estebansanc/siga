@@ -42,7 +42,7 @@ export function MisClasesHoy() {
           title="Todavía no seguís ninguna comisión"
           description="Elegí las comisiones que cursás para ver el estado de tus clases de hoy."
         >
-          <Link href="/preferencias" className={buttonVariants()}>
+          <Link href="/mi-cuenta/comisiones" className={buttonVariants()}>
             Elegir comisiones
           </Link>
         </ClasesEmpty>

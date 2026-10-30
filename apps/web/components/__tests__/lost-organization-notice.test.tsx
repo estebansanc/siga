@@ -70,7 +70,7 @@ describe("LostOrganizationNotice", () => {
   });
 
   it("fuera del inicio navega ahí una sola vez, sin atrapar ahí las veces siguientes", () => {
-    pathnameState.current = "/mi-perfil";
+    pathnameState.current = "/mi-cuenta";
     const first = renderWithProviders(<LostOrganizationNotice me={meOf(lost)} />);
     expect(routerSpies.replace).toHaveBeenCalledWith("/");
     expect(routerSpies.replace).toHaveBeenCalledTimes(1);
@@ -91,7 +91,7 @@ describe("LostOrganizationNotice", () => {
     const { rerender } = renderWithProviders(<LostOrganizationNotice me={meOf(lost)} />);
     expect(routerSpies.replace).not.toHaveBeenCalled();
 
-    pathnameState.current = "/mi-perfil";
+    pathnameState.current = "/mi-cuenta";
     rerender(<LostOrganizationNotice me={meOf(lost)} />);
     expect(routerSpies.replace).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toBeInTheDocument();

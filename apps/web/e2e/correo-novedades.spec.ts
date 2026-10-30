@@ -16,13 +16,13 @@ test.describe("Correo de novedades", () => {
   test("el estudiante activa cada opción, persiste al recargar y arrancan desactivadas", async ({
     authenticatedPage: page,
   }) => {
-    await page.goto("/preferencias");
+    await page.goto("/mi-cuenta/notificaciones");
     await expect(page.getByRole("switch", { name: switchNovedades })).not.toBeChecked();
     await expect(page.getByRole("switch", { name: switchAvisos })).not.toBeChecked();
 
     await page.getByRole("switch", { name: switchNovedades }).click();
     await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Preferencias guardadas")).toBeVisible();
+    await expect(page.getByText("Notificaciones guardadas")).toBeVisible();
 
     await page.reload();
     await expect(page.getByRole("switch", { name: switchNovedades })).toBeChecked();
@@ -33,13 +33,14 @@ test.describe("Correo de novedades", () => {
     authenticatedPage: page,
     browser,
     baseURL,
+    user,
   }) => {
     const { userId } = await readMeViaApi(page.request);
-    await page.goto("/preferencias");
+    await page.goto("/mi-cuenta/notificaciones");
     await page.getByRole("switch", { name: switchNovedades }).click();
     await page.getByRole("switch", { name: switchAvisos }).click();
     await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Preferencias guardadas")).toBeVisible();
+    await expect(page.getByText("Notificaciones guardadas")).toBeVisible();
 
     const anonymous = await browser.newContext({ baseURL });
     const baja = await anonymous.newPage();
@@ -56,12 +57,21 @@ test.describe("Correo de novedades", () => {
     await baja.getByRole("button", { name: "Dejar de recibir" }).click();
     await expect(
       baja.getByText(
-        "Listo. Ya no vas a recibir novedades de clase por correo. Podés volver a activarlas desde Preferencias.",
+        "Listo. Ya no vas a recibir novedades de clase por correo. Podés volver a activarlas desde Mi cuenta → Notificaciones.",
       ),
     ).toBeVisible();
+
+    await baja.getByRole("link", { name: "Ir a Notificaciones" }).click();
+    await expect(baja).toHaveURL(/\/login\?next=%2Fmi-cuenta%2Fnotificaciones/);
+    await baja.getByLabel("Email").fill(user.email);
+    await baja.getByLabel("Contraseña").fill(user.password);
+    await baja.getByRole("button", { name: "Ingresar" }).click();
+    await expect(baja).toHaveURL(/\/mi-cuenta\/notificaciones/);
+    await expect(baja.getByRole("switch", { name: switchNovedades })).not.toBeChecked();
+    await expect(baja.getByRole("switch", { name: switchAvisos })).toBeChecked();
     await anonymous.close();
 
-    await page.goto("/preferencias");
+    await page.goto("/mi-cuenta/notificaciones");
     await expect(page.getByRole("switch", { name: switchNovedades })).not.toBeChecked();
     await expect(page.getByRole("switch", { name: switchAvisos })).toBeChecked();
   });
@@ -72,11 +82,11 @@ test.describe("Correo de novedades", () => {
     baseURL,
   }) => {
     const { userId } = await readMeViaApi(page.request);
-    await page.goto("/preferencias");
+    await page.goto("/mi-cuenta/notificaciones");
     await page.getByRole("switch", { name: switchNovedades }).click();
     await page.getByRole("switch", { name: switchAvisos }).click();
     await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Preferencias guardadas")).toBeVisible();
+    await expect(page.getByText("Notificaciones guardadas")).toBeVisible();
 
     const anonymous = await browser.newContext({ baseURL });
     const baja = await anonymous.newPage();
@@ -87,8 +97,22 @@ test.describe("Correo de novedades", () => {
     ).toBeVisible();
     await anonymous.close();
 
-    await page.goto("/preferencias");
+    await page.goto("/mi-cuenta/notificaciones");
     await expect(page.getByRole("switch", { name: switchNovedades })).toBeChecked();
     await expect(page.getByRole("switch", { name: switchAvisos })).not.toBeChecked();
+  });
+
+  test("la baja sin enlace válido abre sin sesión y no ofrece la baja", async ({
+    browser,
+    baseURL,
+  }) => {
+    const anonymous = await browser.newContext({ baseURL });
+    const baja = await anonymous.newPage();
+    await baja.goto("/baja-correo");
+    await expect(
+      baja.getByText("El enlace para dejar de recibir correos no es válido."),
+    ).toBeVisible();
+    await expect(baja.getByRole("button", { name: "Dejar de recibir" })).toHaveCount(0);
+    await anonymous.close();
   });
 });

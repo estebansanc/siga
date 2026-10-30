@@ -51,9 +51,7 @@ test.describe("Asignar, mover y reemplazar desde el plano", () => {
     await expect(mover).toBeHidden();
     await page.keyboard.press("Escape");
 
-    await page.getByRole("button", { name: "PB", exact: true }).click();
     await expect(celda(page, escenario.conClase.codigo)).toContainText("Libre");
-    await page.getByRole("button", { name: "1.º piso" }).click();
     await expect(celda(page, escenario.destino.codigo)).toContainText("Pendiente");
   });
 
@@ -72,7 +70,6 @@ test.describe("Asignar, mover y reemplazar desde el plano", () => {
     await expect(reemplazar).toBeHidden();
     await page.keyboard.press("Escape");
 
-    await page.getByRole("button", { name: "1.º piso" }).click();
     await expect(celda(page, escenario.destino.codigo)).toContainText("Pendiente");
   });
 
