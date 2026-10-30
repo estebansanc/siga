@@ -21,7 +21,11 @@ vi.mock("@/hooks/use-incidencias", () => ({
   useReportarIncidencia: () => ({ mutateAsync: reportar, isPending: false }),
 }));
 vi.mock("@/components/novedades/publicar-novedad-dialog", () => ({
-  PublicarNovedadDialog: () => null,
+  PublicarNovedadDialog: ({ claseInicial }: { claseInicial?: ClaseDto }) => (
+    <div role="dialog" aria-label="Publicar novedad">
+      {claseInicial?.id}
+    </div>
+  ),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
@@ -49,12 +53,20 @@ beforeEach(() => {
   reportar.mockResolvedValue({});
 });
 
+const abrirMenu = () =>
+  userEvent.click(screen.getByRole("button", { name: "Acciones de Proyecto Final 5K2" }));
+
 describe("MisClasesDocente", () => {
-  it("reporta una incidencia desde una clase con aula, enviando la clase", async () => {
+  it("no muestra botones de texto Incidencia ni Novedad en la tarjeta", () => {
     renderWithProviders(<MisClasesDocente />);
-    await userEvent.click(
-      screen.getByRole("button", { name: "Reportar incidencia en Proyecto Final 5K2" }),
-    );
+    expect(screen.queryByRole("button", { name: /^(Incidencia|Novedad)$/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Acciones de Proyecto Final 5K2" })).toBeVisible();
+  });
+
+  it("reporta una incidencia desde el menú, enviando la clase", async () => {
+    renderWithProviders(<MisClasesDocente />);
+    await abrirMenu();
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Reportar incidencia" }));
     const dialog = await screen.findByRole("dialog", { name: "Nueva incidencia" });
     expect(within(dialog).getByText(/en Aula 12/)).toBeVisible();
     await userEvent.selectOptions(
@@ -70,9 +82,34 @@ describe("MisClasesDocente", () => {
     });
   });
 
-  it("no ofrece reportar en una clase sin aula", () => {
+  it("publica una novedad desde el menú con la clase preseleccionada", async () => {
+    renderWithProviders(<MisClasesDocente />);
+    await abrirMenu();
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Publicar novedad" }));
+    expect(await screen.findByRole("dialog", { name: "Publicar novedad" })).toHaveTextContent(
+      "clase-1",
+    );
+  });
+
+  it("deshabilita Reportar incidencia con motivo en una clase sin aula", async () => {
     state.clases = [{ ...clase, aula: null }];
     renderWithProviders(<MisClasesDocente />);
-    expect(screen.queryByRole("button", { name: /Reportar incidencia/ })).toBeNull();
+    await abrirMenu();
+    const item = await screen.findByRole("menuitem", { name: /Reportar incidencia/ });
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(item).toHaveTextContent("La clase no tiene aula asignada");
+  });
+
+  it.each([
+    ["SUSPENDIDA", "Suspendida"],
+    ["AUSENTE", "Ausente"],
+    ["FINALIZADA", "Finalizada"],
+  ] as const)("deshabilita Publicar novedad con la clase %s", async (estado, texto) => {
+    state.clases = [{ ...clase, estado }];
+    renderWithProviders(<MisClasesDocente />);
+    await abrirMenu();
+    const item = await screen.findByRole("menuitem", { name: /Publicar novedad/ });
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    expect(item).toHaveTextContent(`La clase está ${texto}`);
   });
 });

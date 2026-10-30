@@ -140,8 +140,10 @@ test.describe("Incidencias de aulas", () => {
       await loginViaUi(page, seededUsers.docente);
       await page.goto("/");
       const tarjeta = page.locator(`[data-clase-id="${claseId}"]`);
-      await tarjeta.getByRole("button", { name: /Reportar incidencia en/ }).click();
+      await tarjeta.getByRole("button", { name: /^Acciones de/ }).click();
+      await page.getByRole("menuitem", { name: "Reportar incidencia" }).click();
       const reporte = page.getByRole("dialog", { name: "Nueva incidencia" });
+      await expect(page.getByRole("dialog")).toHaveCount(1);
       await expect(reporte.getByLabel("Aula", { exact: true })).toHaveCount(0);
       await expect(reporte.getByText(new RegExp(`en ${aulaCodigo}`))).toBeVisible();
       await reporte.getByRole("button", { name: "Reportar" }).click();
@@ -161,6 +163,34 @@ test.describe("Incidencias de aulas", () => {
         elemento: "CLIMATIZACION",
         reportadaPor: { email: seededUsers.docente.email },
       });
+    } finally {
+      await eliminarClaseConAula(claseId, aulaId);
+    }
+  });
+
+  test("la tarjeta del docente ofrece ⋯ sin botones de texto, abre Publicar novedad con la clase y no scrollea a lo ancho", async ({
+    page,
+  }) => {
+    const { aulaId, claseId } = await crearClaseDeHoyConAula();
+    try {
+      await loginViaUi(page, seededUsers.docente);
+      await page.goto("/");
+      const tarjeta = page.locator(`[data-clase-id="${claseId}"]`);
+      await expect(tarjeta.getByRole("button", { name: /^Acciones de/ })).toBeVisible();
+      await expect(tarjeta.getByRole("button", { name: /^(Incidencia|Novedad)$/ })).toHaveCount(0);
+      await expectNoHorizontalPageScroll(page);
+
+      await tarjeta.getByRole("button", { name: /^Acciones de/ }).click();
+      await expect(page.getByRole("menuitem", { name: "Reportar incidencia" })).toBeEnabled();
+      const publicar = page.getByRole("menuitem", { name: /^Publicar novedad/ });
+      if ((await tarjeta.textContent())?.includes("Finalizada")) {
+        await expect(publicar).toBeDisabled();
+        await expect(publicar).toContainText("La clase está Finalizada");
+        return;
+      }
+      await publicar.click();
+      await expect(page.getByRole("dialog", { name: "Publicar novedad" })).toBeVisible();
+      await expect(page.getByRole("dialog")).toHaveCount(1);
     } finally {
       await eliminarClaseConAula(claseId, aulaId);
     }
