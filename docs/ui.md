@@ -119,7 +119,7 @@ Qué está verificado y qué no, sin mezclarlos:
 
 Usuarios de QA por perfil (`.claude/flow.json`, clave `demo1234`): Bedel `demo@example.com` (también Administrador de la institución, ve Configuración), Docente `docente@example.com`, Estudiante `estudiante@example.com`, Autoridad `autoridad@example.com`.
 
-Flujos a recorrer en cada navegador: Estudiante guarda comisiones en Preferencias y las ve en Mis clases de hoy; Docente publica una novedad y la ve en Novedades; Bedel registra un estado (visible en el historial) y publica una novedad; Autoridad ve Clases; Administrador abre el "?" de Configuración.
+Flujos a recorrer en cada navegador: Estudiante guarda comisiones en Mi cuenta → Comisiones y las ve en Mis clases de hoy; Docente publica una novedad y la ve en Novedades; Bedel registra un estado (visible en el historial) y publica una novedad; Autoridad ve Clases; Administrador abre el "?" de Configuración.
 
 Teclado en Safari: en macOS, Tab por defecto salta los links y llega solo a campos y botones; para recorrer links hay que usar Option+Tab (o activar "Pulsar la tecla Tab para resaltar cada elemento" en Ajustes de Safari). No es un defecto de la app.
 
