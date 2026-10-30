@@ -22,6 +22,11 @@ test.describe("Configuración", () => {
     await expect(page.getByText("Presencia del docente", { exact: true })).toBeVisible();
     await expect(page.getByText("Turnos", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Miembros", { exact: true })).toHaveCount(0);
+    await expect(
+      page.getByText("El nombre que ven todos los usuarios en la barra lateral."),
+    ).toBeVisible();
+    await expect(page.getByLabel("Nombre de la institución")).toBeVisible();
+    await expect(page.getByText(/organizaci|miembro|invitaci/i)).toHaveCount(0);
   });
 
   test("un estudiante no ve Configuración y por URL vuelve a Mis clases", async ({

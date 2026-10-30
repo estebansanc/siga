@@ -54,10 +54,10 @@ describe("LostOrganizationNotice", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("nombra la organización que se dejó y la propia que se ve ahora", () => {
+  it("avisa que se perdió el acceso y a quién consultar", () => {
     renderWithProviders(<LostOrganizationNotice me={meOf(lost)} />);
-    expect(screen.getByText("Ya no formás parte de Organización QA Norte.")).toBeInTheDocument();
-    expect(screen.getByText("Seguís viendo Organización de QA.")).toBeInTheDocument();
+    expect(screen.getByText("Ya no tenés acceso a Organización QA Norte.")).toBeInTheDocument();
+    expect(screen.getByText("Si creés que es un error, consultá en Bedelía.")).toBeInTheDocument();
   });
 
   it("cerrarlo lo oculta y no reaparece por esa organización", async () => {

@@ -13,7 +13,7 @@ export const roleOf = (role: string): MemberRole =>
 
 export const memberRoleLabels: Record<MemberRole, string> = {
   owner: "Administrador",
-  member: "Miembro",
+  member: "Usuario",
 };
 
 // ---------- SiGA ----------

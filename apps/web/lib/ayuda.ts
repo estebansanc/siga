@@ -289,17 +289,13 @@ const datosAcademicos: SeccionManual = {
 
 const configuracion: SeccionManual = {
   titulo: "Configuración",
-  paraQueSirve:
-    "Administra la organización: nombre, turnos, presencia del docente y versión.",
+  paraQueSirve: "Administra la institución: nombre, turnos, presencia del docente y versión.",
   comoSeLlega: menu("Configuración"),
   pasos: [
-    'Editá el nombre de la organización y tocá "Guardar".',
+    'Editá el nombre de la institución y tocá "Guardar".',
     'Ajustá "Turnos" y "Presencia del docente" y guardá con "Guardar turnos" o "Guardar presencia".',
   ],
-  mensajes: [
-    "Solo el Administrador de la organización ve esta sección.",
-    "Las personas se gestionan en Usuarios.",
-  ],
+  mensajes: ["Solo el Administrador ve esta sección.", "Las personas se gestionan en Usuarios."],
 };
 
 const miPerfil: SeccionManual = {
@@ -307,15 +303,7 @@ const miPerfil: SeccionManual = {
   paraQueSirve: "Corregí tus datos o solicitá la baja de tu cuenta.",
   comoSeLlega: 'Tocá tu nombre al pie del menú lateral y elegí "Mi perfil".',
   pasos: ['Editá tus datos y tocá "Guardar".'],
-  mensajes: ["Los cambios se reflejan en todas tus organizaciones."],
-};
-
-const cambiarOrganizacion: SeccionManual = {
-  titulo: "Cambiar de organización",
-  paraQueSirve: "Tu sesión queda fija en la institución con la que ingresaste.",
-  comoSeLlega: 'Tocá tu nombre al pie del menú lateral y elegí "Cerrar sesión".',
-  pasos: ["Ingresá de nuevo con la cuenta de la otra organización."],
-  mensajes: ["La ayuda se actualiza con el perfil de la nueva organización."],
+  mensajes: ["Los demás usuarios ven tus cambios enseguida."],
 };
 
 const cerrarSesion: SeccionManual = {
@@ -334,7 +322,7 @@ const ayuda: SeccionManual = {
   mensajes: ["Solo ves la ayuda del perfil activo."],
 };
 
-const comunes = [miPerfil, cambiarOrganizacion, cerrarSesion];
+const comunes = [miPerfil, cerrarSesion];
 
 export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
   ESTUDIANTE: {

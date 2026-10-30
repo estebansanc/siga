@@ -23,6 +23,7 @@ test.describe("Ayuda", () => {
       await expect(page.getByText(tarea)).toBeVisible();
       await page.getByRole("tab", { name: "Manual de usuario" }).click();
       await expect(page.getByRole("button", { name: "Mi perfil" })).toBeVisible();
+      await expect(page.getByText(/organizaci/i)).toHaveCount(0);
       await expectNoHorizontalPageScroll(page);
     });
   }

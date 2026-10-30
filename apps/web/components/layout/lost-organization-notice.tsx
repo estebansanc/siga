@@ -52,8 +52,8 @@ export function LostOrganizationNotice({ me: initialMe }: { me: MeDto }) {
     <div className="shrink-0 border-b p-2 sm:px-4">
       <Alert>
         <InfoIcon />
-        <AlertTitle>Ya no formás parte de {lostOrganization.name}.</AlertTitle>
-        <AlertDescription>Seguís viendo {currentOrganizationName}.</AlertDescription>
+        <AlertTitle>Ya no tenés acceso a {lostOrganization.name}.</AlertTitle>
+        <AlertDescription>Si creés que es un error, consultá en Bedelía.</AlertDescription>
         <AlertAction>
           <Button
             type="button"

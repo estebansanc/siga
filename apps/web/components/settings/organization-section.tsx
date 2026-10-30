@@ -32,9 +32,9 @@ export function OrganizationSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Organización</CardTitle>
+        <CardTitle>Institución</CardTitle>
         <CardDescription>
-          El nombre que ven los miembros en la barra lateral y en la invitación.
+          El nombre que ven todos los usuarios en la barra lateral.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -59,7 +59,7 @@ function OrganizationNameForm({ name }: { name: string }) {
     try {
       await updateSettings.mutateAsync(values);
       form.reset(values);
-      toast.success("Organización actualizada");
+      toast.success("Institución actualizada");
     } catch (error) {
       showRequestError(error, form.setError);
     }
@@ -69,7 +69,7 @@ function OrganizationNameForm({ name }: { name: string }) {
     <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <FieldGroup>
         <Field data-invalid={Boolean(form.formState.errors.name)}>
-          <FieldLabel htmlFor="organization-name">Nombre de la organización</FieldLabel>
+          <FieldLabel htmlFor="organization-name">Nombre de la institución</FieldLabel>
           <Input id="organization-name" {...form.register("name")} />
           <FieldError>{form.formState.errors.name?.message}</FieldError>
         </Field>

@@ -28,9 +28,7 @@ describe("ayuda", () => {
     for (const role of roles) {
       const titulos = manualFor(perfil, role).map((seccion) => seccion.titulo);
       for (const item of navigationFor(perfil, role)) expect(titulos).toContain(item.title);
-      expect(titulos).toEqual(
-        expect.arrayContaining(["Mi perfil", "Cambiar de organización", "Cerrar sesión"]),
-      );
+      expect(titulos).toEqual(expect.arrayContaining(["Mi perfil", "Cerrar sesión"]));
     }
   });
 
@@ -52,6 +50,20 @@ describe("ayuda", () => {
       JSON.stringify(manual.find((seccion) => seccion.titulo === titulo)).toLowerCase();
     expect(texto("Configuración")).not.toContain("miembros");
     expect(texto("Usuarios")).toContain("administrador");
+  });
+
+  it.each(perfiles)("el manual de %s no habla de organizaciones", (perfil) => {
+    const texto = JSON.stringify(manualFor(perfil, "owner")).toLowerCase();
+    expect(texto).not.toContain("organizaci");
+    expect(texto).toContain("los demás usuarios ven tus cambios enseguida.");
+  });
+
+  it("el manual del Administrador describe Configuración como de la institución", () => {
+    const configuracion = manualFor("BEDEL", "owner").find((s) => s.titulo === "Configuración");
+    expect(configuracion?.paraQueSirve).toBe(
+      "Administra la institución: nombre, turnos, presencia del docente y versión.",
+    );
+    expect(configuracion?.mensajes).toContain("Solo el Administrador ve esta sección.");
   });
 
   it("la guía de cada perfil tiene exactamente las tareas del ticket", () => {

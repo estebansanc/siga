@@ -43,7 +43,7 @@ export function ProfileSection({ initialMe }: { initialMe: MeDto }) {
       <Card>
         <CardHeader>
           <CardTitle>Perfil</CardTitle>
-          <CardDescription>Cómo te ven en todas tus organizaciones.</CardDescription>
+          <CardDescription>Así te ven los demás usuarios.</CardDescription>
         </CardHeader>
         <CardContent>
           <ProfileForm key={`${me.userName}|${me.dni}|${me.legajo}`} me={me} />
