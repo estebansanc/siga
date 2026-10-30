@@ -42,10 +42,10 @@ const misClasesDocente: SeccionManual = {
   mensajes: ["No tenés clases hoy: no hay clases asignadas para este día."],
 };
 
-const buscar: SeccionManual = {
-  titulo: "Buscar",
+const clases: SeccionManual = {
+  titulo: "Clases",
   paraQueSirve: "Encuentra las clases de una fecha por carrera, año, materia o comisión.",
-  comoSeLlega: menu("Buscar"),
+  comoSeLlega: menu("Clases"),
   pasos: [
     'Elegí la fecha en "Fecha" y completá los filtros que necesites.',
     "Tocá una clase del resultado para ver su estado y novedades.",
@@ -162,25 +162,6 @@ const estado: SeccionManual = {
     'El Bedel elige el "Nuevo estado", indica el "Motivo" y toca "Cambiar estado".',
   ],
   mensajes: ["Al cerrar la institución se pide confirmación y se ofrece generar un aviso."],
-};
-
-const clasesBedel: SeccionManual = {
-  titulo: "Clases",
-  paraQueSirve: "Busca las clases de una fecha para controlar su estado.",
-  comoSeLlega: menu("Clases"),
-  pasos: [
-    'Elegí la fecha en "Fecha" y filtrá por carrera, año, materia o comisión.',
-    "Tocá una clase para ver su detalle.",
-  ],
-  mensajes: ["No se encontraron clases: ninguna coincide con los filtros elegidos."],
-};
-
-const clasesAutoridad: SeccionManual = {
-  titulo: "Clases de hoy",
-  paraQueSirve: "Muestra el panorama de las clases del día.",
-  comoSeLlega: menu("Clases de hoy"),
-  pasos: ["Revisá las clases y sus estados.", "Tocá una clase para ver su detalle."],
-  mensajes: ["No hay clases programadas hoy: no hay clases para este día."],
 };
 
 const plano: SeccionManual = {
@@ -333,9 +314,9 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
         ],
       },
       {
-        titulo: "Buscar una clase",
+        titulo: "Consultar las clases",
         pasos: [
-          'Entrá a "Buscar" y elegí la fecha en "Fecha".',
+          'Entrá a "Clases" y elegí la fecha en "Fecha".',
           "Filtrá por carrera, materia o comisión y abrí la clase.",
         ],
       },
@@ -347,7 +328,7 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
         ],
       },
     ],
-    manual: [misClasesEstudiante, buscar, avisosLectura, preferencias],
+    manual: [misClasesEstudiante, clases, avisosLectura, preferencias],
   },
   DOCENTE: {
     guia: [
@@ -386,7 +367,7 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
         ],
       },
     ],
-    manual: [misClasesDocente, asistencia, novedadesDocente, avisosLectura, aulasDocente, buscar],
+    manual: [misClasesDocente, asistencia, novedadesDocente, avisosLectura, aulasDocente, clases],
   },
   BEDEL: {
     guia: [
@@ -444,7 +425,7 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
     ],
     manual: [
       estado,
-      clasesBedel,
+      clases,
       novedadesBedel,
       aulasBedel,
       plano,
@@ -460,9 +441,9 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
   AUTORIDAD: {
     guia: [
       {
-        titulo: "Ver las clases de hoy",
+        titulo: "Consultar las clases",
         pasos: [
-          'Entrá a "Clases de hoy".',
+          'Entrá a "Clases" y elegí la fecha en "Fecha".',
           "Revisá el estado de cada clase y tocá una para ver su detalle.",
         ],
       },
@@ -486,10 +467,9 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
       },
     ],
     manual: [
-      clasesAutoridad,
+      clases,
       historico,
       avisosGestion,
-      buscar,
       plano,
       {
         ...estado,
