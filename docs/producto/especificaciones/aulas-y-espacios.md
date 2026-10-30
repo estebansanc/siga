@@ -90,7 +90,7 @@ Requisitos cubiertos: RF-02, RF-06, RF-15, RF-16. Criterios de aceptación: CA-0
 
 ## Pantallas
 
-- **Bedel**: Aulas (listado con estado y ocupación en tiempo real; alta, edición, baja; detalle con clases asignadas e incidencias); Solicitudes (pendientes, aprobar o rechazar con motivo); Asignar aula a clases sin aula; Incidencias (listado, cambio de estado, observaciones).
+- **Bedel**: Aulas (listado con estado y ocupación en tiempo real; alta, edición, baja; detalle con clases asignadas e incidencias); Solicitudes (pendientes, aprobar o rechazar con motivo); Asignar aula a clases sin aula (cantidad de alumnos y recursos opcionales; sin filtros ve todas las aulas libres, y sin coincidencias, hasta 5 con lo que incumplen); no solicita aula ni tiene Mis solicitudes: Solicitar aula y Mis solicitudes llevan a Solicitudes; Incidencias (listado, cambio de estado, observaciones).
 - **Docente**: Solicitar aula (filtros, resultados ordenados, confirmación); Mis solicitudes con su estado; Reportar incidencia desde la clase o el aula.
 - **Estudiante**: ve el aula asignada en Mis clases (RF-07); no accede a este módulo.
 

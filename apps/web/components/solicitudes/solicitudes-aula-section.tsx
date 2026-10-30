@@ -26,13 +26,13 @@ import { useState, type ReactNode } from "react";
 import { SolicitudEstadoBadge } from "@/components/aulas/solicitud-estado-badge";
 import {
   useAprobarSolicitudAula,
-  useAsignarAulaAClase,
   useClasesSinAula,
   useReasignarSolicitudAula,
   useSolicitudesAula,
 } from "@/hooks/use-solicitudes-aula";
 import { formatFechaCorta } from "@/lib/dates";
 
+import { AsignarAulaDialog } from "./asignar-aula-dialog";
 import { ElegirAulaDialog } from "./elegir-aula-dialog";
 import { RechazarSolicitudDialog } from "./rechazar-solicitud-dialog";
 
@@ -203,7 +203,6 @@ function ClasesSinAulaLista({ onAccion }: { onAccion: (accion: Accion) => void }
 function AccionDialog({ accion, onClose }: { accion: Accion; onClose: () => void }) {
   const aprobar = useAprobarSolicitudAula();
   const reasignar = useReasignarSolicitudAula();
-  const asignar = useAsignarAulaAClase();
 
   switch (accion.tipo) {
     case "rechazar":
@@ -236,17 +235,7 @@ function AccionDialog({ accion, onClose }: { accion: Accion; onClose: () => void
         />
       );
     case "asignar":
-      return (
-        <ElegirAulaDialog
-          claseId={accion.clase.id}
-          titulo="Asignar aula"
-          descripcion={`${accion.clase.materia.nombre} · ${accion.clase.comision.codigo}, ${formatFechaCorta(accion.clase.fecha)} de ${accion.clase.horaInicio} a ${accion.clase.horaFin}.`}
-          confirmLabel="Asignar"
-          exito="Aula asignada"
-          confirmar={(aulaId) => asignar.mutateAsync({ id: accion.clase.id, aulaId })}
-          onClose={onClose}
-        />
-      );
+      return <AsignarAulaDialog clase={accion.clase} onClose={onClose} />;
   }
 }
 

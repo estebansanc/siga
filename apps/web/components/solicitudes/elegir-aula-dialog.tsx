@@ -22,8 +22,36 @@ import { useAulasDisponibles } from "@/hooks/use-novedades";
 import { RequestError } from "@/lib/api-client";
 import { showRequestError } from "@/lib/form-errors";
 
-const describirAula = (aula: AulaDto) =>
+export const describirAula = (aula: AulaDto) =>
   `${aula.codigo} · ${aula.edificio}, ${aula.piso} · ${aula.capacidad} lugares`;
+
+// Confirma con el aula elegida. Si entre tanto otra operación ocupó el aula, el 409 queda en
+// el diálogo y nada cambia.
+export function useConfirmarAula(
+  confirmar: (aulaId: string) => Promise<unknown>,
+  exito: string,
+  onClose: () => void,
+) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const enviar = async (aulaId: string) => {
+    setPending(true);
+    setError(null);
+    try {
+      await confirmar(aulaId);
+      toast.success(exito);
+      onClose();
+    } catch (cause) {
+      if (cause instanceof RequestError && cause.status === 409) setError(cause.message);
+      else showRequestError(cause);
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return { pending, error, enviar };
+}
 
 export type ElegirAulaProps = {
   claseId: string;
@@ -37,8 +65,7 @@ export type ElegirAulaProps = {
   onClose: () => void;
 };
 
-// Solo ofrece aulas Disponibles y libres en la franja de la clase, sin la que ya tiene. Si
-// entre tanto otra operación ocupó el aula, el 409 se muestra acá y nada cambia.
+// Solo ofrece aulas Disponibles y libres en la franja de la clase, sin la que ya tiene.
 export function ElegirAulaDialog({
   claseId,
   titulo,
@@ -53,24 +80,8 @@ export function ElegirAulaDialog({
   const disponibles = useAulasDisponibles([claseId]);
   const aulas = (disponibles.data ?? []).filter((aula) => aula.id !== aulaActualId);
   const [elegidaId, setElegidaId] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { pending, error, enviar } = useConfirmarAula(confirmar, exito, onClose);
   const aulaId = elegidaId ?? aulas.find((aula) => aula.id === aulaPreelegidaId)?.id ?? "";
-
-  const enviar = async () => {
-    setPending(true);
-    setError(null);
-    try {
-      await confirmar(aulaId);
-      toast.success(exito);
-      onClose();
-    } catch (cause) {
-      if (cause instanceof RequestError && cause.status === 409) setError(cause.message);
-      else showRequestError(cause);
-    } finally {
-      setPending(false);
-    }
-  };
 
   return (
     <Dialog open onOpenChange={(open) => !open && !pending && onClose()}>
@@ -110,7 +121,7 @@ export function ElegirAulaDialog({
           <Button type="button" variant="outline" disabled={pending} onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="button" disabled={!aulaId || pending} onClick={() => void enviar()}>
+          <Button type="button" disabled={!aulaId || pending} onClick={() => void enviar(aulaId)}>
             {pending ? <Spinner /> : null}
             {confirmLabel}
           </Button>

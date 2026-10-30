@@ -478,7 +478,11 @@ export const aulasGestionQuerySchema = z.object({
 
 export const buscarAulasQuerySchema = z.object({
   claseId: z.string().min(1),
-  alumnos: alumnosSolicitudSchema,
+  alumnos: z
+    .preprocess((valor) => (valor === "" ? undefined : valor), alumnosSolicitudSchema.optional())
+    .openapi({
+      description: "Entero mayor que 0. Obligatorio para el Docente; opcional para el Bedel",
+    }),
   recursos: z
     .string()
     .optional()

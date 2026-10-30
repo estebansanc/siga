@@ -638,6 +638,33 @@ describe("Solicitudes de aula por HTTP", () => {
     expect(((await (await call("/solicitudes-aula/mias")).json()) as unknown[]).length).toBe(1);
   });
 
+  it("el Bedel busca aulas con o sin filtros pero no crea ni lista solicitudes propias", async () => {
+    const institution = await createInstitution();
+    const fixture = await seedAcademicFixture(institution);
+    const clase = await createClase(institution, fixture, "2099-10-14");
+    getAuthContext.mockResolvedValue(authOf(institution, institution));
+
+    const sinFiltros = await call(`/solicitudes-aula/aulas?claseId=${clase.id}&alumnos=`);
+    expect(sinFiltros.status).toBe(200);
+    expect(((await sinFiltros.json()) as { aulas: unknown[] }).aulas.length).toBeGreaterThan(0);
+    expect((await call(`/solicitudes-aula/aulas?claseId=${clase.id}&alumnos=2.5`)).status).toBe(
+      422,
+    );
+
+    expect((await call("/solicitudes-aula/clases")).status).toBe(403);
+    expect((await call("/solicitudes-aula/mias")).status).toBe(403);
+    const pedido = { claseId: clase.id, aulaId: fixture.otraAulaId, alumnos: 40, recursos: [] };
+    expect((await call("/solicitudes-aula", json(pedido))).status).toBe(403);
+  });
+
+  it("el Docente debe informar la cantidad de alumnos para buscar aulas", async () => {
+    const institution = await createInstitution();
+    const fixture = await seedAcademicFixture(institution);
+    const clase = await createClase(institution, fixture, "2099-10-14");
+    getAuthContext.mockResolvedValue(authOf(institution, fixture.docente));
+    expect((await call(`/solicitudes-aula/aulas?claseId=${clase.id}`)).status).toBe(422);
+  });
+
   it("las rutas de resolución y de clases sin aula son solo del Bedel", async () => {
     const institution = await createInstitution();
     const fixture = await seedAcademicFixture(institution);

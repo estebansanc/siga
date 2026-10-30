@@ -7,12 +7,21 @@ import { SolicitudesAulaSection } from "@/components/solicitudes/solicitudes-aul
 import { RequestError } from "@/lib/api-client";
 import { renderWithProviders } from "@/test/render";
 
+type Busqueda = { aulas: AulaDto[]; sugerencias: (AulaDto & { faltantes: string[] })[] };
 type Estado = {
   solicitudes: Record<string, SolicitudAulaDto[]>;
   clasesSinAula: ClaseDto[];
   aulas: AulaDto[];
+  busqueda: Busqueda;
+  pedidos: (object | null)[];
 };
-const state = vi.hoisted((): Estado => ({ solicitudes: {}, clasesSinAula: [], aulas: [] }));
+const state = vi.hoisted((): Estado => ({
+  solicitudes: {},
+  clasesSinAula: [],
+  aulas: [],
+  busqueda: { aulas: [], sugerencias: [] },
+  pedidos: [],
+}));
 
 const aprobar = vi.hoisted(() => vi.fn());
 const rechazar = vi.hoisted(() => vi.fn());
@@ -26,6 +35,10 @@ vi.mock("@/hooks/use-solicitudes-aula", () => ({
   useRechazarSolicitudAula: () => ({ mutateAsync: rechazar, isPending: false }),
   useReasignarSolicitudAula: () => ({ mutateAsync: reasignar, isPending: false }),
   useAsignarAulaAClase: () => ({ mutateAsync: asignar, isPending: false }),
+  useBuscarAulas: (pedido: object | null) => {
+    state.pedidos.push(pedido);
+    return { data: pedido ? { ...state.busqueda, hayAulasLibres: true } : undefined };
+  },
 }));
 vi.mock("@/hooks/use-novedades", () => ({
   useAulasDisponibles: () => ({ data: state.aulas }),
@@ -84,6 +97,8 @@ beforeEach(() => {
   state.solicitudes = {};
   state.clasesSinAula = [];
   state.aulas = [aula("a14", "Aula 14", 50), aula("a7", "Aula 7", 45), aula("a3", "Aula 3")];
+  state.busqueda = { aulas: state.aulas, sugerencias: [] };
+  state.pedidos = [];
 });
 
 describe("SolicitudesAulaSection", () => {
@@ -195,19 +210,93 @@ describe("SolicitudesAulaSection", () => {
     await waitFor(() => expect(reasignar).toHaveBeenCalledWith({ id: "s1", aulaId: "a3" }));
   });
 
-  it("Clases sin aula asigna el aula elegida", async () => {
-    state.clasesSinAula = [claseSinAula];
-    asignar.mockResolvedValue(undefined);
-    renderWithProviders(<SolicitudesAulaSection />);
-    await userEvent.click(screen.getByRole("tab", { name: "Clases sin aula" }));
-    expect(await screen.findByText(/Simulación · 5K2/)).toBeVisible();
-    await userEvent.click(screen.getByRole("button", { name: "Asignar aula" }));
+  describe("Clases sin aula", () => {
+    const abrirAsignar = async () => {
+      state.clasesSinAula = [claseSinAula];
+      asignar.mockResolvedValue(undefined);
+      renderWithProviders(<SolicitudesAulaSection />);
+      await userEvent.click(screen.getByRole("tab", { name: "Clases sin aula" }));
+      expect(await screen.findByText(/Simulación · 5K2/)).toBeVisible();
+      await userEvent.click(screen.getByRole("button", { name: "Asignar aula" }));
+      return screen.findByRole("dialog", { name: "Asignar aula" });
+    };
 
-    const dialog = await screen.findByRole("dialog", { name: "Asignar aula" });
-    const confirmar = within(dialog).getByRole("button", { name: "Asignar" });
-    expect(confirmar).toBeDisabled();
-    await userEvent.selectOptions(within(dialog).getByLabelText("Aula"), "a14");
-    await userEvent.click(confirmar);
-    await waitFor(() => expect(asignar).toHaveBeenCalledWith({ id: "c9", aulaId: "a14" }));
+    it("sin filtros ofrece todas las aulas libres y asigna la elegida", async () => {
+      const dialog = await abrirAsignar();
+      expect(within(dialog).getByLabelText("Cantidad de alumnos")).toHaveValue(null);
+      for (const recurso of ["Proyector", "Pizarra", "Climatización"]) {
+        expect(within(dialog).getByRole("checkbox", { name: recurso })).toBeVisible();
+      }
+      expect(within(dialog).getAllByRole("checkbox")).toHaveLength(7);
+      expect(state.pedidos.at(-1)).toEqual({ claseId: "c9", alumnos: undefined, recursos: [] });
+
+      const confirmar = within(dialog).getByRole("button", { name: "Asignar" });
+      expect(confirmar).toBeDisabled();
+      await userEvent.selectOptions(within(dialog).getByLabelText("Aula"), "a14");
+      await userEvent.click(confirmar);
+      await waitFor(() => expect(asignar).toHaveBeenCalledWith({ id: "c9", aulaId: "a14" }));
+    });
+
+    it("la cantidad y los recursos actualizan la búsqueda", async () => {
+      const dialog = await abrirAsignar();
+      await userEvent.type(within(dialog).getByLabelText("Cantidad de alumnos"), "30");
+      await userEvent.click(within(dialog).getByRole("checkbox", { name: "Proyector" }));
+      expect(state.pedidos.at(-1)).toEqual({
+        claseId: "c9",
+        alumnos: 30,
+        recursos: ["Proyector"],
+      });
+    });
+
+    it.each(["0", "2.5"])("la cantidad %s muestra el error y no deja asignar", async (valor) => {
+      const dialog = await abrirAsignar();
+      await userEvent.selectOptions(within(dialog).getByLabelText("Aula"), "a14");
+      await userEvent.type(within(dialog).getByLabelText("Cantidad de alumnos"), valor);
+
+      expect(
+        await within(dialog).findByText("Ingresá una cantidad de alumnos mayor que 0."),
+      ).toBeVisible();
+      expect(within(dialog).getByRole("button", { name: "Asignar" })).toBeDisabled();
+      expect(state.pedidos.at(-1)).toBeNull();
+    });
+
+    it("sin coincidencias avisa y lista las aulas con todo lo que incumplen", async () => {
+      state.busqueda = {
+        aulas: [],
+        sugerencias: [
+          {
+            ...aula("a14", "Aula 14", 50),
+            faltantes: ["Capacidad para 500 alumnos", "Sin proyector"],
+          },
+        ],
+      };
+      const dialog = await abrirAsignar();
+      await userEvent.type(within(dialog).getByLabelText("Cantidad de alumnos"), "500");
+
+      expect(
+        await within(dialog).findByText("Ninguna aula cumple todos los criterios."),
+      ).toBeVisible();
+      expect(
+        within(dialog).getByRole("option", {
+          name: /Aula 14.*Capacidad para 500 alumnos, Sin proyector/,
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("si el aula se ocupó muestra el aviso y deja elegir otra sin cerrar", async () => {
+      const dialog = await abrirAsignar();
+      asignar.mockRejectedValueOnce(
+        new RequestError(409, "CONFLICT", "El aula ya está asignada en esa franja"),
+      );
+      await userEvent.selectOptions(within(dialog).getByLabelText("Aula"), "a14");
+      await userEvent.click(within(dialog).getByRole("button", { name: "Asignar" }));
+
+      expect(
+        await within(dialog).findByText("El aula ya está asignada en esa franja"),
+      ).toBeVisible();
+      await userEvent.selectOptions(within(dialog).getByLabelText("Aula"), "a7");
+      await userEvent.click(within(dialog).getByRole("button", { name: "Asignar" }));
+      await waitFor(() => expect(asignar).toHaveBeenLastCalledWith({ id: "c9", aulaId: "a7" }));
+    });
   });
 });

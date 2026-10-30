@@ -8,10 +8,11 @@ import { requireSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Solicitar aula" };
 
-// Docente (sus comisiones) y Bedel (todas); estudiantes y autoridades no solicitan aulas.
+// Solo el Docente solicita aula; el Bedel asigna desde Solicitudes.
 export default async function SolicitarAulaPage() {
   const session = await requireSession();
-  if (session.perfil !== "DOCENTE" && session.perfil !== "BEDEL") redirect("/");
+  if (session.perfil === "BEDEL") redirect("/solicitudes");
+  if (session.perfil !== "DOCENTE") redirect("/");
 
   return (
     <>

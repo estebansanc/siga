@@ -100,10 +100,10 @@ const proximoDiaHabil = () => {
 };
 
 test.describe("Solicitar aula", () => {
-  test("el bedel busca, solicita un aula y una segunda solicitud para la clase se rechaza", async ({
+  test("el docente busca, solicita un aula y una segunda solicitud para la clase se rechaza", async ({
     page,
   }) => {
-    await loginViaUi(page, seededUsers.bedel);
+    await loginViaUi(page, seededUsers.docente);
     await page.goto("/aulas/mis-solicitudes");
     await page.getByRole("link", { name: "Solicitar aula" }).click();
     await expect(page).toHaveURL(/\/aulas\/solicitar$/);
@@ -148,5 +148,16 @@ test.describe("Solicitar aula", () => {
       .click();
     await page.getByRole("button", { name: "Confirmar solicitud" }).click();
     await expect(page.getByText("Esta clase ya tiene una solicitud pendiente.")).toBeVisible();
+  });
+
+  test("el bedel que abre Solicitar aula o Mis solicitudes llega a Solicitudes", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    for (const ruta of ["/aulas/solicitar", "/aulas/mis-solicitudes"]) {
+      await page.goto(ruta);
+      await expect(page).toHaveURL(/\/solicitudes$/);
+    }
+    await expect(page.getByRole("link", { name: /Solicitar aula|Mis solicitudes/ })).toHaveCount(0);
   });
 });
