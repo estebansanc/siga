@@ -14,7 +14,6 @@ import {
   MegaphoneIcon,
   QrCodeIcon,
   Settings2Icon,
-  SlidersHorizontalIcon,
   TriangleAlertIcon,
   UsersIcon,
   type LucideIcon,
@@ -28,7 +27,6 @@ export type NavigationHref =
   | "/clases"
   | "/novedades"
   | "/estado-institucional"
-  | "/preferencias"
   | "/avisos"
   | "/asistencia"
   | "/aulas"
@@ -78,12 +76,7 @@ const ayuda: NavigationItem = { title: "Ayuda", href: "/ayuda", icon: CircleHelp
 // El menú de cada perfil sigue los mockups (M2–M8, D1–D8); las secciones que todavía no
 // entraron muestran "Próximamente".
 const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
-  ESTUDIANTE: [
-    misClases,
-    clases,
-    avisos,
-    { title: "Preferencias", href: "/preferencias", icon: SlidersHorizontalIcon },
-  ],
+  ESTUDIANTE: [misClases, clases, avisos],
   DOCENTE: [
     misClases,
     { title: "Asistencia", href: "/asistencia", icon: QrCodeIcon },

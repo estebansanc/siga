@@ -75,19 +75,29 @@ const avisosGestion: SeccionManual = {
   mensajes: ["No hay avisos vigentes: todavía no hay avisos para mostrar."],
 };
 
-const preferencias: SeccionManual = {
-  titulo: "Preferencias",
-  paraQueSirve: "Define las comisiones que seguís y qué correos recibís.",
-  comoSeLlega: menu("Preferencias"),
+const comisiones: SeccionManual = {
+  titulo: "Comisiones",
+  paraQueSirve: "Define las comisiones que seguís.",
+  comoSeLlega:
+    'Tocá tu nombre al pie del menú lateral, elegí "Mi cuenta" y la pestaña "Comisiones".',
   pasos: [
     'En "Agregar comisión" elegí carrera, año y materia, y tocá "Agregar" en la comisión.',
     'Para dejar de seguir una comisión, tocá "Quitar".',
+    'Tocá "Guardar": recién ahí se aplican las comisiones agregadas o quitadas.',
+  ],
+  mensajes: ['La comisión agregada pasa a decir "Agregada".'],
+};
+
+const notificaciones: SeccionManual = {
+  titulo: "Notificaciones",
+  paraQueSirve: "Define qué correos recibís.",
+  comoSeLlega:
+    'Tocá tu nombre al pie del menú lateral, elegí "Mi cuenta" y la pestaña "Notificaciones".',
+  pasos: [
     'Activá "Recibir novedades por correo" o "Recibir avisos institucionales por correo".',
-    'Tocá "Guardar": recién ahí se aplican las comisiones agregadas o quitadas y los correos.',
+    'Tocá "Guardar".',
   ],
-  mensajes: [
-    'La comisión agregada pasa a decir "Agregada". Por defecto los correos están desactivados.',
-  ],
+  mensajes: ["Por defecto los correos están desactivados."],
 };
 
 const asistencia: SeccionManual = {
@@ -301,10 +311,10 @@ const configuracion: SeccionManual = {
 };
 
 const miPerfil: SeccionManual = {
-  titulo: "Mi perfil",
+  titulo: "Mi cuenta",
   paraQueSirve: "Corregí tus datos o solicitá la baja de tu cuenta.",
-  comoSeLlega: 'Tocá tu nombre al pie del menú lateral y elegí "Mi perfil".',
-  pasos: ['Editá tus datos y tocá "Guardar".'],
+  comoSeLlega: 'Tocá tu nombre al pie del menú lateral y elegí "Mi cuenta".',
+  pasos: ['En la pestaña "Perfil" editá tus datos y tocá "Guardar".'],
   mensajes: ["Los demás usuarios ven tus cambios enseguida."],
 };
 
@@ -359,7 +369,7 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
         ],
       },
     ],
-    manual: [misClasesEstudiante, clases, avisosLectura, preferencias],
+    manual: [misClasesEstudiante, clases, avisosLectura, comisiones, notificaciones],
   },
   DOCENTE: {
     guia: [

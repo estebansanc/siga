@@ -1,7 +1,7 @@
 "use client";
 
 import type { BajaCorreoResultadoDto } from "@repo/api/client";
-import { Button } from "@repo/ui/components/button";
+import { Button, buttonVariants } from "@repo/ui/components/button";
 import {
   Card,
   CardContent,
@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@repo/ui/components/card";
 import { Spinner } from "@repo/ui/components/spinner";
+import Link from "next/link";
 import { useState } from "react";
 
 import { useBajaCorreo } from "@/hooks/use-baja-correo";
@@ -20,7 +21,7 @@ const enlaceInvalido = "El enlace para dejar de recibir correos no es válido.";
 
 const mensajeDeBaja = {
   novedades:
-    "Listo. Ya no vas a recibir novedades de clase por correo. Podés volver a activarlas desde Preferencias.",
+    "Listo. Ya no vas a recibir novedades de clase por correo. Podés volver a activarlas desde Mi cuenta → Notificaciones.",
   avisos: "Listo, ya no vas a recibir avisos institucionales por correo.",
 } as const;
 
@@ -68,6 +69,13 @@ export function BajaCorreoCard({ token }: { token: string }) {
             {resultado.error}
           </p>
         </CardContent>
+      ) : null}
+      {typeof resultado === "string" ? (
+        <CardFooter>
+          <Link href="/mi-cuenta/notificaciones" className={buttonVariants()}>
+            Ir a Notificaciones
+          </Link>
+        </CardFooter>
       ) : null}
       {typeof resultado !== "string" && token ? (
         <CardFooter>
