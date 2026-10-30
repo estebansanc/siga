@@ -1,5 +1,5 @@
 import { prisma } from "@repo/db";
-import { mensajeVersionDesactualizada, perfilSchema } from "@repo/domain";
+import { mensajeVersionDesactualizada, parrafosDeLaPolitica, perfilSchema } from "@repo/domain";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ApiError } from "../errors";
@@ -60,6 +60,30 @@ describe("política de privacidad", () => {
       "10. Órgano de control",
       "11. Cambios",
     ]);
+  });
+
+  it("la pantalla separa la versión 2 en 22 párrafos: el subtítulo y el cuerpo de cada tema", async () => {
+    const { texto } = await obtenerPoliticaVigente(authOf(institution, institution));
+    const parrafos = parrafosDeLaPolitica(texto);
+
+    expect(parrafos).toHaveLength(22);
+    expect(parrafos.filter((_, indice) => indice % 2 === 0)).toEqual([
+      "1. Responsable",
+      "2. Datos que tratamos",
+      "3. Finalidad",
+      "4. Ubicación en el QR",
+      "5. Quién ve qué",
+      "6. Proveedores",
+      "7. Cookies",
+      "8. Conservación",
+      "9. Tus derechos",
+      "10. Órgano de control",
+      "11. Cambios",
+    ]);
+    expect(parrafos[1]).toContain("UTN");
+    expect(parrafos[3]).toMatch(/DNI.*legajo.*IP/s);
+    expect(parrafos[11]).toMatch(/Vercel.*Neon.*Cloudflare R2.*Resend.*Google/s);
+    expect(parrafos[13]).toContain("8 horas");
   });
 
   it("quien aceptó la versión 1 queda con la política pendiente", async () => {
