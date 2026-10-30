@@ -76,7 +76,6 @@ export const incidenciaRoutes = new OpenAPIHono<ApiEnv>()
       description:
         "Solo lectura, Bedel y Autoridad académica. Solo Resueltas. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por la fecha del reporte; `aulaId` es opcional. El total cuenta todo el período filtrado; el detalle pagina de a 20, la más reciente primero, e incluye el historial de estados.",
       request: { query: consultaIncidenciasSchema },
-      middleware: [consultantes] as const,
       responses: {
         200: jsonResponse(consultaIncidenciasResultadoSchema, "Total y detalle"),
         ...commonErrors,

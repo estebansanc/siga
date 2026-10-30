@@ -1,3 +1,4 @@
+import { crearNovedadesDeHistorial } from "./support/clase-de-hoy";
 import { publicarPolitica, retirarPolitica, verificarCorreo } from "./support/db";
 import {
   expect,
@@ -142,21 +143,7 @@ test.describe("Móvil", () => {
     await sinScrollHorizontalEnDialogo();
     await page.keyboard.press("Escape");
 
-    await page.request.post(`/api/v1/incidencias/${id}/estado`, { data: { estado: "RESUELTA" } });
-    await page.reload();
-    await page.getByRole("tab", { name: "Historial" }).click();
-    await expect(page.getByLabel("Indicadores")).toBeVisible();
-    await expectNoHorizontalPageScroll(page);
-
     await page.request.post(`/api/v1/aulas/${aulaId}/baja`);
-  });
-
-  test("el Historial de Novedades no scrollea a lo ancho", async ({ page }) => {
-    await loginViaUi(page, seededUsers.bedel);
-    await page.goto("/novedades");
-    await page.getByRole("tab", { name: "Historial" }).click();
-    await expect(page.getByLabel("Indicadores")).toBeVisible();
-    await expectNoHorizontalPageScroll(page);
   });
 
   test("Datos académicos no scrollea a lo ancho en ninguna de sus seis pestañas", async ({
@@ -211,6 +198,49 @@ test.describe("Móvil", () => {
     } finally {
       retirarPolitica(2);
     }
+  });
+
+  test.describe("Historiales a 360 px", () => {
+    test.use({ viewport: { width: 360, height: 740 }, hasTouch: true });
+
+    test("los Historiales de Novedades e Incidencias, con filas, no scrollean a lo ancho", async ({
+      page,
+    }) => {
+      const { limpiar } = await crearNovedadesDeHistorial();
+      try {
+        await loginViaUi(page, seededUsers.bedel);
+        const aula = await page.request.post("/api/v1/aulas", {
+          data: {
+            codigo: `Aula 360 ${Date.now().toString(36)}`,
+            edificio: "Edificio C",
+            piso: "PB",
+            capacidad: 30,
+          },
+        });
+        const { id: aulaId } = (await aula.json()) as { id: string };
+        const creada = await page.request.post("/api/v1/incidencias", {
+          data: { aulaId, elemento: "MOBILIARIO", descripcion: "Sillas rotas", gravedad: "LEVE" },
+        });
+        const { id } = (await creada.json()) as { id: string };
+        await page.request.post(`/api/v1/incidencias/${id}/estado`, {
+          data: { estado: "RESUELTA" },
+        });
+
+        await page.goto("/novedades");
+        await page.getByRole("tab", { name: "Historial" }).tap();
+        await expect(page.locator('[data-slot="item"]').first()).toBeVisible();
+        await expectNoHorizontalPageScroll(page);
+
+        await page.goto("/incidencias");
+        await page.getByRole("tab", { name: "Historial" }).tap();
+        await expect(page.locator('[data-slot="item"]').first()).toBeVisible();
+        await expectNoHorizontalPageScroll(page);
+
+        await page.request.post(`/api/v1/aulas/${aulaId}/baja`);
+      } finally {
+        await limpiar();
+      }
+    });
   });
 
   test.describe("Ayuda a 360 px", () => {

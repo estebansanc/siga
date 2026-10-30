@@ -208,6 +208,27 @@ describe("Historial de novedades", () => {
   });
 });
 
+describe("rendimiento", () => {
+  it("una consulta de 12 meses con cientos de novedades responde en menos de 10 s", async () => {
+    await prisma.novedad.createMany({
+      data: Array.from({ length: 600 }, (_, indice) => ({
+        organizationId: institution.organizationId,
+        comisionId: fixture.comisionId,
+        tipo: "DEMORA" as const,
+        estado: "FINALIZADA" as const,
+        publicadaPorId: fixture.docente.userId,
+        createdAt: new Date(
+          instanteArgentino("2025-11-01", "08:00").getTime() + indice * 3_600_000 * 12,
+        ),
+      })),
+    });
+    const inicio = Date.now();
+    const resultado = await consultar({ desde: "2025-10-21", hasta: "2026-10-21" });
+    expect(Date.now() - inicio).toBeLessThan(10_000);
+    expect(resultado.total).toBe(600);
+  });
+});
+
 describe("permisos del Historial de novedades", () => {
   it("el Docente solo ve las de sus comisiones; Bedel y Autoridad, todas", async () => {
     const otroDocente = await createUserWithPerfil(institution, "DOCENTE");

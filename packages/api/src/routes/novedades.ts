@@ -31,7 +31,7 @@ export const novedadRoutes = new OpenAPIHono<ApiEnv>()
       tags,
       summary: "Historial de novedades en un rango de fechas, con cantidad por tipo",
       description:
-        "Solo lectura. Novedades finalizadas o sin clases por delante. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por fecha de publicación; `tipo` es opcional. El total y la cantidad por tipo cuentan todo el período filtrado; el detalle pagina de a 20, la más reciente primero. El docente ve las de sus comisiones; bedel y autoridad, todas.",
+        "Solo lectura (sin `perfilOnly`: el servicio rechaza y audita el 403, SEG-6). Novedades finalizadas o sin clases por delante. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por fecha de publicación; `tipo` es opcional. El total y la cantidad por tipo cuentan todo el período filtrado; el detalle pagina de a 20, la más reciente primero. El docente ve las de sus comisiones; bedel y autoridad, todas.",
       request: { query: consultaNovedadesSchema },
       middleware: [perfilOnly("DOCENTE", "BEDEL", "AUTORIDAD")] as const,
       responses: {

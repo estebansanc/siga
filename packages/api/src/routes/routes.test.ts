@@ -319,6 +319,14 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
     expect((await call("/incidencias/historial?desde=2026-01-01&hasta=2026-01-31")).status).toBe(
       403,
     );
+    const denegados = () =>
+      prisma.auditLog.count({ where: { entity: "Permiso", action: "acceso_denegado" } });
+    const antes = await denegados();
+    como(docente);
+    await call("/incidencias/historial?desde=2026-01-01&hasta=2026-01-31");
+    como(estudiante);
+    await call("/novedades/historial?desde=2026-01-01&hasta=2026-01-31");
+    expect(await denegados()).toBe(antes + 2);
     como(institution);
     const incidencias = await call("/incidencias/historial?desde=2024-01-01&hasta=2026-01-01");
     expect(incidencias.status).toBe(422);

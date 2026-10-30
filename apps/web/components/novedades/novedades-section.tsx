@@ -34,7 +34,9 @@ import { HistorialNovedades } from "./historial-novedades";
 import { NovedadItem } from "./novedad-item";
 import { PublicarNovedadDialog } from "./publicar-novedad-dialog";
 
-type Vista = "activas" | "historial";
+const vistas = ["activas", "historial"] as const;
+type Vista = (typeof vistas)[number];
+const vistaDe = (valor: unknown): Vista => vistas.find((vista) => vista === valor) ?? vistas[0];
 
 // Novedades propias (docente) o de toda la institución (bedel, autoridad), con publicar,
 // editar y finalizar en Activas (RF-05) y el Historial de solo lectura.
@@ -75,7 +77,7 @@ export function NovedadesSection({ puedePublicar }: { puedePublicar: boolean }) 
         ) : null}
       </CardHeader>
       <CardContent>
-        <Tabs value={vista} onValueChange={(valor) => setVista(valor as Vista)}>
+        <Tabs value={vista} onValueChange={(valor) => setVista(vistaDe(valor))}>
           <TabsList aria-label="Vista de novedades">
             <TabsTrigger value="activas">Activas</TabsTrigger>
             <TabsTrigger value="historial">Historial</TabsTrigger>

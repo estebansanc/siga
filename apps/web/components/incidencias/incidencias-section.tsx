@@ -76,7 +76,9 @@ type Accion =
   | { tipo: "detalle"; id: string }
   | { tipo: "fuera-de-servicio"; aula: AulaDeIncidencia };
 
-type Vista = "abiertas" | "historial";
+const vistas = ["abiertas", "historial"] as const;
+type Vista = (typeof vistas)[number];
+const vistaDe = (valor: unknown): Vista => vistas.find((vista) => vista === valor) ?? vistas[0];
 
 // Incidencias de bedelía (RF-15): Abiertas en tiempo real e Historial de las resueltas. La
 // Autoridad las consulta sin modificar nada.
@@ -109,7 +111,7 @@ export function IncidenciasSection({ puedeGestionar }: { puedeGestionar: boolean
         ) : null}
       </CardHeader>
       <CardContent>
-        <Tabs value={vista} onValueChange={(valor) => setVista(valor as Vista)}>
+        <Tabs value={vista} onValueChange={(valor) => setVista(vistaDe(valor))}>
           <TabsList aria-label="Vista de incidencias">
             <TabsTrigger value="abiertas">Abiertas</TabsTrigger>
             <TabsTrigger value="historial">Historial</TabsTrigger>
