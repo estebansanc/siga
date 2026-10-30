@@ -24,7 +24,10 @@ export function AvisosUrgentesIndicator() {
       className="focus-visible:ring-ring pointer-coarse:min-h-11 flex min-w-0 items-center rounded-full outline-none hover:opacity-80 focus-visible:ring-2"
       aria-label={texto}
     >
-      <Badge variant="outline" className={cn("max-w-48 gap-1.5 sm:max-w-80", tonoClassNames.rojo)}>
+      <Badge
+        variant="outline"
+        className={cn("min-w-0 max-w-48 shrink gap-1.5 sm:max-w-80", tonoClassNames.rojo)}
+      >
         <TriangleAlertIcon aria-hidden="true" />
         <span className="truncate">{texto}</span>
       </Badge>
