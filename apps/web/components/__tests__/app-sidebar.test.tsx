@@ -76,6 +76,14 @@ const linkNames = () =>
     .slice(1)
     .map((link) => link.textContent?.trim());
 
+const sectionsOf = () =>
+  [...document.querySelectorAll('[role="group"]')].map((group) => ({
+    title: group.querySelector('[data-slot="sidebar-group-label"]')?.textContent,
+    items: [...group.querySelectorAll('[data-slot="sidebar-menu-button"]')].map((link) =>
+      link.textContent?.trim(),
+    ),
+  }));
+
 describe("AppSidebar", () => {
   it("el bedel Administrador ve el menú de bedelía y Configuración, con Estado institucional activo", () => {
     pathnameState.current = "/estado-institucional";
@@ -84,17 +92,31 @@ describe("AppSidebar", () => {
       "Estado institucional",
       "Clases",
       "Novedades",
-      "Aulas",
       "Asistencia docente",
+      "Aulas",
       "Solicitudes",
       "Incidencias",
-      "Consultas históricas",
       "Avisos",
       "Usuarios",
       "Datos académicos",
+      "Consultas históricas",
       "Configuración",
       "Ayuda",
     ]);
+    expect(sectionsOf()).toEqual([
+      {
+        title: "Hoy",
+        items: ["Estado institucional", "Clases", "Novedades", "Asistencia docente"],
+      },
+      { title: "Aulas", items: ["Aulas", "Solicitudes", "Incidencias"] },
+      { title: "Comunicación", items: ["Avisos"] },
+      {
+        title: "Administración",
+        items: ["Usuarios", "Datos académicos", "Consultas históricas", "Configuración"],
+      },
+    ]);
+    expect(screen.getByRole("group", { name: "Hoy" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ayuda" }).closest('[role="group"]')).toBeNull();
     expect(screen.getByRole("link", { name: "Estado institucional" })).toHaveAttribute(
       "data-active",
     );
@@ -113,6 +135,18 @@ describe("AppSidebar", () => {
       "href",
       "/preferencias",
     );
+  });
+
+  it("el menú plano de Estudiante y Docente no lleva títulos de sección", () => {
+    renderSidebar("member", meOf([ownOrganization], "ESTUDIANTE"));
+    expect(screen.queryByRole("group")).not.toBeInTheDocument();
+    expect(document.querySelector('[data-slot="sidebar-group-label"]')).toBeNull();
+  });
+
+  it("sin ser Administrador, el bedel no ve Configuración y Administración termina en Consultas históricas", () => {
+    renderSidebar("member", meOf([ownOrganization], "BEDEL"));
+    expect(screen.queryByRole("link", { name: "Configuración" })).not.toBeInTheDocument();
+    expect(sectionsOf().at(-1)?.items.at(-1)).toBe("Consultas históricas");
   });
 
   it("el docente ve Asistencia, Novedades, Avisos y Solicitudes de aula; la autoridad, Consultas históricas, Estado y Usuarios", () => {
@@ -134,15 +168,21 @@ describe("AppSidebar", () => {
     renderSidebar("member", meOf([ownOrganization], "AUTORIDAD"));
     expect(linkNames()).toEqual([
       "Clases",
-      "Novedades",
-      "Incidencias",
-      "Consultas históricas",
-      "Avisos",
-      "Aulas",
       "Estado institucional",
+      "Novedades",
+      "Aulas",
+      "Incidencias",
+      "Avisos",
       "Usuarios",
       "Datos académicos",
+      "Consultas históricas",
       "Ayuda",
+    ]);
+    expect(sectionsOf().map((section) => section.title)).toEqual([
+      "Hoy",
+      "Aulas",
+      "Comunicación",
+      "Administración",
     ]);
   });
 

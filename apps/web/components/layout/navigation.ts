@@ -75,56 +75,73 @@ const configuracion: NavigationItem = {
 
 const ayuda: NavigationItem = { title: "Ayuda", href: "/ayuda", icon: CircleHelpIcon };
 
-// El menú de cada perfil sigue los mockups (M2–M8, D1–D8); las secciones que todavía no
-// entraron muestran "Próximamente".
-const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
-  ESTUDIANTE: [
-    misClases,
-    clases,
-    avisos,
-    { title: "Preferencias", href: "/preferencias", icon: SlidersHorizontalIcon },
+const asistenciaDocente: NavigationItem = {
+  title: "Asistencia docente",
+  href: "/qr",
+  icon: QrCodeIcon,
+};
+const solicitudes: NavigationItem = { title: "Solicitudes", href: "/solicitudes", icon: InboxIcon };
+
+// Una sección sin título es un grupo plano (el menú de Estudiante y Docente, y Ayuda).
+export type NavigationSection = { title?: string; items: NavigationItem[] };
+
+const flat = (items: NavigationItem[]): NavigationSection[] => [{ items }];
+
+// El menú de cada perfil sigue los mockups (M2–M8, D1–D8). Bedel y Autoridad, que tienen más
+// ítems, los agrupan en secciones.
+const navigationByPerfil: Record<
+  Perfil,
+  (administracionExtra: NavigationItem[]) => NavigationSection[]
+> = {
+  ESTUDIANTE: () =>
+    flat([
+      misClases,
+      clases,
+      avisos,
+      { title: "Preferencias", href: "/preferencias", icon: SlidersHorizontalIcon },
+    ]),
+  DOCENTE: () =>
+    flat([
+      misClases,
+      { title: "Asistencia", href: "/asistencia", icon: QrCodeIcon },
+      novedades,
+      avisos,
+      { title: "Solicitudes de aula", href: "/solicitudes", icon: InboxIcon },
+      clases,
+    ]),
+  BEDEL: (extra) => [
+    { title: "Hoy", items: [estado, clases, novedades, asistenciaDocente] },
+    { title: "Aulas", items: [aulas, solicitudes, incidencias] },
+    { title: "Comunicación", items: [avisos] },
+    {
+      title: "Administración",
+      items: [usuarios, datosAcademicos, consultasHistoricas, ...extra],
+    },
   ],
-  DOCENTE: [
-    misClases,
-    { title: "Asistencia", href: "/asistencia", icon: QrCodeIcon },
-    novedades,
-    avisos,
-    { title: "Solicitudes de aula", href: "/solicitudes", icon: InboxIcon },
-    clases,
-  ],
-  BEDEL: [
-    estado,
-    clases,
-    novedades,
-    aulas,
-    { title: "Asistencia docente", href: "/qr", icon: QrCodeIcon },
-    { title: "Solicitudes", href: "/solicitudes", icon: InboxIcon },
-    incidencias,
-    consultasHistoricas,
-    avisos,
-    usuarios,
-    datosAcademicos,
-  ],
-  AUTORIDAD: [
-    clases,
-    novedades,
-    incidencias,
-    consultasHistoricas,
-    avisos,
-    aulas,
-    estado,
-    usuarios,
-    datosAcademicos,
+  AUTORIDAD: (extra) => [
+    { title: "Hoy", items: [clases, estado, novedades] },
+    { title: "Aulas", items: [aulas, incidencias] },
+    { title: "Comunicación", items: [avisos] },
+    {
+      title: "Administración",
+      items: [usuarios, datosAcademicos, consultasHistoricas, ...extra],
+    },
   ],
 };
 
-// Configuración sigue siendo del Administrador de la organización, cualquiera sea su perfil.
-// Ayuda siempre es la última entrada.
-export const navigationFor = (perfil: Perfil, role: MemberRole): NavigationItem[] => [
-  ...navigationByPerfil[perfil],
-  ...(role === "owner" ? [configuracion] : []),
-  ayuda,
-];
+// Configuración sigue siendo del Administrador de la organización, cualquiera sea su perfil:
+// cierra Administración, o va al final del menú plano. Ayuda siempre es la última entrada,
+// sin título de sección.
+export const navigationFor = (perfil: Perfil, role: MemberRole): NavigationSection[] => {
+  const sections = navigationByPerfil[perfil](role === "owner" ? [configuracion] : []);
+  const isGrouped = sections.some((section) => section.title);
+  const withConfiguracion =
+    role === "owner" && !isGrouped ? [{ items: [...sections[0].items, configuracion] }] : sections;
+  return [...withConfiguracion, { items: [ayuda] }];
+};
 
 export const brandIcon = LayoutGridIcon;
 export const sectionIcon = BookOpenIcon;
+
+export const navigationItemsFor = (perfil: Perfil, role: MemberRole): NavigationItem[] =>
+  navigationFor(perfil, role).flatMap((section) => section.items);

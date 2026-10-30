@@ -47,7 +47,7 @@ const simularCamaraConQr = (token: string) => {
 
 const generarQrEnPantalla = async (page: Page, turno: keyof typeof etiquetaDeTurno) => {
   await page.goto("/qr");
-  await page.getByLabel("Aula").selectOption({ label: "Aula 7" });
+  await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 7" });
   await page.getByLabel("Turno").selectOption(turno);
   await page.getByRole("button", { name: "Generar QR" }).click();
 };

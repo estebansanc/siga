@@ -60,7 +60,7 @@ test.describe("Asistencia docente", () => {
     await expect(page.getByRole("heading", { name: "Asistencia docente" })).toBeVisible();
     await expect(page.getByLabel("Fecha")).toHaveValue(fechaArgentina(new Date()));
 
-    await page.getByLabel("Aula").selectOption({ label: "Aula 12" });
+    await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 12" });
     await page.getByLabel("Turno").selectOption("NOCHE");
     await page.getByLabel("Fecha").fill(proximaClaseEnAula12());
     await page.getByRole("button", { name: "Generar QR" }).click();
@@ -85,7 +85,7 @@ test.describe("Asistencia docente", () => {
   test("un aula sin clases en el turno da error y no muestra QR", async ({ page }) => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/qr");
-    await page.getByLabel("Aula").selectOption({ label: "Aula 3" });
+    await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 3" });
     await page.getByLabel("Turno").selectOption("MANANA");
     await page.getByLabel("Fecha").fill(proximaClaseEnAula12());
     await page.getByRole("button", { name: "Generar QR" }).click();
@@ -97,7 +97,7 @@ test.describe("Asistencia docente", () => {
   test("una fecha pasada da error y no muestra QR", async ({ page }) => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/qr");
-    await page.getByLabel("Aula").selectOption({ label: "Aula 12" });
+    await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 12" });
     await page.getByLabel("Turno").selectOption("NOCHE");
     await page.getByLabel("Fecha").fill("2020-01-06");
     await page.getByRole("button", { name: "Generar QR" }).click();
@@ -116,7 +116,7 @@ test.describe("Asistencia docente", () => {
 
     try {
       await page.goto("/qr");
-      await page.getByLabel("Aula").selectOption({ label: "Aula 12" });
+      await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 12" });
       await page.getByLabel("Turno").selectOption("MANANA");
       await page.getByRole("button", { name: "Generar QR" }).click();
       await expect(page.getByText("El turno ya terminó")).toBeVisible();
@@ -151,7 +151,7 @@ test.describe("Asistencia docente", () => {
     );
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/qr");
-    await page.getByLabel("Aula").selectOption({ label: "Aula 12" });
+    await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 12" });
     await page.getByLabel("Turno").selectOption("NOCHE");
     await page.getByRole("button", { name: "Generar QR" }).click();
 
