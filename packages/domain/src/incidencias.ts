@@ -100,11 +100,3 @@ export const cambiarEstadoIncidenciaSchema = z.object({
 });
 export type CambiarEstadoIncidencia = z.infer<typeof cambiarEstadoIncidenciaSchema>;
 export type CambiarEstadoIncidenciaInput = z.input<typeof cambiarEstadoIncidenciaSchema>;
-
-export const listarIncidenciasQuerySchema = z.object({
-  estados: z
-    .string()
-    .optional()
-    .transform((value) => (value ?? "").split(",").filter(Boolean))
-    .pipe(z.array(estadoIncidenciaSchema)),
-});

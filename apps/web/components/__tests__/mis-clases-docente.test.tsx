@@ -63,6 +63,20 @@ describe("MisClasesDocente", () => {
     expect(screen.getByRole("button", { name: "Acciones de Proyecto Final 5K2" })).toBeVisible();
   });
 
+  it("no muestra el bloque Acciones rápidas ni sus destinos", async () => {
+    renderWithProviders(<MisClasesDocente />);
+    await screen.findByText("Proyecto Final");
+    expect(screen.queryByText("Acciones rápidas")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("sin clases hoy muestra solo el estado vacío", async () => {
+    state.clases = [];
+    renderWithProviders(<MisClasesDocente />);
+    expect(await screen.findByText("No tenés clases hoy")).toBeVisible();
+    expect(screen.queryByText("Acciones rápidas")).toBeNull();
+  });
+
   it("reporta una incidencia desde el menú, enviando la clase", async () => {
     renderWithProviders(<MisClasesDocente />);
     await abrirMenu();

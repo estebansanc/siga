@@ -1,14 +1,15 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import {
   cambiarEstadoIncidenciaSchema,
+  consultaIncidenciasSchema,
   crearIncidenciaSchema,
-  listarIncidenciasQuerySchema,
   subirFotoIncidenciaSchema,
 } from "@repo/domain";
 
 import type { ApiEnv } from "../context";
 import { perfilOnly } from "../middleware";
 import {
+  consultaIncidenciasResultadoSchema,
   fotoSubidaSchema,
   idParamSchema,
   incidenciaDetalleSchema,
@@ -21,6 +22,7 @@ import { commonErrors, jsonBody, jsonResponse } from "./shared";
 const tags = ["Incidencias"];
 const reportantes = perfilOnly("DOCENTE", "BEDEL");
 const soloBedel = perfilOnly("BEDEL");
+const consultantes = perfilOnly("BEDEL", "AUTORIDAD");
 
 export const incidenciaRoutes = new OpenAPIHono<ApiEnv>()
   .openapi(
@@ -57,14 +59,33 @@ export const incidenciaRoutes = new OpenAPIHono<ApiEnv>()
       method: "get",
       path: "/",
       tags,
-      summary: "Incidencias por estado, las más recientes primero",
-      description: "Solo Bedel. `estados` separados por coma; sin él, Abiertas y En curso.",
-      request: { query: listarIncidenciasQuerySchema },
-      middleware: [soloBedel] as const,
+      summary: "Incidencias abiertas, las más recientes primero",
+      description:
+        "Pestaña Abiertas: Abierta y En curso, sin filtro de estado ni paginación. Bedel y Autoridad académica (solo lectura).",
+      middleware: [consultantes] as const,
       responses: { 200: jsonResponse(z.array(incidenciaSchema), "Incidencias"), ...commonErrors },
     }),
+    async (c) => c.json(await incidencias.listarIncidencias(c.get("auth")), 200),
+  )
+  .openapi(
+    createRoute({
+      method: "get",
+      path: "/historial",
+      tags,
+      summary: "Historial de incidencias resueltas en un rango de fechas",
+      description:
+        "Solo lectura, Bedel y Autoridad académica. Solo Resueltas. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por la fecha del reporte; `aulaId` es opcional. El total cuenta todo el período filtrado; el detalle pagina de a 20, la más reciente primero, e incluye el historial de estados.",
+      request: { query: consultaIncidenciasSchema },
+      responses: {
+        200: jsonResponse(consultaIncidenciasResultadoSchema, "Total y detalle"),
+        ...commonErrors,
+      },
+    }),
     async (c) =>
-      c.json(await incidencias.listarIncidencias(c.get("auth"), c.req.valid("query").estados), 200),
+      c.json(
+        await incidencias.consultarHistorialIncidencias(c.get("auth"), c.req.valid("query")),
+        200,
+      ),
   )
   .openapi(
     createRoute({
@@ -72,9 +93,9 @@ export const incidenciaRoutes = new OpenAPIHono<ApiEnv>()
       path: "/{id}",
       tags,
       summary: "Detalle de una incidencia con foto e historial",
-      description: "Solo Bedel. `fotoUrl` es una URL firmada de lectura.",
+      description: "Bedel y Autoridad académica. `fotoUrl` es una URL firmada de lectura.",
       request: { params: idParamSchema },
-      middleware: [soloBedel] as const,
+      middleware: [consultantes] as const,
       responses: { 200: jsonResponse(incidenciaDetalleSchema, "Incidencia"), ...commonErrors },
     }),
     async (c) =>

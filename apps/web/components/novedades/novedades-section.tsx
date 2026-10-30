@@ -2,7 +2,6 @@
 
 import type { NovedadDto } from "@repo/api/client";
 import { tipoNovedadLabels } from "@repo/domain";
-import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
@@ -13,117 +12,38 @@ import {
   CardTitle,
 } from "@repo/ui/components/card";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@repo/ui/components/dropdown-menu";
-import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@repo/ui/components/empty";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemTitle,
-} from "@repo/ui/components/item";
+import { ItemGroup } from "@repo/ui/components/item";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { MegaphoneIcon, MoreHorizontalIcon, PlusIcon } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@repo/ui/components/tabs";
+import { MegaphoneIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/settings/confirm-dialog";
 import { useFinalizarNovedad, useNovedades } from "@/hooks/use-novedades";
-import { formatFechaCorta, formatFechaHora } from "@/lib/dates";
 import { showRequestError } from "@/lib/form-errors";
 
 import { EditarNovedadDialog } from "./editar-novedad-dialog";
+import { HistorialNovedades } from "./historial-novedades";
+import { NovedadItem } from "./novedad-item";
 import { PublicarNovedadDialog } from "./publicar-novedad-dialog";
 
-const finalizable = (novedad: NovedadDto) =>
-  novedad.estado === "ACTIVA" && novedad.tipo !== "AUSENCIA" && novedad.tipo !== "SUSPENSION";
+const vistas = ["activas", "historial"] as const;
+type Vista = (typeof vistas)[number];
+const vistaDe = (valor: unknown): Vista => vistas.find((vista) => vista === valor) ?? vistas[0];
 
-const describirDetalle = (novedad: NovedadDto) => {
-  if (novedad.tipo === "DEMORA" && novedad.minutosDemora) return `${novedad.minutosDemora} min`;
-  if (novedad.tipo === "CAMBIO_AULA" && novedad.aulaNueva) return `a ${novedad.aulaNueva.codigo}`;
-  if (novedad.tipo === "VIRTUAL" && novedad.enlaceVirtual) return novedad.enlaceVirtual;
-  return null;
-};
-
-function NovedadItem({
-  novedad,
-  puedeGestionar,
-  onEditar,
-  onFinalizar,
-}: {
-  novedad: NovedadDto;
-  puedeGestionar: boolean;
-  onEditar: () => void;
-  onFinalizar: () => void;
-}) {
-  const detalle = describirDetalle(novedad);
-  const clases = novedad.clases
-    .map((clase) => `${formatFechaCorta(clase.fecha)} ${clase.horaInicio}`)
-    .join(", ");
-  return (
-    <Item variant="outline">
-      <ItemContent>
-        <ItemTitle>
-          {tipoNovedadLabels[novedad.tipo]}
-          {detalle ? <span className="text-muted-foreground font-normal">{detalle}</span> : null}
-          <Badge variant={novedad.estado === "ACTIVA" ? "default" : "outline"}>
-            {novedad.estado === "ACTIVA" ? "Activa" : "Finalizada"}
-          </Badge>
-        </ItemTitle>
-        <ItemDescription>
-          {novedad.comision.materia} · {novedad.comision.codigo} · {clases}
-        </ItemDescription>
-        {novedad.mensaje ? <ItemDescription>“{novedad.mensaje}”</ItemDescription> : null}
-        <ItemDescription className="text-xs">
-          {formatFechaHora(novedad.createdAt)} · {novedad.publicadaPor.nombre}
-          {novedad.publicadaPorBedelia ? " (bedelía)" : null}
-        </ItemDescription>
-      </ItemContent>
-      {puedeGestionar && (novedad.editable || finalizable(novedad)) ? (
-        <ItemActions>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Acciones de la novedad ${tipoNovedadLabels[novedad.tipo]} de ${novedad.comision.codigo}`}
-                />
-              }
-            >
-              <MoreHorizontalIcon />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {novedad.editable ? (
-                <DropdownMenuItem onClick={onEditar}>Editar novedad</DropdownMenuItem>
-              ) : null}
-              {finalizable(novedad) ? (
-                <DropdownMenuItem onClick={onFinalizar}>Finalizar novedad</DropdownMenuItem>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </ItemActions>
-      ) : null}
-    </Item>
-  );
-}
-
-// Novedades propias (docente) o de toda la institución (bedel, autoridad), con publicar y
-// finalizar (RF-05).
+// Novedades propias (docente) o de toda la institución (bedel, autoridad), con publicar,
+// editar y finalizar en Activas (RF-05) y el Historial de solo lectura.
 export function NovedadesSection({ puedePublicar }: { puedePublicar: boolean }) {
   const novedades = useNovedades();
   const finalizar = useFinalizarNovedad();
+  const [vista, setVista] = useState<Vista>("activas");
   const [publicando, setPublicando] = useState(false);
   const [editando, setEditando] = useState<NovedadDto | null>(null);
   const [finalizando, setFinalizando] = useState<NovedadDto | null>(null);
@@ -147,7 +67,7 @@ export function NovedadesSection({ puedePublicar }: { puedePublicar: boolean }) 
           Ausencias, demoras, clases virtuales, suspensiones y cambios de aula. Cada cambio queda en
           el historial.
         </CardDescription>
-        {puedePublicar ? (
+        {puedePublicar && vista === "activas" ? (
           <CardAction>
             <Button size="sm" onClick={() => setPublicando(true)}>
               <PlusIcon />
@@ -157,35 +77,49 @@ export function NovedadesSection({ puedePublicar }: { puedePublicar: boolean }) 
         ) : null}
       </CardHeader>
       <CardContent>
-        {!novedades.data ? (
-          <div className="flex flex-col gap-2">
-            {Array.from({ length: 2 }).map((_, index) => (
-              <Skeleton key={index} className="h-20 w-full" />
-            ))}
-          </div>
-        ) : novedades.data.length === 0 ? (
-          <Empty className="border">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <MegaphoneIcon />
-              </EmptyMedia>
-              <EmptyTitle>Sin novedades publicadas</EmptyTitle>
-              <EmptyDescription>Las novedades que publiques aparecen acá.</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : (
-          <ItemGroup className="gap-2">
-            {novedades.data.map((novedad) => (
-              <NovedadItem
-                key={novedad.id}
-                novedad={novedad}
-                puedeGestionar={puedePublicar}
-                onEditar={() => setEditando(novedad)}
-                onFinalizar={() => setFinalizando(novedad)}
-              />
-            ))}
-          </ItemGroup>
-        )}
+        <Tabs value={vista} onValueChange={(valor) => setVista(vistaDe(valor))}>
+          <TabsList aria-label="Vista de novedades">
+            <TabsTrigger value="activas">Activas</TabsTrigger>
+            <TabsTrigger value="historial">Historial</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="pt-2">
+          {vista === "activas" ? (
+            <>
+              {!novedades.data ? (
+                <div className="flex flex-col gap-2">
+                  {Array.from({ length: 2 }).map((_, index) => (
+                    <Skeleton key={index} className="h-20 w-full" />
+                  ))}
+                </div>
+              ) : novedades.data.length === 0 ? (
+                <Empty className="border">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <MegaphoneIcon />
+                    </EmptyMedia>
+                    <EmptyTitle>Sin novedades activas</EmptyTitle>
+                    <EmptyDescription>Las novedades que publiques aparecen acá.</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              ) : (
+                <ItemGroup className="gap-2">
+                  {novedades.data.map((novedad) => (
+                    <NovedadItem
+                      key={novedad.id}
+                      novedad={novedad}
+                      puedeGestionar={puedePublicar}
+                      onEditar={() => setEditando(novedad)}
+                      onFinalizar={() => setFinalizando(novedad)}
+                    />
+                  ))}
+                </ItemGroup>
+              )}
+            </>
+          ) : (
+            <HistorialNovedades />
+          )}
+        </div>
       </CardContent>
       {publicando ? (
         <PublicarNovedadDialog open onOpenChange={(open) => !open && setPublicando(false)} />
@@ -202,7 +136,7 @@ export function NovedadesSection({ puedePublicar }: { puedePublicar: boolean }) 
           open
           onOpenChange={(open) => !open && setFinalizando(null)}
           title={`¿Finalizar la novedad ${tipoNovedadLabels[finalizando.tipo]} de ${finalizando.comision.codigo}?`}
-          description="Las clases afectadas vuelven a su estado anterior y la novedad queda en el historial."
+          description="Las clases afectadas vuelven a su estado anterior y la novedad pasa al Historial."
           confirmLabel="Finalizar"
           pending={finalizar.isPending}
           onConfirm={() => void confirmarFinalizar()}

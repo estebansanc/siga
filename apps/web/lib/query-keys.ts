@@ -10,12 +10,10 @@ export const queryKeys = {
   clases: (query: Record<string, string | undefined>) => ["clases", query] as const,
   clase: (id: string) => ["clase", id] as const,
   novedades: ["novedades"] as const,
-  historicoNovedades: (query: Record<string, string>) => ["historico", "novedades", query] as const,
+  novedadesHistorial: (query: Record<string, string>) => ["novedades", "historial", query] as const,
   historicoAsistencias: (query: Record<string, string>) =>
     ["historico", "asistencias", query] as const,
   historicoUsoAulas: (query: Record<string, string>) => ["historico", "uso-aulas", query] as const,
-  historicoIncidencias: (query: Record<string, string>) =>
-    ["historico", "incidencias", query] as const,
   historicoOpciones: ["historico", "opciones"] as const,
   avisos: ["avisos"] as const,
   avisosVista: (vista: string) => ["avisos", vista] as const,
@@ -38,7 +36,9 @@ export const queryKeys = {
   busquedaAulas: (pedido: object) => ["solicitudes-aula", "aulas", pedido] as const,
   misSolicitudesAula: ["solicitudes-aula", "mias"] as const,
   solicitudesAula: (estado: string) => ["solicitudes-aula", "lista", estado] as const,
-  incidencias: (estados: string[]) => ["incidencias", "lista", estados] as const,
+  incidencias: ["incidencias", "lista"] as const,
+  incidenciasHistorial: (query: Record<string, string>) =>
+    ["incidencias", "historial", query] as const,
   incidencia: (id: string) => ["incidencias", "detalle", id] as const,
   clasesSinAula: ["clases", "sin-aula"] as const,
 };

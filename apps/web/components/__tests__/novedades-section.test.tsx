@@ -11,6 +11,9 @@ vi.mock("@/hooks/use-novedades", () => ({
   useNovedades: () => ({ data: state.novedades }),
   useFinalizarNovedad: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
+vi.mock("@/components/novedades/historial-novedades", () => ({
+  HistorialNovedades: () => <p>Historial de novedades</p>,
+}));
 vi.mock("@/components/novedades/publicar-novedad-dialog", () => ({
   PublicarNovedadDialog: () => null,
 }));
@@ -57,6 +60,15 @@ describe("NovedadesSection", () => {
     await abrirMenu(user);
     await user.click(await screen.findByRole("menuitem", { name: "Editar novedad" }));
     expect(screen.getByText("Editando n1")).toBeInTheDocument();
+  });
+
+  it("abre en Activas y el Historial es otra pestaña de solo lectura", async () => {
+    renderWithProviders(<NovedadesSection puedePublicar />);
+    expect(screen.getByRole("tab", { name: "Activas", selected: true })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Publicar novedad" })).toBeVisible();
+    await userEvent.click(screen.getByRole("tab", { name: "Historial" }));
+    expect(await screen.findByText("Historial de novedades")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Publicar novedad" })).toBeNull();
   });
 
   it("la autoridad no ve acciones sobre las novedades", () => {

@@ -140,14 +140,14 @@ export function FiltrosForm({
   errores,
   onCambiar,
   onConsultar,
-  soloAula = false,
+  alcance = "completo",
 }: {
   children?: ReactNode;
   filtros: Filtros;
   errores: ErroresFiltros;
   onCambiar: (campo: keyof Filtros, valor: string) => void;
   onConsultar: () => void;
-  soloAula?: boolean;
+  alcance?: "completo" | "aula" | "ninguno";
 }) {
   const opciones = useOpcionesHistorico();
 
@@ -182,7 +182,7 @@ export function FiltrosForm({
           <FieldError>{errores.hasta}</FieldError>
         </Field>
         {children}
-        {soloAula ? null : (
+        {alcance === "completo" ? (
           <>
             <FiltrosAcademicos filtros={filtros} onCambiar={onCambiar} />
             <Field>
@@ -202,23 +202,25 @@ export function FiltrosForm({
               </NativeSelect>
             </Field>
           </>
+        ) : null}
+        {alcance === "ninguno" ? null : (
+          <Field>
+            <FieldLabel htmlFor="historico-aula">Aula</FieldLabel>
+            <NativeSelect
+              id="historico-aula"
+              className="w-full"
+              value={filtros.aulaId}
+              onChange={(event) => onCambiar("aulaId", event.target.value)}
+            >
+              <NativeSelectOption value="">Todas</NativeSelectOption>
+              {opciones.data?.aulas.map((aula) => (
+                <NativeSelectOption key={aula.id} value={aula.id}>
+                  {aula.codigo}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </Field>
         )}
-        <Field>
-          <FieldLabel htmlFor="historico-aula">Aula</FieldLabel>
-          <NativeSelect
-            id="historico-aula"
-            className="w-full"
-            value={filtros.aulaId}
-            onChange={(event) => onCambiar("aulaId", event.target.value)}
-          >
-            <NativeSelectOption value="">Todas</NativeSelectOption>
-            {opciones.data?.aulas.map((aula) => (
-              <NativeSelectOption key={aula.id} value={aula.id}>
-                {aula.codigo}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </Field>
       </FieldGroup>
       <div>
         <Button type="submit">Consultar</Button>

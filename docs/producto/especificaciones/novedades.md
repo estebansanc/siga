@@ -36,6 +36,12 @@ Una novedad sobre un rango de fechas es una sola novedad que abarca todas las cl
 5. El sistema publica la novedad en tiempo real y envía un correo por novedad a cada estudiante que sigue la comisión y tiene activadas las notificaciones (RF-17). No se agrupan ni se difieren.
 6. El docente puede editar o dar por finalizada una novedad. Cada modificación queda en el historial; nada se borra. Finalizar una Demora o un Cambio de modalidad devuelve la clase a Programada si no tiene asistencia registrada; un Cambio de aula finalizado restituye el aula anterior si sigue libre. Las novedades de Ausencia y Suspensión no se finalizan, porque la clase quedó en estado final: solo se edita su mensaje.
 
+**Activas e Historial**
+
+- `/novedades` abre en **Activas**: novedades no finalizadas con alguna clase futura o en curso, con "Publicar novedad", "Editar novedad" y "Finalizar novedad". Ausencia y Suspensión no se finalizan: salen de Activas cuando pasan sus clases.
+- **Historial** (solo lectura): novedades finalizadas o sin clases por delante, con rango de publicación (30 días precargados, hasta 12 meses), filtro por tipo, total y cantidad por tipo, de a 20 con "Página X de Y". Finalizar una novedad la pasa al Historial sin recargar.
+- El Docente solo ve las novedades de sus comisiones; la Autoridad ve ambas pestañas sin modificar nada.
+
 **Edición**
 
 - La edita el Docente de la comisión (aunque la haya publicado bedelía) o el Bedel desde "Editar novedad" en el listado; la Autoridad no. Solo una novedad activa con al menos una clase que aún no terminó.

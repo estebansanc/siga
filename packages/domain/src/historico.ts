@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import { isoDate } from "./common";
 import { origenAsignacionAulaSchema, tipoNovedadSchema } from "./enums";
-import { estadoIncidenciaSchema, type EstadoIncidencia } from "./incidencias";
 import { diaSemanaDe, fechasEntre, sumarMeses } from "./tiempo";
 import type { Turnos } from "./turnos";
 
@@ -58,11 +57,13 @@ const validarRango = (
 };
 
 // RF-09 / CA-06: rango obligatorio de hasta 12 meses (los dos extremos incluidos: de
-// 21/10/2025 a 21/10/2026 es válido) y filtros opcionales combinables.
+// 21/10/2025 a 21/10/2026 es válido). El Historial de Novedades solo agrega el tipo.
 export const consultaNovedadesSchema = z
   .object({
-    ...rangoYFiltros,
+    desde: rangoYFiltros.desde,
+    hasta: rangoYFiltros.hasta,
     tipo: tipoNovedadSchema.optional().or(z.literal("").transform(() => undefined)),
+    pagina: rangoYFiltros.pagina,
   })
   .superRefine(validarRango);
 export type ConsultaNovedades = z.infer<typeof consultaNovedadesSchema>;
@@ -83,7 +84,7 @@ export const consultaUsoAulasSchema = z
 export type ConsultaUsoAulas = z.infer<typeof consultaUsoAulasSchema>;
 export type ConsultaUsoAulasInput = z.input<typeof consultaUsoAulasSchema>;
 
-// RF-09 / CA-06 / EF-5: solo rango y aula; carrera, materia y docente no aplican a las incidencias.
+// Historial de Incidencias (Resueltas): solo rango y aula; carrera, materia y docente no aplican.
 export const consultaIncidenciasSchema = z
   .object({
     desde: rangoYFiltros.desde,
@@ -94,21 +95,6 @@ export const consultaIncidenciasSchema = z
   .superRefine(validarRango);
 export type ConsultaIncidencias = z.infer<typeof consultaIncidenciasSchema>;
 export type ConsultaIncidenciasInput = z.input<typeof consultaIncidenciasSchema>;
-
-export type IndicadoresIncidencias = { total: number; porEstado: Record<EstadoIncidencia, number> };
-
-export const calcularIndicadoresIncidencias = (
-  grupos: { estado: EstadoIncidencia; cantidad: number }[],
-): IndicadoresIncidencias => {
-  const porEstado = Object.fromEntries(
-    estadoIncidenciaSchema.options.map((estado) => [estado, 0]),
-  ) as Record<EstadoIncidencia, number>;
-  for (const { estado, cantidad } of grupos) porEstado[estado] += cantidad;
-  return {
-    total: Object.values(porEstado).reduce((suma, cantidad) => suma + cantidad, 0),
-    porEstado,
-  };
-};
 
 const minutosDe = (hora: string) => {
   const [horas, minutos] = hora.split(":").map(Number) as [number, number];

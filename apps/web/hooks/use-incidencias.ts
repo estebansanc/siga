@@ -1,26 +1,45 @@
 "use client";
 
-import type { FotoSubidaDto, IncidenciaDetalleDto, IncidenciaDto } from "@repo/api/client";
+import type {
+  ConsultaIncidenciasResultadoDto,
+  FotoSubidaDto,
+  IncidenciaDetalleDto,
+  IncidenciaDto,
+} from "@repo/api/client";
 import {
   subirFotoIncidenciaSchema,
   type CambiarEstadoIncidenciaInput,
+  type ConsultaIncidencias,
+  type ConsultaIncidenciasInput,
   type CrearIncidenciaInput,
-  type EstadoIncidencia,
 } from "@repo/domain";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, RequestError, unwrap } from "@/lib/api-client";
 import { comprimirImagen } from "@/lib/comprimir-imagen";
 import { queryKeys } from "@/lib/query-keys";
 
 import { realtimeQueryOptions } from "./use-estado-institucional";
+import { comoQuery } from "./use-historico";
 
-export const useIncidencias = (estados: EstadoIncidencia[]) =>
+export const useIncidencias = () =>
   useQuery({
-    queryKey: queryKeys.incidencias(estados),
-    queryFn: () =>
-      unwrap<IncidenciaDto[]>(api.incidencias.$get({ query: { estados: estados.join(",") } })),
+    queryKey: queryKeys.incidencias,
+    queryFn: () => unwrap<IncidenciaDto[]>(api.incidencias.$get()),
     ...realtimeQueryOptions,
+  });
+
+export const useHistorialIncidencias = (consulta: ConsultaIncidencias | null) =>
+  useQuery({
+    queryKey: queryKeys.incidenciasHistorial(consulta ? comoQuery(consulta) : {}),
+    queryFn: () =>
+      unwrap<ConsultaIncidenciasResultadoDto>(
+        api.incidencias.historial.$get({
+          query: comoQuery(consulta!) as ConsultaIncidenciasInput,
+        }),
+      ),
+    enabled: consulta !== null,
+    placeholderData: keepPreviousData,
   });
 
 export const useIncidencia = (id: string) =>

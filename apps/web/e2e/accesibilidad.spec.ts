@@ -40,7 +40,14 @@ const rutasPorPerfil: Record<keyof typeof perfiles, string[]> = {
     "/datos-academicos",
     "/configuracion",
   ],
-  Autoridad: ["/historico", "/aulas", "/usuarios", "/datos-academicos"],
+  Autoridad: [
+    "/novedades",
+    "/incidencias",
+    "/historico",
+    "/aulas",
+    "/usuarios",
+    "/datos-academicos",
+  ],
 };
 
 const esperarPantalla = async (page: Page) => {

@@ -1,9 +1,9 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { editarNovedadSchema, listarNovedadesQuerySchema, publicarNovedadSchema } from "@repo/domain";
+import { consultaNovedadesSchema, editarNovedadSchema, publicarNovedadSchema } from "@repo/domain";
 
 import type { ApiEnv } from "../context";
 import { perfilOnly } from "../middleware";
-import { idParamSchema, novedadSchema } from "../schemas";
+import { consultaNovedadesResultadoSchema, idParamSchema, novedadSchema } from "../schemas";
 import * as novedades from "../services/novedades";
 
 import { commonErrors, jsonBody, jsonResponse } from "./shared";
@@ -16,13 +16,30 @@ export const novedadRoutes = new OpenAPIHono<ApiEnv>()
       method: "get",
       path: "/",
       tags,
-      summary: "Novedades publicadas, la más reciente primero",
-      description: "El docente ve las de sus comisiones; bedel y autoridad, todas.",
-      request: { query: listarNovedadesQuerySchema },
+      summary: "Novedades activas, la más reciente primero",
+      description:
+        "Pestaña Activas: no finalizadas con alguna clase futura o en curso (Ausencia y Suspensión no se finalizan: salen cuando pasan sus clases). El docente ve las de sus comisiones; bedel y autoridad, todas. Sin paginar.",
       middleware: [perfilOnly("DOCENTE", "BEDEL", "AUTORIDAD")] as const,
       responses: { 200: jsonResponse(z.array(novedadSchema), "Novedades"), ...commonErrors },
     }),
-    async (c) => c.json(await novedades.listarNovedades(c.get("auth"), c.req.valid("query")), 200),
+    async (c) => c.json(await novedades.listarNovedades(c.get("auth")), 200),
+  )
+  .openapi(
+    createRoute({
+      method: "get",
+      path: "/historial",
+      tags,
+      summary: "Historial de novedades en un rango de fechas, con cantidad por tipo",
+      description:
+        "Solo lectura (sin `perfilOnly`: el servicio rechaza y audita el 403, SEG-6). Novedades finalizadas o sin clases por delante. `desde` y `hasta` son obligatorios (yyyy-mm-dd, hora argentina, inclusivos, hasta 12 meses) y filtran por fecha de publicación; `tipo` es opcional. El total y la cantidad por tipo cuentan todo el período filtrado; el detalle pagina de a 20, la más reciente primero. El docente ve las de sus comisiones; bedel y autoridad, todas.",
+      request: { query: consultaNovedadesSchema },
+      responses: {
+        200: jsonResponse(consultaNovedadesResultadoSchema, "Total, cantidad por tipo y detalle"),
+        ...commonErrors,
+      },
+    }),
+    async (c) =>
+      c.json(await novedades.consultarHistorialNovedades(c.get("auth"), c.req.valid("query")), 200),
   )
   .openapi(
     createRoute({
@@ -52,11 +69,7 @@ export const novedadRoutes = new OpenAPIHono<ApiEnv>()
     }),
     async (c) =>
       c.json(
-        await novedades.editarNovedad(
-          c.get("auth"),
-          c.req.valid("param").id,
-          c.req.valid("json"),
-        ),
+        await novedades.editarNovedad(c.get("auth"), c.req.valid("param").id, c.req.valid("json")),
         200,
       ),
   )

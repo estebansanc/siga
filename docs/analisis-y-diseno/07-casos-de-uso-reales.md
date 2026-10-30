@@ -63,7 +63,7 @@ Casos de uso "reales" (en el sentido de Larman): describen la interacción concr
 
 - **Actor**: docente. **Precondición**: clase programada propia no finalizada.
 - **Flujo principal**
-  1. En M5 (Mis clases) el docente ve sus clases de hoy con estado y los botones "Registrar asistencia", "Publicar novedad" y "Solicitar aula". Toca "Publicar novedad".
+  1. En M5 (Mis clases) el docente ve sus clases de hoy con estado y el menú ⋯ de cada una. Entra a "Novedades" (menú) y toca "Publicar novedad", o elige "Publicar novedad" en el menú ⋯ de una clase para dejarla preseleccionada.
   2. En M6, paso 1: selecciona una o más de sus clases (chips); puede elegir un rango de fechas para una comisión.
   3. Paso 2: elige el tipo (Ausencia, Demora, Virtual, Suspensión, Cambio de aula). Según el tipo aparece el campo obligatorio: minutos de demora, enlace de la clase virtual o aula nueva (lista de aulas disponibles en esa franja).
   4. Paso 3: escribe un mensaje opcional (máximo 500 caracteres, contador visible).
@@ -78,7 +78,7 @@ Casos de uso "reales" (en el sentido de Larman): describen la interacción concr
 
 - **Actor**: docente. **Precondición**: bedelía mostró el QR del aula y turno (D3); el docente está en el aula.
 - **Flujo principal**
-  1. Desde M5 toca "Registrar asistencia". M7 abre directamente la cámara con un marco de escaneo y el texto "Apuntá al código QR de bedelía".
+  1. Desde el menú toca "Asistencia". M7 abre directamente la cámara con un marco de escaneo y el texto "Apuntá al código QR de bedelía".
   2. El navegador pide permiso de cámara (primera vez) y de ubicación; el docente acepta.
   3. Al leer el QR, el sistema valida y muestra la tarjeta verde "Asistencia registrada · Aula 12 · Turno Noche · 19:02".
 - **Alternativos**
@@ -93,7 +93,7 @@ Casos de uso "reales" (en el sentido de Larman): describen la interacción concr
 
 - **Actor**: docente.
 - **Flujo principal**
-  1. Desde M5 toca "Solicitar aula". En M8 completa fecha, franja horaria, cantidad de alumnos y recursos (chips: Proyector, Computadora, Climatización, etc.).
+  1. Desde el menú entra a "Aulas" y toca "Solicitar aula". En M8 completa fecha, franja horaria, cantidad de alumnos y recursos (chips: Proyector, Computadora, Climatización, etc.).
   2. El sistema lista las aulas disponibles que cumplen todo, ordenadas por capacidad más ajustada, con capacidad y equipamiento.
   3. Toca "Solicitar" en un aula; confirma en un diálogo; toast "Solicitud enviada. Queda pendiente de aprobación por bedelía".
 - **Alternativos**
