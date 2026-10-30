@@ -30,22 +30,27 @@ export const actualizarPreferencias = async (
   input: ActualizarPreferenciasInput,
 ): Promise<PreferenciasDto> => {
   await assertPerfil(auth, "ESTUDIANTE");
-  const comisionIds = [...new Set(input.comisionIds)];
-  const existentes = await prisma.comision.count({
-    where: { id: { in: comisionIds }, organizationId: auth.organizationId, activa: true },
-  });
-  if (existentes !== comisionIds.length)
-    throw unprocessable("Alguna comisión ya no está disponible");
+  // Sin `comisionIds` se guardan solo las opciones de correo y las comisiones quedan como están.
+  const comisionIds = input.comisionIds ? [...new Set(input.comisionIds)] : undefined;
+  if (comisionIds) {
+    const existentes = await prisma.comision.count({
+      where: { id: { in: comisionIds }, organizationId: auth.organizationId, activa: true },
+    });
+    if (existentes !== comisionIds.length)
+      throw unprocessable("Alguna comisión ya no está disponible");
+  }
 
   await prisma.$transaction(async (tx) => {
-    await tx.comisionSeguida.deleteMany({ where: { userId: auth.userId } });
-    await tx.comisionSeguida.createMany({
-      data: comisionIds.map((comisionId) => ({
-        userId: auth.userId,
-        comisionId,
-        organizationId: auth.organizationId,
-      })),
-    });
+    if (comisionIds) {
+      await tx.comisionSeguida.deleteMany({ where: { userId: auth.userId } });
+      await tx.comisionSeguida.createMany({
+        data: comisionIds.map((comisionId) => ({
+          userId: auth.userId,
+          comisionId,
+          organizationId: auth.organizationId,
+        })),
+      });
+    }
     const { notificarNovedadesPorCorreo, notificarAvisosPorCorreo } = input;
     await tx.userProfile.update({
       where: { userId: auth.userId },
