@@ -1,4 +1,5 @@
 import type { MeDto } from "@repo/api/client";
+import { perfilLabels } from "@repo/domain";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -58,6 +59,14 @@ describe("ProfileSection", () => {
     ).toBeInTheDocument();
     expect(guardar()).toBeDisabled();
   });
+
+  it.each(["ESTUDIANTE", "DOCENTE", "BEDEL", "AUTORIDAD"] as const)(
+    "el badge de perfil muestra el nombre del perfil %s",
+    (perfil) => {
+      renderWithProviders(<ProfileSection initialMe={{ ...me, perfil }} />);
+      expect(screen.getByTestId("profile-perfil")).toHaveTextContent(perfilLabels[perfil]);
+    },
+  );
 
   it("guarda nombre, DNI y legajo, avisa y vuelve a deshabilitar Guardar", async () => {
     renderWithProviders(<ProfileSection initialMe={me} />);

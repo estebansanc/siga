@@ -12,13 +12,12 @@ test.describe("Mi cuenta: Perfil", () => {
     await expect(page.getByText("Así te ven los demás usuarios.")).toBeVisible();
     await expect(nameInput).toHaveValue(user.name);
     await expect(page.getByTestId("profile-email")).toHaveText(user.email);
-    await expect(page.getByTestId("profile-perfil")).toBeVisible();
+    await expect(page.getByTestId("profile-perfil")).toHaveText("Estudiante");
     await expect(page.getByLabel("Legajo (opcional)")).toBeVisible();
-    await page.getByLabel("Legajo (opcional)").focus();
-    await page.keyboard.press("Tab");
-    await expect(page.getByTestId("profile-email")).not.toBeFocused();
-    await expect(page.getByTestId("profile-perfil")).not.toBeFocused();
     await expect(page.getByRole("button", { name: "Guardar" })).toBeDisabled();
+    await page.getByLabel("Legajo (opcional)").fill("L-TAB");
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Guardar" })).toBeFocused();
 
     await nameInput.fill("   ");
     await page.getByRole("button", { name: "Guardar" }).click();
