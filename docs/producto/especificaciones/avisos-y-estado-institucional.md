@@ -41,7 +41,7 @@ Requisitos cubiertos: RF-01, RF-08, RF-14, RF-17. Criterios de aceptación: CA-0
 1. En todas las pantallas se muestra un indicador destacado del estado institucional en la parte superior.
 2. El indicador muestra el estado, la fecha y hora de la última actualización y, si corresponde, el motivo.
 3. Ante un cambio, el indicador se actualiza solo en todas las sesiones abiertas.
-4. Al tocar el indicador se accede al detalle y a los avisos institucionales vigentes. Los avisos urgentes se muestran también junto al indicador.
+4. Al tocar el indicador se accede al detalle. Los avisos institucionales vigentes están en la sección Avisos. Los avisos urgentes se muestran también junto al indicador.
 
 **Salidas**: indicador actualizado en menos de 60 segundos tras la acción del bedel.
 
@@ -84,7 +84,7 @@ Requisitos cubiertos: RF-01, RF-08, RF-14, RF-17. Criterios de aceptación: CA-0
 
 ## Pantallas
 
-- **Todos**: indicador de estado institucional en la parte superior; detalle con avisos vigentes; sección Avisos.
+- **Todos**: indicador de estado institucional en la parte superior; detalle del estado; sección Avisos con los avisos vigentes.
 - **Bedel**: Estado institucional (cambio de estado con motivo y vigencia; historial); Avisos (redactar, segmentar, publicar, enviar por correo, ver resultado de envíos).
 - **Autoridad académica**: Avisos (igual que Bedel).
 - **Estudiante**: Preferencias (comisiones seguidas, notificaciones por correo).
