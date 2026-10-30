@@ -125,13 +125,12 @@ test.describe("Aulas", () => {
     page,
   }) => {
     await loginViaUi(page, seededUsers.docente);
-    const menu = page.getByRole("navigation");
-    await expect(menu.getByRole("link", { name: "Solicitudes de aula" })).toBeVisible();
-    await expect(menu.getByRole("link", { name: "Aulas", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Solicitudes de aula" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Aulas", exact: true })).toHaveCount(0);
     for (const ruta of ["/aulas", "/aulas/solicitar", "/aulas/mis-solicitudes"]) {
       await page.goto(ruta);
       await expect(page).toHaveURL(/\/solicitudes$/);
-      await expect(page.getByRole("heading", { name: "Solicitudes de aula" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Solicitudes de aula", exact: true })).toBeVisible();
     }
     await expect(page.getByRole("button", { name: "Nueva aula" })).toHaveCount(0);
   });
