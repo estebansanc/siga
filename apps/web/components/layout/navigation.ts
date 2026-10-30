@@ -2,6 +2,7 @@ import type { MemberRole, Perfil } from "@repo/domain";
 import {
   BellIcon,
   BookOpenIcon,
+  CalendarSearchIcon,
   CalendarDaysIcon,
   CircleDotIcon,
   CircleHelpIcon,
@@ -13,7 +14,6 @@ import {
   MapIcon,
   MegaphoneIcon,
   QrCodeIcon,
-  SearchIcon,
   Settings2Icon,
   SlidersHorizontalIcon,
   TriangleAlertIcon,
@@ -46,7 +46,7 @@ export type NavigationHref =
   | "/ayuda";
 
 const misClases: NavigationItem = { title: "Mis clases", href: "/", icon: CalendarDaysIcon };
-const buscar: NavigationItem = { title: "Buscar", href: "/clases", icon: SearchIcon };
+const clases: NavigationItem = { title: "Clases", href: "/clases", icon: CalendarSearchIcon };
 const avisos: NavigationItem = { title: "Avisos", href: "/avisos", icon: BellIcon };
 const novedades: NavigationItem = { title: "Novedades", href: "/novedades", icon: MegaphoneIcon };
 const estado: NavigationItem = {
@@ -80,7 +80,7 @@ const ayuda: NavigationItem = { title: "Ayuda", href: "/ayuda", icon: CircleHelp
 const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
   ESTUDIANTE: [
     misClases,
-    buscar,
+    clases,
     avisos,
     { title: "Preferencias", href: "/preferencias", icon: SlidersHorizontalIcon },
   ],
@@ -90,11 +90,11 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     novedades,
     avisos,
     aulas,
-    buscar,
+    clases,
   ],
   BEDEL: [
     estado,
-    { title: "Clases", href: "/clases", icon: CalendarDaysIcon },
+    clases,
     novedades,
     aulas,
     plano,
@@ -107,10 +107,9 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     datosAcademicos,
   ],
   AUTORIDAD: [
-    { title: "Clases de hoy", href: "/", icon: CalendarDaysIcon },
+    clases,
     consultasHistoricas,
     avisos,
-    buscar,
     plano,
     estado,
     usuarios,

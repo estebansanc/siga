@@ -46,7 +46,7 @@ describe("ayuda", () => {
     expect(titulos("ESTUDIANTE")).toEqual([
       "Elegir las comisiones que seguís",
       "Ver tus clases del día con estado y novedades",
-      "Buscar una clase",
+      "Consultar las clases",
       "Leer los avisos",
     ]);
     expect(titulos("DOCENTE")).toEqual([
@@ -66,10 +66,18 @@ describe("ayuda", () => {
       "Publicar un aviso",
     ]);
     expect(titulos("AUTORIDAD")).toEqual([
-      "Ver las clases de hoy",
+      "Consultar las clases",
       "Consultar los históricos",
       "Publicar un aviso",
       "Consultar el estado institucional",
     ]);
+  });
+
+  it("ningún perfil menciona Buscar ni Clases de hoy y todos describen Clases", () => {
+    for (const perfil of ["ESTUDIANTE", "DOCENTE", "BEDEL", "AUTORIDAD"] as const) {
+      const texto = JSON.stringify(ayudaPorPerfil[perfil]);
+      expect(texto).not.toMatch(/"Buscar"|Clases de hoy/);
+      expect(ayudaPorPerfil[perfil].manual.map((seccion) => seccion.titulo)).toContain("Clases");
+    }
   });
 });

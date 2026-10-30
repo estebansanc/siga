@@ -22,7 +22,7 @@ const perfiles = {
   Estudiante: { user: seededUsers.estudiante, inicio: "Mis clases de hoy" },
   Docente: { user: seededUsers.docente, inicio: "Mis clases de hoy" },
   Bedel: { user: seededUsers.bedel, inicio: "Estado institucional" },
-  Autoridad: { user: seededUsers.autoridad, inicio: "Clases de hoy" },
+  Autoridad: { user: seededUsers.autoridad, inicio: "Clases" },
 } satisfies Record<string, { user: User; inicio: string }>;
 
 const rutasComunes = ["/", "/mi-perfil", "/avisos", "/clases"];

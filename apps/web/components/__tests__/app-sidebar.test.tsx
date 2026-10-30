@@ -105,9 +105,9 @@ describe("AppSidebar", () => {
     );
   });
 
-  it("el estudiante ve Mis clases, Buscar, Avisos y Preferencias, sin Configuración", () => {
+  it("el estudiante ve Mis clases, Clases, Avisos y Preferencias, sin Configuración", () => {
     renderSidebar("member", meOf([ownOrganization], "ESTUDIANTE"));
-    expect(linkNames()).toEqual(["Mis clases", "Buscar", "Avisos", "Preferencias", "Ayuda"]);
+    expect(linkNames()).toEqual(["Mis clases", "Clases", "Avisos", "Preferencias", "Ayuda"]);
     expect(screen.getByRole("link", { name: "Mis clases" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "Mis clases" })).toHaveAttribute("data-active");
     expect(screen.getByRole("link", { name: "Preferencias" })).toHaveAttribute(
@@ -125,7 +125,7 @@ describe("AppSidebar", () => {
       "Novedades",
       "Avisos",
       "Aulas",
-      "Buscar",
+      "Clases",
       "Ayuda",
     ]);
     expect(screen.getByRole("link", { name: "Novedades" })).toHaveAttribute("data-active");
@@ -134,10 +134,9 @@ describe("AppSidebar", () => {
 
     renderSidebar("member", meOf([ownOrganization], "AUTORIDAD"));
     expect(linkNames()).toEqual([
-      "Clases de hoy",
+      "Clases",
       "Consultas históricas",
       "Avisos",
-      "Buscar",
       "Plano de aulas",
       "Estado institucional",
       "Usuarios",
