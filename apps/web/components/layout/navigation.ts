@@ -11,7 +11,6 @@ import {
   HistoryIcon,
   InboxIcon,
   LayoutGridIcon,
-  MapIcon,
   MegaphoneIcon,
   QrCodeIcon,
   Settings2Icon,
@@ -35,7 +34,6 @@ export type NavigationHref =
   | "/aulas"
   | "/aulas/solicitar"
   | "/aulas/mis-solicitudes"
-  | "/plano-de-aulas"
   | "/qr"
   | "/solicitudes"
   | "/incidencias"
@@ -66,7 +64,6 @@ const consultasHistoricas: NavigationItem = {
   icon: HistoryIcon,
 };
 const aulas: NavigationItem = { title: "Aulas", href: "/aulas", icon: DoorOpenIcon };
-const plano: NavigationItem = { title: "Plano de aulas", href: "/plano-de-aulas", icon: MapIcon };
 const configuracion: NavigationItem = {
   title: "Configuración",
   href: "/configuracion",
@@ -97,7 +94,6 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     clases,
     novedades,
     aulas,
-    plano,
     { title: "QR de asistencia", href: "/qr", icon: QrCodeIcon },
     { title: "Solicitudes", href: "/solicitudes", icon: InboxIcon },
     { title: "Incidencias", href: "/incidencias", icon: TriangleAlertIcon },
@@ -106,15 +102,7 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     usuarios,
     datosAcademicos,
   ],
-  AUTORIDAD: [
-    clases,
-    consultasHistoricas,
-    avisos,
-    plano,
-    estado,
-    usuarios,
-    datosAcademicos,
-  ],
+  AUTORIDAD: [clases, consultasHistoricas, avisos, aulas, estado, usuarios, datosAcademicos],
 };
 
 // Configuración sigue siendo del Administrador de la organización, cualquiera sea su perfil.

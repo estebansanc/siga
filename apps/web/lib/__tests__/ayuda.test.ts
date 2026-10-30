@@ -15,6 +15,11 @@ describe("ayuda", () => {
     }
   });
 
+  it.each(perfiles)("el manual de %s no tiene una sección Plano de aulas", (perfil) => {
+    const titulos = manualFor(perfil, "member").map((seccion) => seccion.titulo);
+    expect(titulos).not.toContain("Plano de aulas");
+  });
+
   it.each(perfiles)("la guía de %s no supera el máximo de palabras", (perfil) => {
     expect(contarPalabras(ayudaPorPerfil[perfil].guia)).toBeLessThanOrEqual(maximoPalabrasGuia);
   });

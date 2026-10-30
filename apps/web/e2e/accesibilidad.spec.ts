@@ -27,12 +27,12 @@ const perfiles = {
 
 const rutasComunes = ["/", "/mi-perfil", "/avisos", "/clases"];
 const rutasPorPerfil: Record<keyof typeof perfiles, string[]> = {
-  Estudiante: ["/preferencias"],
+  Estudiante: ["/preferencias", "/aulas?vista=plano"],
   Docente: ["/asistencia", "/novedades", "/aulas"],
   Bedel: [
     "/novedades",
     "/aulas",
-    "/plano-de-aulas",
+    "/aulas?vista=plano",
     "/qr",
     "/solicitudes",
     "/incidencias",
@@ -40,7 +40,7 @@ const rutasPorPerfil: Record<keyof typeof perfiles, string[]> = {
     "/datos-academicos",
     "/configuracion",
   ],
-  Autoridad: ["/historico", "/plano-de-aulas", "/usuarios", "/datos-academicos"],
+  Autoridad: ["/historico", "/aulas", "/usuarios", "/datos-academicos"],
 };
 
 const esperarPantalla = async (page: Page) => {

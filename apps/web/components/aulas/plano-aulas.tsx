@@ -90,7 +90,13 @@ function AulaCelda({ aula, onClick }: { aula: PlanoAulaDto; onClick: () => void 
 // Plano de aulas (RF-02, RF-07): grilla provisoria por código hasta tener los planos de cada
 // piso. Se actualiza por consulta periódica de 30 s. La elección inicial queda fijada con los
 // primeros datos: si el piso se vacía no salta a otro.
-export function PlanoAulas({ perfil }: { perfil: Perfil }) {
+export function PlanoAulas({
+  perfil,
+  onAbrirAula,
+}: {
+  perfil: Perfil;
+  onAbrirAula?: (aulaId: string) => void;
+}) {
   const plano = usePlanoAulas();
   const [seleccion, setSeleccion] = useState<{ edificio: string; piso: string }>();
   const [aulaId, setAulaId] = useState<string | null>(null);
@@ -113,7 +119,7 @@ export function PlanoAulas({ perfil }: { perfil: Perfil }) {
   ]).sort(compararPisos);
   const piso = seleccion?.piso;
   const delPiso = deEdificio.filter((aula) => aula.piso === piso);
-  const aulaAbierta = aulas?.find((aula) => aula.id === aulaId);
+  const aulaAbierta = onAbrirAula ? undefined : aulas?.find((aula) => aula.id === aulaId);
 
   const elegirEdificio = (valor: string) => {
     const pisoMasBajo = aulas
@@ -166,7 +172,11 @@ export function PlanoAulas({ perfil }: { perfil: Perfil }) {
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {delPiso.map((aula) => (
-                  <AulaCelda key={aula.id} aula={aula} onClick={() => setAulaId(aula.id)} />
+                  <AulaCelda
+                    key={aula.id}
+                    aula={aula}
+                    onClick={() => (onAbrirAula ? onAbrirAula(aula.id) : setAulaId(aula.id))}
+                  />
                 ))}
               </div>
             )}

@@ -72,6 +72,46 @@ test.describe("Aulas", () => {
     await expect(dialog.getByText("Clases de hoy y los próximos 7 días")).toBeVisible();
   });
 
+  test("el bedel alterna Lista y Plano, ve el mismo detalle y la vista sobrevive a recargar", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    await expect(page.getByRole("link", { name: "Plano de aulas" })).toHaveCount(0);
+    await page.goto("/aulas");
+    await expect(page.getByRole("button", { name: "Lista" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await page
+      .locator('[data-slot="item"]')
+      .filter({ hasText: /^Aula 12/ })
+      .getByRole("button", { name: "Detalle" })
+      .click();
+    const detalleLista = page.getByRole("dialog", { name: "Aula 12" });
+    await expect(detalleLista.getByText("Reportar incidencia")).toBeVisible();
+    const textoLista = await detalleLista.innerText();
+    await page.keyboard.press("Escape");
+
+    await page.getByRole("button", { name: "Plano", exact: true }).click();
+    await expect(page).toHaveURL(/vista=plano/);
+    await expect(page.getByRole("button", { name: "Nueva aula" })).toBeVisible();
+    await page.getByRole("button", { name: "Edificio A" }).click();
+    await page.getByRole("button", { name: /^Aula 12/ }).click();
+    const detallePlano = page.getByRole("dialog", { name: "Aula 12" });
+    await expect(detallePlano.getByText("Reportar incidencia")).toBeVisible();
+    expect(await detallePlano.innerText()).toBe(textoLista);
+    await page.keyboard.press("Escape");
+
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Plano", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await page.goto("/plano-de-aulas");
+    await expect(page).toHaveURL(/\/aulas\?vista=plano/);
+  });
+
   test("el docente va de Aulas a sus solicitudes y desde su panel a Solicitar aula", async ({
     page,
   }) => {

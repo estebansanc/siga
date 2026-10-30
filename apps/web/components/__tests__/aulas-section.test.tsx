@@ -1,5 +1,5 @@
 import type { AulaGestionDto } from "@repo/api/client";
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -8,6 +8,7 @@ import { renderWithProviders } from "@/test/render";
 
 const state = vi.hoisted(() => ({ aulas: [] as AulaGestionDto[], bajasPedidas: [] as boolean[] }));
 const reactivar = vi.hoisted(() => vi.fn());
+const onDetalle = vi.fn();
 
 vi.mock("@/hooks/use-aulas", () => ({
   useAulas: (bajas: boolean) => {
@@ -49,7 +50,7 @@ beforeEach(() => {
 
 describe("AulasSection", () => {
   it("lista las activas con ubicación, capacidad, equipamiento y estado; Ocupada prevalece", () => {
-    renderWithProviders(<AulasSection />);
+    renderWithProviders(<AulasSection onDetalle={onDetalle} />);
     const items = screen.getAllByText(/^Aula \d+$/);
     expect(items.map((item) => item.firstChild?.textContent)).toEqual([
       "Aula 12",
@@ -65,7 +66,7 @@ describe("AulasSection", () => {
   });
 
   it("con el filtro de dadas de baja ofrece reactivar", async () => {
-    renderWithProviders(<AulasSection />);
+    renderWithProviders(<AulasSection onDetalle={onDetalle} />);
     await userEvent.click(screen.getByRole("button", { name: "Dadas de baja" }));
     expect(screen.getByText("Aula 99")).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Acciones de Aula 99" }));
@@ -73,9 +74,9 @@ describe("AulasSection", () => {
     expect(reactivar).toHaveBeenCalledWith("a99");
   });
 
-  it("Nueva aula abre el formulario de alta", async () => {
-    renderWithProviders(<AulasSection />);
-    await userEvent.click(screen.getByRole("button", { name: "Nueva aula" }));
-    expect(within(screen.getByRole("dialog")).getByLabelText("Código")).toBeVisible();
+  it("Detalle avisa qué aula abrir", async () => {
+    renderWithProviders(<AulasSection onDetalle={onDetalle} />);
+    await userEvent.click(screen.getAllByRole("button", { name: "Detalle" })[0]);
+    expect(onDetalle).toHaveBeenCalledWith("a12");
   });
 });

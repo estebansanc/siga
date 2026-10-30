@@ -143,14 +143,19 @@ const aulasDocente: SeccionManual = {
 
 const aulasBedel: SeccionManual = {
   titulo: "Aulas",
-  paraQueSirve: "Administra las aulas del campus.",
+  paraQueSirve: "Administra las aulas del campus y muestra su estado en tiempo real.",
   comoSeLlega: menu("Aulas"),
   pasos: [
+    'Alterná entre "Lista" y "Plano" para ver las aulas como listado o por edificio y piso.',
     'Tocá "Nueva aula" para dar de alta un aula.',
-    'En el menú de cada aula elegí "Editar" o "Dar de baja".',
+    'En la Lista, tocá "Detalle" para ver la clase, asignar, mover o reemplazar clases y reportar incidencias; en el Plano, tocá el aula.',
+    'En el menú de cada aula de la Lista elegí "Editar" o "Dar de baja".',
     'Con "Dadas de baja" ves las aulas dadas de baja.',
   ],
-  mensajes: ["Sin aulas activas: todavía no hay aulas cargadas."],
+  mensajes: [
+    "Sin aulas activas: todavía no hay aulas cargadas.",
+    "Libre, Pendiente, Ocupada, Fuera de servicio y En mantenimiento describen el aula.",
+  ],
 };
 
 const estado: SeccionManual = {
@@ -164,11 +169,15 @@ const estado: SeccionManual = {
   mensajes: ["Al cerrar la institución se pide confirmación y se ofrece generar un aviso."],
 };
 
-const plano: SeccionManual = {
-  titulo: "Plano de aulas",
+const aulasAutoridad: SeccionManual = {
+  titulo: "Aulas",
   paraQueSirve: "Muestra el estado de cada aula en tiempo real.",
-  comoSeLlega: menu("Plano de aulas"),
-  pasos: ["Elegí el edificio.", "Tocá un aula para ver su clase actual y la asistencia."],
+  comoSeLlega: menu("Aulas"),
+  pasos: [
+    "Elegí el edificio y el piso.",
+    "Tocá un aula para ver su clase actual y la asistencia.",
+    'Con "Asignar clase", "Mover clase" o "Reemplazar clase" reorganizás las clases de hoy.',
+  ],
   mensajes: ["Libre, Pendiente, Ocupada, Fuera de servicio y En mantenimiento describen el aula."],
 };
 
@@ -428,7 +437,6 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
       clases,
       novedadesBedel,
       aulasBedel,
-      plano,
       qr,
       solicitudes,
       incidencias,
@@ -470,7 +478,7 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
       clases,
       historico,
       avisosGestion,
-      plano,
+      aulasAutoridad,
       {
         ...estado,
         pasos: ["Revisá el estado actual y su historial."],

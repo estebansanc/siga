@@ -20,7 +20,7 @@ test.afterEach(async () => {
 
 const abrirPlano = async (page: Page, usuario: typeof seededUsers.bedel) => {
   await loginViaUi(page, usuario);
-  await page.goto("/plano-de-aulas");
+  await page.goto("/aulas?vista=plano");
   await page.getByRole("button", { name: escenario.edificio }).click();
 };
 

@@ -25,7 +25,7 @@ const describirNovedad = (novedad: ClaseDto["novedades"][number]) => {
     : etiqueta;
 };
 
-function ClaseEnCurso({ clase }: { clase: ClaseDto }) {
+export function ClaseEnCurso({ clase }: { clase: ClaseDto }) {
   const asistencia =
     clase.estado === "DOCENTE_PRESENTE" ? "Docente presente" : "Sin asistencia registrada";
   return (
@@ -54,7 +54,7 @@ function ClaseEnCurso({ clase }: { clase: ClaseDto }) {
   );
 }
 
-function ProximaClase({ aula }: { aula: PlanoAulaDto }) {
+export function ProximaClase({ aula }: { aula: PlanoAulaDto }) {
   const proxima = aula.proximaClase;
   return (
     <section className="flex flex-col gap-1">

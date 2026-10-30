@@ -45,7 +45,7 @@ Requisitos cubiertos: RF-02, RF-06, RF-15, RF-16. Criterios de aceptación: CA-0
 
 ## RF-16 Asignación de aulas y aprobación de solicitudes
 
-**Quién**: Bedel. La Autoridad académica asigna, mueve y reemplaza clases desde el Plano de aulas; las solicitudes siguen siendo del Bedel.
+**Quién**: Bedel. La Autoridad académica asigna, mueve y reemplaza clases desde la vista Plano de Aulas; las solicitudes siguen siendo del Bedel.
 
 **Entrada**: solicitud pendiente (RF-06) o clase sin aula, aula, decisión (Aprobar / Rechazar) y motivo (obligatorio si se rechaza).
 
@@ -60,7 +60,8 @@ Requisitos cubiertos: RF-02, RF-06, RF-15, RF-16. Criterios de aceptación: CA-0
 **Reglas**
 
 - Toda asignación que superponga un aula en la misma franja se rechaza con el mensaje "El aula ya está asignada en esa franja: la ocupa la comisión <código>" y no cambia nada.
-- Desde el panel de un aula del Plano de aulas (solo clases de hoy), Bedel y Autoridad pueden:
+- Aulas es una sola sección: el Bedel alterna entre la vista Lista (gestión) y la vista Plano (por edificio y piso) y ve el mismo detalle del aula en ambas; la Autoridad abre directamente el Plano, y Docente y Estudiante lo consultan sin acciones.
+- Desde el panel de un aula (solo clases de hoy), Bedel y Autoridad pueden:
   - **Asignar clase** (aula Disponible sin clase en la franja actual): se ofrecen las clases de hoy sin aula que admiten asignación, sin solicitud pendiente, con los estudiantes que siguen la comisión dentro de la capacidad y la franja libre en el aula. No genera novedad y los docentes reciben el correo de asignación. Con la franja en curso el aula pasa a "Pendiente"; con una franja futura sigue "Libre" y el panel muestra la clase como próxima.
   - **Mover a otra aula** (aula con clase en curso, también si está Fuera de servicio o En mantenimiento): se ofrecen las aulas Disponibles, libres en esa franja y con capacidad, agrupadas por piso. Publica un "Cambio de aula" y los docentes reciben el correo de reasignación; la original queda "Libre".
   - **Reemplazar clase** (aula Disponible con clase en curso): se elige la clase que entra y el aula adonde va la actual. Es todo o nada; solo la desplazada genera "Cambio de aula" y correo de reasignación, y la que entra recibe el correo de asignación.

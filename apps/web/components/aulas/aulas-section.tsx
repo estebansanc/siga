@@ -5,7 +5,6 @@ import { equipamientoLabels, type Equipamiento } from "@repo/domain";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -34,23 +33,18 @@ import {
 } from "@repo/ui/components/item";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@repo/ui/components/toggle-group";
-import { DoorOpenIcon, MoreHorizontalIcon, PlusIcon } from "lucide-react";
+import { DoorOpenIcon, MoreHorizontalIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { useAulas, useReactivarAula } from "@/hooks/use-aulas";
 import { showRequestError } from "@/lib/form-errors";
 
-import { AulaDetalleDialog } from "./aula-detalle-dialog";
 import { AulaEstadoBadge } from "./aula-estado-badge";
 import { AulaFormDialog } from "./aula-form-dialog";
 import { BajaAulaDialog } from "./baja-aula-dialog";
 
-type Accion =
-  | { tipo: "crear" }
-  | { tipo: "editar"; aula: AulaGestionDto }
-  | { tipo: "baja"; aula: AulaGestionDto }
-  | { tipo: "detalle"; aula: AulaGestionDto };
+type Accion = { tipo: "editar"; aula: AulaGestionDto } | { tipo: "baja"; aula: AulaGestionDto };
 
 const describirEquipamiento = (aula: AulaGestionDto) =>
   aula.equipamiento.map((item) => equipamientoLabels[item as Equipamiento] ?? item).join(", ");
@@ -58,10 +52,12 @@ const describirEquipamiento = (aula: AulaGestionDto) =>
 function AulaItem({
   aula,
   onAccion,
+  onDetalle,
   onReactivar,
 }: {
   aula: AulaGestionDto;
   onAccion: (accion: Accion) => void;
+  onDetalle: () => void;
   onReactivar: () => void;
 }) {
   return (
@@ -77,7 +73,7 @@ function AulaItem({
         </ItemDescription>
       </ItemContent>
       <ItemActions>
-        <Button variant="outline" size="sm" onClick={() => onAccion({ tipo: "detalle", aula })}>
+        <Button variant="outline" size="sm" onClick={onDetalle}>
           Detalle
         </Button>
         <DropdownMenu>
@@ -109,7 +105,7 @@ function AulaItem({
 }
 
 // Gestión de aulas del Bedel (RF-02): listado en tiempo real por consulta periódica.
-export function AulasSection() {
+export function AulasSection({ onDetalle }: { onDetalle: (aulaId: string) => void }) {
   const [bajas, setBajas] = useState(false);
   const aulas = useAulas(bajas);
   const reactivar = useReactivarAula();
@@ -132,12 +128,6 @@ export function AulasSection() {
         <CardDescription>
           Estado y ocupación en tiempo real. Cada cambio queda en auditoría.
         </CardDescription>
-        <CardAction>
-          <Button size="sm" onClick={() => setAccion({ tipo: "crear" })}>
-            <PlusIcon />
-            Nueva aula
-          </Button>
-        </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <ToggleGroup
@@ -178,18 +168,15 @@ export function AulasSection() {
                 key={aula.id}
                 aula={aula}
                 onAccion={setAccion}
+                onDetalle={() => onDetalle(aula.id)}
                 onReactivar={() => void reactivarAula(aula)}
               />
             ))}
           </ItemGroup>
         )}
       </CardContent>
-      {accion?.tipo === "crear" ? <AulaFormDialog onClose={cerrar} /> : null}
       {accion?.tipo === "editar" ? <AulaFormDialog aula={accion.aula} onClose={cerrar} /> : null}
       {accion?.tipo === "baja" ? <BajaAulaDialog aula={accion.aula} onClose={cerrar} /> : null}
-      {accion?.tipo === "detalle" ? (
-        <AulaDetalleDialog aulaId={accion.aula.id} onClose={cerrar} />
-      ) : null}
     </Card>
   );
 }
