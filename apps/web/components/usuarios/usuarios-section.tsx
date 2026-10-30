@@ -190,13 +190,14 @@ export function UsuariosSection() {
           <Input
             type="search"
             aria-label="Buscar usuarios"
+            className="sm:min-w-0 sm:flex-1"
             placeholder="Buscar por nombre, correo o DNI"
             value={busqueda}
             onChange={(event) => setBusqueda(event.target.value)}
           />
           <NativeSelect
             aria-label="Filtrar por perfil"
-            className="w-full sm:w-52"
+            className="w-full sm:w-60 sm:shrink-0"
             value={perfil}
             onChange={(event) => setPerfil(event.target.value)}
           >
@@ -209,7 +210,7 @@ export function UsuariosSection() {
           </NativeSelect>
           <NativeSelect
             aria-label="Filtrar por solicitud de baja"
-            className="w-full sm:w-52"
+            className="w-full sm:w-56 sm:shrink-0"
             value={bajaSolicitada}
             onChange={(event) => setBajaSolicitada(event.target.value)}
           >

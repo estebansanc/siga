@@ -238,6 +238,55 @@ test.describe("Usuarios", () => {
     await anonimo.close();
   });
 
+  for (const ancho of [1366, 768]) {
+    test(`a ${ancho} px los filtros muestran completa la opción elegida y no cambian de ancho`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: ancho, height: 850 });
+      await loginViaUi(page, seededUsers.bedel);
+      await page.goto("/usuarios");
+      const buscador = page.getByLabel("Buscar usuarios");
+      const filtros = [
+        {
+          selector: page.getByLabel("Filtrar por perfil"),
+          opciones: ["Todos los perfiles", "Autoridad académica"],
+        },
+        {
+          selector: page.getByLabel("Filtrar por solicitud de baja"),
+          opciones: ["Todas las cuentas", "Baja solicitada"],
+        },
+      ];
+      const cortado = (selector: (typeof filtros)[number]["selector"]) =>
+        selector.evaluate((el) => el.scrollWidth > el.clientWidth);
+      const [primero] = await Promise.all([buscador.boundingBox()]);
+      for (const { selector, opciones } of filtros) {
+        const anchoInicial = (await selector.boundingBox())?.width;
+        expect((await selector.boundingBox())?.y).toBe(primero?.y);
+        for (const opcion of opciones) {
+          await selector.selectOption({ label: opcion });
+          expect(await cortado(selector)).toBe(false);
+          expect((await selector.boundingBox())?.width).toBe(anchoInicial);
+        }
+        await selector.selectOption({ index: 0 });
+      }
+      await expectNoHorizontalPageScroll(page);
+    });
+  }
+
+  test("en mobile el buscador y los filtros se apilan sin scroll horizontal", async ({ page }) => {
+    await page.setViewportSize({ width: 412, height: 915 });
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/usuarios");
+    const cajas = await Promise.all(
+      ["Buscar usuarios", "Filtrar por perfil", "Filtrar por solicitud de baja"].map((nombre) =>
+        page.getByLabel(nombre).boundingBox(),
+      ),
+    );
+    expect(cajas[1]!.y).toBeGreaterThan(cajas[0]!.y);
+    expect(cajas[2]!.y).toBeGreaterThan(cajas[1]!.y);
+    await expectNoHorizontalPageScroll(page);
+  });
+
   test("el estudiante no ve Usuarios, vuelve al inicio y de los docentes ve solo el nombre", async ({
     page,
   }) => {
