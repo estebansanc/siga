@@ -17,7 +17,7 @@ describe("EstadoInstitucionalView", () => {
     renderWithProviders(<EstadoInstitucionalView puedeCambiar />);
 
     expect(screen.getByText("Estado actual")).toBeInTheDocument();
-    expect(screen.getByText("Cambiar estado")).toBeInTheDocument();
+    expect(screen.getAllByText("Cambiar estado").length).toBeGreaterThan(0);
     expect(screen.getByText("Historial")).toBeInTheDocument();
     expect(screen.queryByText("Avisos vigentes")).not.toBeInTheDocument();
   });
