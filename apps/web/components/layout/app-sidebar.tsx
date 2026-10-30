@@ -61,7 +61,14 @@ function NavSection({
   const labelId = useId();
   return (
     <SidebarGroup {...(section.title ? { role: "group", "aria-labelledby": labelId } : {})}>
-      {section.title ? <SidebarGroupLabel id={labelId}>{section.title}</SidebarGroupLabel> : null}
+      {section.title ? (
+        <SidebarGroupLabel
+          id={labelId}
+          className="group-data-[collapsible=icon]:pointer-events-none"
+        >
+          {section.title}
+        </SidebarGroupLabel>
+      ) : null}
       <SidebarMenu>
         {section.items.map((item) => (
           <SidebarMenuItem key={item.href}>

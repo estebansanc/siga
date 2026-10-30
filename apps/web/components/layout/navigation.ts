@@ -91,16 +91,17 @@ const flat = (items: NavigationItem[]): NavigationSection[] => [{ items }];
 // ítems, los agrupan en secciones.
 const navigationByPerfil: Record<
   Perfil,
-  (administracionExtra: NavigationItem[]) => NavigationSection[]
+  (configuracionItems: NavigationItem[]) => NavigationSection[]
 > = {
-  ESTUDIANTE: () =>
+  ESTUDIANTE: (configuracionItems) =>
     flat([
       misClases,
       clases,
       avisos,
       { title: "Preferencias", href: "/preferencias", icon: SlidersHorizontalIcon },
+      ...configuracionItems,
     ]),
-  DOCENTE: () =>
+  DOCENTE: (configuracionItems) =>
     flat([
       misClases,
       { title: "Asistencia", href: "/asistencia", icon: QrCodeIcon },
@@ -108,23 +109,24 @@ const navigationByPerfil: Record<
       avisos,
       { title: "Solicitudes de aula", href: "/solicitudes", icon: InboxIcon },
       clases,
+      ...configuracionItems,
     ]),
-  BEDEL: (extra) => [
+  BEDEL: (configuracionItems) => [
     { title: "Hoy", items: [estado, clases, novedades, asistenciaDocente] },
     { title: "Aulas", items: [aulas, solicitudes, incidencias] },
     { title: "Comunicación", items: [avisos] },
     {
       title: "Administración",
-      items: [usuarios, datosAcademicos, consultasHistoricas, ...extra],
+      items: [usuarios, datosAcademicos, consultasHistoricas, ...configuracionItems],
     },
   ],
-  AUTORIDAD: (extra) => [
+  AUTORIDAD: (configuracionItems) => [
     { title: "Hoy", items: [clases, estado, novedades] },
     { title: "Aulas", items: [aulas, incidencias] },
     { title: "Comunicación", items: [avisos] },
     {
       title: "Administración",
-      items: [usuarios, datosAcademicos, consultasHistoricas, ...extra],
+      items: [usuarios, datosAcademicos, consultasHistoricas, ...configuracionItems],
     },
   ],
 };
@@ -132,13 +134,10 @@ const navigationByPerfil: Record<
 // Configuración sigue siendo del Administrador de la organización, cualquiera sea su perfil:
 // cierra Administración, o va al final del menú plano. Ayuda siempre es la última entrada,
 // sin título de sección.
-export const navigationFor = (perfil: Perfil, role: MemberRole): NavigationSection[] => {
-  const sections = navigationByPerfil[perfil](role === "owner" ? [configuracion] : []);
-  const isGrouped = sections.some((section) => section.title);
-  const withConfiguracion =
-    role === "owner" && !isGrouped ? [{ items: [...sections[0].items, configuracion] }] : sections;
-  return [...withConfiguracion, { items: [ayuda] }];
-};
+export const navigationFor = (perfil: Perfil, role: MemberRole): NavigationSection[] => [
+  ...navigationByPerfil[perfil](role === "owner" ? [configuracion] : []),
+  { items: [ayuda] },
+];
 
 export const brandIcon = LayoutGridIcon;
 export const sectionIcon = BookOpenIcon;

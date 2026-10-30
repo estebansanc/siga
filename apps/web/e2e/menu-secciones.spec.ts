@@ -27,6 +27,30 @@ test.describe("Menú en secciones", () => {
     }
   });
 
+  test("con la barra colapsada se ven solo íconos y el último ítem de cada sección sigue accesible", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "La barra colapsada es solo de escritorio");
+    await loginViaUi(page, seededUsers.bedel);
+    await page.getByRole("button", { name: "Alternar menú lateral" }).last().click();
+
+    const menu = page.locator('[data-sidebar="sidebar"]');
+    for (const titulo of seccionesDelBedel) {
+      await expect(
+        menu.locator('[data-slot="sidebar-group-label"]', { hasText: titulo }),
+      ).toHaveCSS("opacity", "0");
+    }
+
+    const avisos = menu.getByRole("link", { name: "Avisos" });
+    await avisos.hover();
+    await expect(
+      page.locator('[data-slot="tooltip-content"]', { hasText: "Avisos" }),
+    ).toBeVisible();
+    await avisos.click();
+    await expect(page).toHaveURL(/\/avisos$/);
+  });
+
   test("el estudiante conserva el menú plano, sin secciones", async ({ page, isMobile }) => {
     await loginViaUi(page, seededUsers.estudiante);
     if (isMobile) await page.getByRole("button", { name: "Alternar menú lateral" }).click();
