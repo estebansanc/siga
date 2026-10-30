@@ -73,7 +73,7 @@ Requisitos cubiertos: RF-02, RF-06, RF-15, RF-16. Criterios de aceptación: CA-0
 
 ## RF-15 Incidencias de infraestructura
 
-**Quién reporta**: Docente o Bedel. **Quién gestiona**: Bedel.
+**Quién reporta**: Docente o Bedel. **Quién gestiona**: Bedel. **Quién consulta**: Autoridad (solo lectura).
 
 **Entrada**: aula, elemento afectado (proyector, climatización, iluminación, mobiliario, conectividad, otro), descripción (máximo 500 caracteres), gravedad (Leve / Impide el uso del aula) y foto opcional (JPG o PNG, máximo 5 MB; se comprime a 1 MB).
 
@@ -86,6 +86,8 @@ Requisitos cubiertos: RF-02, RF-06, RF-15, RF-16. Criterios de aceptación: CA-0
 5. El bedel actualiza el estado (Abierta → En curso → Resuelta) y agrega observaciones. Al resolverla, puede volver a habilitar el aula.
 
 **Reglas**: cada incidencia conserva el historial completo de estados con fecha, hora y usuario responsable (CA-06).
+
+**Pestañas**: `/incidencias` abre en **Abiertas** (Abierta y En curso, sin filtro de estado ni paginación; "Nueva incidencia" y, en "Detalle", "Pasar a En curso" y "Resolver"). Al resolverla pasa al **Historial** sin recargar: incidencias Resueltas, con rango por fecha del reporte (30 días precargados, hasta 12 meses) y aula, total del período, de a 20 con "Página X de Y" y "Detalle" de solo lectura con el historial de estados. La Autoridad ve ambas pestañas sin crear ni cambiar estados.
 
 **Salidas**: incidencia visible en el listado de bedelía y en el detalle del aula; historial de estados; error ante datos incompletos o archivo inválido.
 
