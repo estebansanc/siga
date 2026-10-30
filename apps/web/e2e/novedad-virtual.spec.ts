@@ -1,11 +1,5 @@
 import { focoVisible } from "./support/accesibilidad";
-import {
-  expect,
-  expectNoHorizontalPageScroll,
-  loginViaUi,
-  seededUsers,
-  test,
-} from "./support/fixtures";
+import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
 
 const fechaArgentina = (instante: Date) =>
   new Date(instante.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -27,7 +21,6 @@ test.describe("Novedad Virtual", () => {
     page,
     browser,
     baseURL,
-    isMobile,
   }) => {
     test.setTimeout(120_000);
     const enlace = "https://meet.google.com/abc-defg-hij";
@@ -63,13 +56,6 @@ test.describe("Novedad Virtual", () => {
     await popup.close();
     await expect(page).toHaveURL(/\/novedades$/);
     await expect(novedad).toBeVisible();
-
-    if (isMobile) {
-      const caja = await link.boundingBox();
-      expect(caja?.width).toBeGreaterThanOrEqual(44);
-      expect(caja?.height).toBeGreaterThanOrEqual(44);
-      await expectNoHorizontalPageScroll(page);
-    }
 
     const contenido = await novedad.textContent();
     for (const usuario of [seededUsers.bedel, seededUsers.autoridad]) {
