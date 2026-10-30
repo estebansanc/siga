@@ -309,6 +309,7 @@ const configuracion: SeccionManual = {
   pasos: [
     'Editá el nombre de la institución y tocá "Guardar".',
     'Ajustá "Turnos" y "Presencia del docente" y guardá con "Guardar turnos" o "Guardar presencia".',
+    'Tocá "?" junto a la versión, al pie de la página, para abrir "Qué hay de nuevo" con los cambios de cada versión.',
   ],
   mensajes: ["Solo el Administrador ve esta sección.", "Las personas se gestionan en Usuarios."],
 };

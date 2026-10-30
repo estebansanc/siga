@@ -52,6 +52,13 @@ describe("ayuda", () => {
     expect(texto("Usuarios")).toContain("administrador");
   });
 
+  it("el manual del Administrador explica cómo abrir Qué hay de nuevo en Configuración", () => {
+    const configuracion = manualFor("BEDEL", "owner").find(
+      (seccion) => seccion.titulo === "Configuración",
+    );
+    expect(JSON.stringify(configuracion?.pasos)).toContain("Qué hay de nuevo");
+  });
+
   it.each(perfiles)("el manual de %s no habla de organizaciones", (perfil) => {
     const texto = JSON.stringify(manualFor(perfil, "owner")).toLowerCase();
     expect(texto).not.toContain("organizaci");

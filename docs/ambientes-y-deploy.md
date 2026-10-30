@@ -151,7 +151,7 @@ Sin token Turbo corre igual, solo sin caché compartida. Para comprobar que una 
 
 ## Versionado
 
-La versión que se ve al pie de Configuración y sus Novedades salen de un único archivo versionado, `apps/web/lib/releases.json`:
+La versión que se ve al pie de Configuración y "Qué hay de nuevo" salen de un único archivo versionado, `apps/web/lib/releases.json`:
 
 ```json
 {
