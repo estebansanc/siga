@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -26,7 +26,6 @@ const manana = (): [string, string] => {
     "10:00",
   ];
 };
-
 
 const cargarFechaHora = async (label: string, horaLabel: string, fecha: string, hora: string) => {
   const campoFecha = screen.getByLabelText(label);
