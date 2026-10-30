@@ -203,7 +203,7 @@ describe("rechazar solicitud", () => {
   it("una Asignada o ya resuelta responde 409", async () => {
     const asignada = await createClase(institution, fixture, fecha, "10:10", "12:00", null);
     const inmediata = await crearSolicitudAula(
-      bedel(),
+      docente(),
       { claseId: asignada.id, aulaId: fixture.aulaId, alumnos: 20, recursos: [] },
       ahora,
     );
