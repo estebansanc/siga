@@ -141,8 +141,11 @@ export function LoginForm() {
                 Ingresar
               </Button>
               <FieldDescription className="text-center">
-                ¿No tenés cuenta?{" "}
+                ¿Sos estudiante?{" "}
                 <Link href={authRouteWithNext("/registro", next)}>Registrate</Link>
+              </FieldDescription>
+              <FieldDescription className="text-center">
+                Docentes y personal: tu acceso lo crea Bedelía
               </FieldDescription>
             </Field>
           </FieldGroup>

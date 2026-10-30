@@ -28,6 +28,18 @@ test.describe("Autenticación", () => {
     await expect(page.getByRole("link", { name: "Preferencias" })).toHaveCount(0);
   });
 
+  test("el ingreso aclara que el registro es para estudiantes y Registrate abre Crear cuenta", async ({
+    page,
+  }) => {
+    await page.goto("/login");
+    await expect(page.getByText("¿Sos estudiante?")).toBeVisible();
+    await expect(page.getByText("Docentes y personal: tu acceso lo crea Bedelía")).toBeVisible();
+    await expect(page.getByText("¿No tenés cuenta?")).toHaveCount(0);
+    await page.getByRole("link", { name: "Registrate" }).click();
+    await expect(page).toHaveURL(/\/registro/);
+    await expect(page.getByText("Crear cuenta").first()).toBeVisible();
+  });
+
   test("login con credenciales incorrectas avisa y no entra", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Email").fill("nadie@example.com");

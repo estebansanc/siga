@@ -65,6 +65,15 @@ describe("LoginForm", () => {
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/invitacion/inv-1"));
   });
 
+  it("el pie aclara que Registrate es para estudiantes y que el personal no es un link", () => {
+    renderWithProviders(<LoginForm />);
+    expect(screen.getByText(/¿Sos estudiante\?/)).toBeInTheDocument();
+    expect(screen.queryByText(/¿No tenés cuenta\?/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Registrate" })).toHaveAttribute("href", "/registro");
+    const staffNote = screen.getByText("Docentes y personal: tu acceso lo crea Bedelía");
+    expect(staffNote.closest("a")).toBeNull();
+  });
+
   it("si las credenciales fallan, vuelve a habilitar el formulario y avisa", async () => {
     signInEmail.mockResolvedValue({ error: { message: "invalid" } });
     renderWithProviders(<LoginForm />);
