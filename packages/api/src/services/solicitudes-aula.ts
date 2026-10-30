@@ -7,7 +7,8 @@ import {
   fechaArgentina,
   horaArgentina,
   maxSugerenciasAula,
-  type BuscarAulaSolicitud,
+  mensajeAlumnosInvalidos,
+  type BusquedaAulaPedido,
   type CrearSolicitudAula,
 } from "@repo/domain";
 
@@ -95,20 +96,17 @@ const clasesSolicitablesWhere = (
   organizationId: auth.organizationId,
   estado: { notIn: [...estadosSinSolicitud] },
   fin: { gt: ahora },
-  comision: {
-    activa: true,
-    ...(esBedel(auth) ? {} : { docentes: { some: { docenteId: auth.userId } } }),
-  },
+  comision: { activa: true, docentes: { some: { docenteId: auth.userId } } },
 });
 
-// Docente: las clases de sus comisiones; Bedel: todas. Solo las que no terminaron ni se
-// suspendieron, ausentaron o pasaron a virtual.
+// Solo del Docente: las clases de sus comisiones que no terminaron ni se suspendieron,
+// ausentaron o pasaron a virtual. El Bedel asigna aula directamente.
 export const listarClasesSolicitables = async (
   auth: AuthContext,
   fecha = fechaArgentina(new Date()),
   ahora = new Date(),
 ): Promise<ClasesDelDiaDto> => {
-  await assertPerfil(auth, "DOCENTE", "BEDEL");
+  await assertPerfil(auth, "DOCENTE");
   await finalizarClasesVencidas(auth.organizationId, ahora);
   const clases = await prisma.claseProgramada.findMany({
     where: { ...clasesSolicitablesWhere(auth, ahora), fecha: toDateColumn(fecha) },
@@ -165,13 +163,17 @@ const aulasLibresEnLaFranja = (
   });
 
 // RF-06: aulas libres que cumplen capacidad y recursos; si ninguna cumple todo, hasta 5 libres
-// que cumplen en parte, con el criterio que falla y las que fallan menos primero.
+// que cumplen en parte, con el criterio que falla y las que fallan menos primero (a igualdad,
+// la de menor capacidad). Sin filtros devuelve todas las libres. El Docente informa alumnos.
 export const buscarAulasParaClase = async (
   auth: AuthContext,
-  pedido: BuscarAulaSolicitud,
+  pedido: BusquedaAulaPedido,
   ahora = new Date(),
 ): Promise<BusquedaAulaDto> => {
   const clase = await buscarClaseSolicitable(auth, pedido.claseId, ahora);
+  if (!esBedel(auth) && pedido.alumnos === undefined) {
+    throw unprocessable(mensajeAlumnosInvalidos);
+  }
   const libres = await aulasLibresEnLaFranja(auth.organizationId, clase);
   const evaluadas = libres.map((aula) => ({ aula, faltantes: criteriosQueFallan(aula, pedido) }));
   const coinciden = evaluadas.filter(({ faltantes }) => faltantes.length === 0);
@@ -179,7 +181,10 @@ export const buscarAulasParaClase = async (
     coinciden.length > 0
       ? []
       : evaluadas
-          .toSorted((a, b) => a.faltantes.length - b.faltantes.length)
+          .toSorted(
+            (a, b) =>
+              a.faltantes.length - b.faltantes.length || a.aula.capacidad - b.aula.capacidad,
+          )
           .slice(0, maxSugerenciasAula)
           .map(({ aula, faltantes }) => ({ ...aula, faltantes }));
   return {
@@ -244,6 +249,7 @@ export const crearSolicitudAula = async (
   input: CrearSolicitudAula,
   ahora = new Date(),
 ): Promise<SolicitudAulaDto> => {
+  await assertPerfil(auth, "DOCENTE");
   const clase = await buscarClaseSolicitable(auth, input.claseId, ahora);
   const aula = await prisma.aula.findFirst({
     where: { id: input.aulaId, organizationId: auth.organizationId },
@@ -293,7 +299,7 @@ export const crearSolicitudAula = async (
 };
 
 export const listarMisSolicitudesAula = async (auth: AuthContext): Promise<SolicitudAulaDto[]> => {
-  await assertPerfil(auth, "DOCENTE", "BEDEL");
+  await assertPerfil(auth, "DOCENTE");
   const solicitudes = await prisma.solicitudAula.findMany({
     where: { organizationId: auth.organizationId, solicitanteId: auth.userId },
     include: solicitudInclude,

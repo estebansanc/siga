@@ -31,6 +31,9 @@ export const buscarAulaSolicitudSchema = z.object({
 });
 export type BuscarAulaSolicitud = z.infer<typeof buscarAulaSolicitudSchema>;
 
+// El Bedel busca sin cantidad de alumnos; el Docente siempre la informa.
+export type BusquedaAulaPedido = Omit<BuscarAulaSolicitud, "alumnos"> & { alumnos?: number };
+
 export const crearSolicitudAulaSchema = buscarAulaSolicitudSchema.extend({
   aulaId: z.string().min(1),
   comentario: optionalText(comentarioSolicitudMax),
@@ -43,12 +46,12 @@ type AulaBuscable = { capacidad: number; equipamiento: string[] };
 // Los criterios del pedido que el aula no cumple, con el texto que ve el docente.
 export const criteriosQueFallan = (
   aula: AulaBuscable,
-  pedido: { alumnos: number; recursos: Equipamiento[] },
+  pedido: { alumnos?: number; recursos: Equipamiento[] },
 ): string[] => {
   const faltantes = pedido.recursos
     .filter((recurso) => !aula.equipamiento.includes(recurso))
     .map((recurso) => `Sin ${equipamientoLabels[recurso].toLowerCase()}`);
-  return aula.capacidad < pedido.alumnos
+  return pedido.alumnos !== undefined && aula.capacidad < pedido.alumnos
     ? [`Capacidad para ${pedido.alumnos} alumnos`, ...faltantes]
     : faltantes;
 };

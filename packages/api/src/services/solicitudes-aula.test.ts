@@ -48,7 +48,7 @@ beforeEach(async () => {
 });
 
 describe("clases solicitables", () => {
-  it("el docente ve solo las clases de sus comisiones y el bedel todas", async () => {
+  it("el docente ve solo las clases de sus comisiones y el bedel no accede", async () => {
     const propia = await createClase(institution, fixture, fecha);
     const otroDocente = await createUserWithPerfil(institution, "DOCENTE");
     const otraComision = await prisma.comision.create({
@@ -62,7 +62,7 @@ describe("clases solicitables", () => {
         docentes: { create: { docenteId: otroDocente.userId } },
       },
     });
-    const ajena = await createClase(
+    await createClase(
       institution,
       { comisionId: otraComision.id, aulaId: fixture.otraAulaId },
       fecha,
@@ -70,8 +70,9 @@ describe("clases solicitables", () => {
 
     const delDocente = await listarClasesSolicitables(docente(), fecha, ahora);
     expect(delDocente.clases.map((clase) => clase.id)).toEqual([propia.id]);
-    const delBedel = await listarClasesSolicitables(bedel(), fecha, ahora);
-    expect(delBedel.clases.map((clase) => clase.id).sort()).toEqual([propia.id, ajena.id].sort());
+    await expect(listarClasesSolicitables(bedel(), fecha, ahora)).rejects.toMatchObject({
+      status: 403,
+    });
   });
 
   it("excluye las terminadas y las Virtual, Suspendida, Ausente o Finalizada", async () => {
@@ -89,7 +90,7 @@ describe("clases solicitables", () => {
       );
       await prisma.claseProgramada.update({ where: { id: clase.id }, data: { estado } });
     }
-    const { clases } = await listarClasesSolicitables(bedel(), fecha, ahora);
+    const { clases } = await listarClasesSolicitables(docente(), fecha, ahora);
     expect(clases.map((clase) => clase.id)).toEqual([vigente.id]);
   });
 
@@ -111,6 +112,18 @@ describe("clases solicitables", () => {
       ),
     ).rejects.toMatchObject({ status: 403 });
     await expect(listarMisSolicitudesAula(auth)).rejects.toMatchObject({ status: 403 });
+  });
+
+  it("el bedel no crea solicitudes ni lista las propias", async () => {
+    const clase = await createClase(institution, fixture, fecha);
+    await expect(
+      crearSolicitudAula(
+        bedel(),
+        { claseId: clase.id, aulaId: fixture.otraAulaId, alumnos: 10, recursos: [] },
+        ahora,
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(listarMisSolicitudesAula(bedel())).rejects.toMatchObject({ status: 403 });
   });
 
   it("un docente no puede operar sobre una clase de otra comisión", async () => {
@@ -187,6 +200,34 @@ describe("búsqueda de aulas", () => {
     expect(sinProyector.aulas.map((aula) => aula.codigo)).toEqual(["Chica 5", "Aula 12"]);
   });
 
+  it("el Bedel busca sin filtros, con filtros y con empate de incumplidos desempata por capacidad", async () => {
+    await crearAulaExtra("Aula 30", 30, ["Proyector"]);
+    const clase = await createClase(institution, fixture, fecha, "19:00", "23:00", null);
+    const sinFiltros = await buscarAulasParaClase(
+      bedel(),
+      { claseId: clase.id, recursos: [] },
+      ahora,
+    );
+    expect(codigos(sinFiltros.aulas)).toEqual(["Aula 30", "Aula 7", "Aula 12"]);
+    expect(sinFiltros.sugerencias).toEqual([]);
+
+    const soloCantidad = await buscarAulasParaClase(
+      bedel(),
+      { claseId: clase.id, alumnos: 500, recursos: [] },
+      ahora,
+    );
+    expect(soloCantidad.aulas).toEqual([]);
+    expect(codigos(soloCantidad.sugerencias)).toEqual(["Aula 30", "Aula 7", "Aula 12"]);
+    expect(soloCantidad.sugerencias[0]?.faltantes).toEqual(["Capacidad para 500 alumnos"]);
+  });
+
+  it("el Docente no busca sin cantidad de alumnos", async () => {
+    const clase = await createClase(institution, fixture, fecha, "19:00", "23:00", null);
+    await expect(
+      buscarAulasParaClase(docente(), { claseId: clase.id, recursos: [] }, ahora),
+    ).rejects.toMatchObject({ status: 422 });
+  });
+
   it("informa 'Sin <recurso>' en minúscula y marca cuando no hay aulas libres", async () => {
     const clase = await createClase(institution, fixture, fecha, "19:00", "23:00", null);
     const parcial = await buscarAulasParaClase(
@@ -248,7 +289,7 @@ describe("crear solicitud", () => {
   it("sin aula y a menos de 30 minutos nace Asignada y la clase recibe el aula", async () => {
     const clase = await createClase(institution, fixture, fecha, "10:10", "12:00", null);
     const solicitud = await crearSolicitudAula(
-      bedel(),
+      docente(),
       pedido(clase.id, fixture.otraAulaId),
       ahora,
     );
@@ -281,7 +322,7 @@ describe("crear solicitud", () => {
     const clase = await createClase(institution, fixture, fecha, "15:00", "17:00");
     await crearSolicitudAula(docente(), pedido(clase.id, fixture.otraAulaId), ahora);
     await expect(
-      crearSolicitudAula(bedel(), pedido(clase.id, fixture.aulaId), ahora),
+      crearSolicitudAula(docente(), pedido(clase.id, fixture.aulaId), ahora),
     ).rejects.toMatchObject({
       status: 409,
       message: "Esta clase ya tiene una solicitud pendiente.",
@@ -293,7 +334,7 @@ describe("crear solicitud", () => {
     const clase = await createClase(institution, fixture, fecha, "15:00", "17:00");
     const resultados = await Promise.allSettled([
       crearSolicitudAula(docente(), pedido(clase.id, fixture.otraAulaId), ahora),
-      crearSolicitudAula(bedel(), pedido(clase.id, fixture.aulaId), ahora),
+      crearSolicitudAula(docente(), pedido(clase.id, fixture.aulaId), ahora),
     ]);
     expect(resultados.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
     expect(resultados.find(({ status }) => status === "rejected")).toMatchObject({
@@ -311,6 +352,7 @@ describe("crear solicitud", () => {
         codigo: "5K1",
         turno: "NOCHE",
         anioLectivo: 2026,
+        docentes: { create: { docenteId: fixture.docente.userId } },
       },
     });
     const primera = await createClase(institution, fixture, fecha, "10:10", "12:00", null);
@@ -324,7 +366,7 @@ describe("crear solicitud", () => {
     );
     const resultados = await Promise.allSettled(
       [primera, segunda].map((clase) =>
-        crearSolicitudAula(bedel(), pedido(clase.id, fixture.otraAulaId), ahora),
+        crearSolicitudAula(docente(), pedido(clase.id, fixture.otraAulaId), ahora),
       ),
     );
     expect(resultados.filter(({ status }) => status === "fulfilled")).toHaveLength(1);
@@ -369,15 +411,6 @@ describe("mis solicitudes", () => {
     });
     const vieja = await crearSolicitudAula(docente(), pedido(primera.id), ahora);
     await crearSolicitudAula(docente(), pedido(segunda.id), ahora);
-    await crearSolicitudAula(
-      bedel(),
-      {
-        ...pedido(
-          await createClase(institution, fixture, fecha, "18:30", "19:30").then((c) => c.id),
-        ),
-      },
-      ahora,
-    );
     await prisma.solicitudAula.update({
       where: { id: vieja.id },
       data: {
@@ -391,6 +424,6 @@ describe("mis solicitudes", () => {
     expect(propias.map((solicitud) => solicitud.estado)).toEqual(["PENDIENTE", "RECHAZADA"]);
     expect(propias[1]).toMatchObject({ motivoRechazo: "Sin aulas libres" });
     expect(propias[0]?.clase).toMatchObject({ materia: "Proyecto Final", comision: "5K2" });
-    expect(await listarMisSolicitudesAula(bedel())).toHaveLength(1);
+    await expect(listarMisSolicitudesAula(bedel())).rejects.toMatchObject({ status: 403 });
   });
 });
