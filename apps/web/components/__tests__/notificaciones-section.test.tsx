@@ -106,4 +106,16 @@ describe("NotificacionesSection", () => {
     expect(screen.queryByRole("switch")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Guardar/ })).not.toBeInTheDocument();
   });
+
+  it("mientras guarda, el interruptor activo muestra un spinner y ambos se bloquean", async () => {
+    actualizar.mockReturnValue(new Promise(() => undefined));
+    const user = userEvent.setup();
+    renderWithProviders(<NotificacionesSection esEstudiante />);
+    await user.click(screen.getByRole("switch", { name: "Recibir novedades por correo" }));
+    await waitFor(() => expect(screen.getByRole("status")).toBeInTheDocument());
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(
+      screen.getByRole("switch", { name: "Recibir avisos institucionales por correo" }),
+    ).toHaveAttribute("aria-disabled", "true");
+  });
 });

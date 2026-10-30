@@ -132,10 +132,21 @@ test.describe("Flujo principal de SiGA", () => {
       page.getByRole("button", { name: "Agregar 5K2 de Proyecto Final" }),
     ).toBeDisabled();
     await expect(page.getByText("Comisión agregada")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Guardar" })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Quitar" })).toHaveCount(1);
 
     await page.getByRole("link", { name: "Mis clases" }).click();
     await expect(page.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
     await expect(page.getByText(/\d+ clases? · 5K2/)).toBeVisible();
     await expect(page.getByText("Todavía no seguís ninguna comisión")).toHaveCount(0);
+
+    await page.goto("/mi-cuenta/comisiones");
+    await page.getByRole("button", { name: "Quitar" }).click();
+    await expect(page.getByText("Comisión quitada")).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Quitar" })).toHaveCount(0);
+    await page.getByRole("link", { name: "Mis clases" }).click();
+    await expect(page.getByText("Todavía no seguís ninguna comisión")).toBeVisible();
   });
 });

@@ -48,7 +48,7 @@ export function ComisionesSection() {
   const comisiones = useComisiones(filtro, Boolean(filtro.materiaId));
 
   const actuales = seguidas?.map((comision) => comision.id) ?? [];
-  const guardando = actualizar.isPending;
+  const guardando = actualizar.isPending || enCurso !== null;
 
   // Cada guardado reemplaza la lista completa, por eso se bloquea todo mientras dura.
   const guardar = async (comisionId: string, comisionIds: string[], mensaje: string) => {

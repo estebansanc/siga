@@ -58,7 +58,7 @@ function OpcionesDeCorreoCard() {
         notificarAvisosPorCorreo: preferencias.data.notificarAvisosPorCorreo,
       }
     : null;
-  const deshabilitado = !opciones || actualizar.isPending;
+  const deshabilitado = !opciones || actualizar.isPending || enCurso !== null;
 
   const cambiarOpcion = async (opcion: keyof OpcionesDeCorreo, activada: boolean) => {
     setEnCurso(opcion);

@@ -105,4 +105,20 @@ describe("ayuda", () => {
       expect(ayudaPorPerfil[perfil].manual.map((seccion) => seccion.titulo)).toContain("Clases");
     }
   });
+
+  it("la Ayuda del Estudiante dice que Comisiones y Notificaciones se guardan en el momento, sin Guardar", () => {
+    const { guia, manual } = ayudaPorPerfil.ESTUDIANTE;
+    const tarea = guia.find((item) => item.titulo === "Elegir las comisiones que seguís");
+    const secciones = manualFor("ESTUDIANTE", "member").filter((seccion) =>
+      ["Comisiones", "Notificaciones"].includes(seccion.titulo),
+    );
+    expect(manual).toBeDefined();
+    expect(secciones).toHaveLength(2);
+    const textos = [tarea, ...secciones].map((item) => JSON.stringify(item));
+    expect(textos).toHaveLength(3);
+    for (const texto of textos) {
+      expect(texto).not.toContain("Guardar");
+      expect(texto).toMatch(/se guardan? en el momento/);
+    }
+  });
 });

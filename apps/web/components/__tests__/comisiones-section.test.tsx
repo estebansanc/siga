@@ -1,5 +1,5 @@
 import type { ComisionDto, PreferenciasDto } from "@repo/api/client";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -90,5 +90,15 @@ describe("ComisionesSection", () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Ocurrió un error inesperado"));
     expect(toast.success).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: /Quitar/ })).toBeEnabled();
+  });
+
+  it("mientras guarda, el botón activo muestra un spinner", async () => {
+    actualizar.mockReturnValue(new Promise(() => undefined));
+    const user = userEvent.setup();
+    renderWithProviders(<ComisionesSection />);
+    const quitar = screen.getByRole("button", { name: /Quitar/ });
+    await user.click(quitar);
+    await waitFor(() => expect(quitar).toBeDisabled());
+    expect(within(quitar).getByRole("status")).toBeInTheDocument();
   });
 });
