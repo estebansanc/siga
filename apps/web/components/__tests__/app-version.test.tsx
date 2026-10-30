@@ -37,10 +37,10 @@ describe("AppVersion", () => {
     expect(screen.getByText("Versión Alpha 0.1")).toBeInTheDocument();
   });
 
-  it("el botón Novedades abre el diálogo con los cambios de la versión actual", async () => {
+  it("el botón Qué hay de nuevo abre el diálogo con los cambios de la versión actual", async () => {
     render(<AppVersion />);
-    await userEvent.click(screen.getByRole("button", { name: "Novedades" }));
-    const dialog = await screen.findByRole("dialog", { name: "Novedades" });
+    await userEvent.click(screen.getByRole("button", { name: "Qué hay de nuevo" }));
+    const dialog = await screen.findByRole("dialog", { name: "Qué hay de nuevo" });
     expect(within(dialog).getByRole("heading", { name: "Alpha 0.1" })).toBeVisible();
     expect(
       within(dialog).getByText("Ahora podés invitar miembros desde Configuración."),
@@ -50,8 +50,8 @@ describe("AppVersion", () => {
 
   it("las versiones anteriores aparecen colapsadas y una sin cambios lo dice al expandirla", async () => {
     render(<AppVersion />);
-    await userEvent.click(screen.getByRole("button", { name: "Novedades" }));
-    const dialog = await screen.findByRole("dialog", { name: "Novedades" });
+    await userEvent.click(screen.getByRole("button", { name: "Qué hay de nuevo" }));
+    const dialog = await screen.findByRole("dialog", { name: "Qué hay de nuevo" });
     const previous = within(dialog).getByRole("button", { name: /Alpha 0\.0/ });
     expect(previous).toHaveAttribute("aria-expanded", "false");
     expect(within(dialog).queryByText("Sin cambios registrados.")).not.toBeInTheDocument();

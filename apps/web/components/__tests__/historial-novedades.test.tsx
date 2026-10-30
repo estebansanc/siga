@@ -98,9 +98,7 @@ describe("HistorialNovedades", () => {
     expect(within(indicadores).getByText("Total").nextSibling).toHaveTextContent("25");
     expect(within(indicadores).getByText("Demora").nextSibling).toHaveTextContent("20");
     expect(within(indicadores).getByText("Virtual").nextSibling).toHaveTextContent("0");
-    const novedad = screen
-      .getByText("Proyecto Final · 5K2 · 15/10/2026 19:00")
-      .closest("[data-slot=item]");
+    const novedad = screen.getByText("15/10/2026 19:00").closest("[data-slot=item]");
     expect(novedad).toHaveTextContent("Finalizada");
     expect(novedad).toHaveTextContent("Rosa Benítez (bedelía)");
     expect(screen.queryByRole("button", { name: /Acciones de la novedad/ })).toBeNull();

@@ -419,4 +419,46 @@ test.describe("Móvil", () => {
       }
     });
   });
+
+  test("el link de una Virtual activa tiene zona táctil de 44 px y Novedades no scrollea a lo ancho", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    const marca = Date.now().toString(36);
+    const cuartaClase = new Date();
+    for (let encontradas = 0; encontradas < 4;) {
+      cuartaClase.setDate(cuartaClase.getDate() + 1);
+      const dia = new Date(cuartaClase.getTime() - 3 * 60 * 60 * 1000);
+      if ([1, 4].includes(new Date(`${dia.toISOString().slice(0, 10)}T12:00:00Z`).getUTCDay()))
+        encontradas++;
+    }
+    const fecha = new Date(cuartaClase.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    await loginViaUi(page, seededUsers.docente);
+    await page.goto("/novedades");
+    await page.getByRole("button", { name: "Publicar novedad" }).click();
+    const dialog = page.getByRole("dialog", { name: "Publicar novedad" });
+    await dialog.getByLabel("Fecha de las clases").fill(fecha);
+    await dialog.getByRole("checkbox", { name: /Proyecto Final · 5K2/ }).check();
+    await dialog.getByRole("button", { name: "Virtual" }).click();
+    await dialog
+      .getByLabel("Enlace de la clase virtual")
+      .fill("https://meet.google.com/abc-defg-hij");
+    await dialog.getByLabel(/Mensaje para los estudiantes/).fill(`Por Meet (${marca})`);
+    await dialog.getByRole("button", { name: "Publicar" }).click();
+    await expect(page.getByText("Novedad publicada")).toBeVisible();
+
+    const novedad = page.locator('[data-slot="item"]').filter({ hasText: marca });
+    const link = novedad.getByRole("link", { name: "Entrar a la clase virtual" });
+    await expect(link).toBeVisible();
+    const caja = await link.boundingBox();
+    expect(caja?.width).toBeGreaterThanOrEqual(44);
+    expect(caja?.height).toBeGreaterThanOrEqual(44);
+    await expectNoHorizontalPageScroll(page);
+
+    await novedad.getByRole("button", { name: /Acciones de la novedad/ }).click();
+    await page.getByRole("menuitem", { name: "Finalizar novedad" }).click();
+    await page.getByRole("button", { name: "Finalizar" }).click();
+    await expect(page.getByText("Novedad finalizada")).toBeVisible();
+  });
 });

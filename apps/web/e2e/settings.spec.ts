@@ -1,14 +1,14 @@
 import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
 
 test.describe("Configuración", () => {
-  test("muestra la versión del sistema y sus novedades, aunque no haya cambios", async ({
+  test("muestra la versión del sistema y Qué hay de nuevo, aunque no haya cambios", async ({
     page,
   }) => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/configuracion");
     await expect(page.getByText(/^Versión .*\d+\.\d+$/)).toBeVisible();
-    await page.getByRole("button", { name: "Novedades" }).click();
-    const dialog = page.getByRole("dialog", { name: "Novedades" });
+    await page.getByRole("button", { name: "Qué hay de nuevo" }).click();
+    const dialog = page.getByRole("dialog", { name: "Qué hay de nuevo" });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole("heading", { level: 3 })).toBeVisible();
     await expect(

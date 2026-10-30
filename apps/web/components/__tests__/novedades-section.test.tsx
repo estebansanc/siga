@@ -102,4 +102,59 @@ describe("NovedadesSection", () => {
     expect(await screen.findByRole("menuitem", { name: "Editar novedad" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Finalizar novedad" })).not.toBeInTheDocument();
   });
+
+  it("una Virtual activa muestra el link a pestaña nueva y no la URL; el resto no", () => {
+    const enlaceVirtual = "https://meet.google.com/abc-defg-hij";
+    state.novedades = [
+      { ...novedad, id: "v1", tipo: "VIRTUAL", minutosDemora: null, enlaceVirtual },
+      {
+        ...novedad,
+        id: "v2",
+        tipo: "VIRTUAL",
+        minutosDemora: null,
+        enlaceVirtual,
+        editable: false,
+        estado: "FINALIZADA",
+      },
+      { ...novedad, id: "d1" },
+    ];
+    renderWithProviders(<NovedadesSection puedePublicar />);
+    const links = screen.getAllByRole("link", { name: "Entrar a la clase virtual" });
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", enlaceVirtual);
+    expect(links[0]).toHaveAttribute("target", "_blank");
+    expect(screen.queryByText(enlaceVirtual)).not.toBeInTheDocument();
+  });
+
+  it("ordena tipo, fechas, materia y comisión, mensaje, link y pie, con las fechas destacadas", () => {
+    state.novedades = [
+      {
+        ...novedad,
+        tipo: "VIRTUAL",
+        minutosDemora: null,
+        enlaceVirtual: "https://meet.google.com/abc-defg-hij",
+        mensaje: "Por Meet",
+        clases: [
+          { ...novedad.clases[0] },
+          { ...novedad.clases[0], id: "clase-2", fecha: "2026-10-22" },
+        ],
+      },
+    ];
+    renderWithProviders(<NovedadesSection puedePublicar />);
+    const fechas = screen.getByText("15/10/2026 19:00, 22/10/2026 19:00");
+    expect(fechas).toHaveClass("font-medium");
+    const orden = [
+      screen.getByText("Virtual"),
+      fechas,
+      screen.getByText("Proyecto Final · 5K2"),
+      screen.getByText("“Por Meet”"),
+      screen.getByRole("link", { name: "Entrar a la clase virtual" }),
+      screen.getByText(/Bedelía/),
+    ];
+    orden.slice(1).forEach((elemento, indice) => {
+      expect(
+        orden[indice].compareDocumentPosition(elemento) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+  });
 });

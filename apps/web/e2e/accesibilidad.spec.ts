@@ -175,15 +175,15 @@ test.describe("Teclado", () => {
     await expect(abrir).toBeFocused();
   });
 
-  test("Escape cierra las Novedades de Configuración y devuelve el foco al botón", async ({
+  test("Escape cierra Qué hay de nuevo de Configuración y devuelve el foco al botón", async ({
     page,
   }) => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/configuracion");
-    const abrir = page.getByRole("button", { name: "Novedades" });
+    const abrir = page.getByRole("button", { name: "Qué hay de nuevo" });
     await abrir.focus();
     await page.keyboard.press("Enter");
-    const dialogo = page.getByRole("dialog", { name: "Novedades" });
+    const dialogo = page.getByRole("dialog", { name: "Qué hay de nuevo" });
     await expect(dialogo).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialogo).toBeHidden();
