@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@repo/ui/components/button";
 import {
   Card,
   CardContent,
@@ -40,78 +39,77 @@ function NotificacionesInformativas() {
   );
 }
 
+const mensajeDeOpcion = (opcion: keyof OpcionesDeCorreo, activada: boolean) => {
+  const verbo = activada ? "Vas a recibir" : "Ya no vas a recibir";
+  const que =
+    opcion === "notificarNovedadesPorCorreo"
+      ? "novedades por correo"
+      : "avisos institucionales por correo";
+  return `${verbo} ${que}`;
+};
+
 function OpcionesDeCorreoCard() {
   const preferencias = usePreferencias();
   const actualizar = useActualizarPreferencias();
-  const [editadas, setEditadas] = useState<OpcionesDeCorreo | null>(null);
+  const [enCurso, setEnCurso] = useState<keyof OpcionesDeCorreo | null>(null);
   const opciones: OpcionesDeCorreo | null = preferencias.data
-    ? (editadas ?? {
+    ? {
         notificarNovedadesPorCorreo: preferencias.data.notificarNovedadesPorCorreo,
         notificarAvisosPorCorreo: preferencias.data.notificarAvisosPorCorreo,
-      })
+      }
     : null;
+  const deshabilitado = !opciones || actualizar.isPending;
 
-  const hayCambios =
-    editadas !== null &&
-    (editadas.notificarNovedadesPorCorreo !== preferencias.data?.notificarNovedadesPorCorreo ||
-      editadas.notificarAvisosPorCorreo !== preferencias.data?.notificarAvisosPorCorreo);
-
-  const cambiarOpcion = (opcion: keyof OpcionesDeCorreo, activada: boolean) => {
-    if (opciones) setEditadas({ ...opciones, [opcion]: activada });
-  };
-
-  const guardar = async () => {
+  const cambiarOpcion = async (opcion: keyof OpcionesDeCorreo, activada: boolean) => {
+    setEnCurso(opcion);
     try {
-      await actualizar.mutateAsync({ ...opciones });
-      setEditadas(null);
-      toast.success("Notificaciones guardadas");
+      await actualizar.mutateAsync({ [opcion]: activada });
+      toast.success(mensajeDeOpcion(opcion, activada));
     } catch (error) {
       showRequestError(error);
+    } finally {
+      setEnCurso(null);
     }
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Notificaciones por correo</CardTitle>
-          <CardDescription>
-            Elegí qué correos querés recibir. Por defecto están desactivados.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <Field orientation="horizontal">
-              <Switch
-                id="pref-correo-novedades"
-                disabled={!opciones}
-                checked={opciones?.notificarNovedadesPorCorreo ?? false}
-                onCheckedChange={(activada) =>
-                  cambiarOpcion("notificarNovedadesPorCorreo", activada)
-                }
-              />
-              <FieldLabel htmlFor="pref-correo-novedades">Recibir novedades por correo</FieldLabel>
-            </Field>
-            <Field orientation="horizontal">
-              <Switch
-                id="pref-correo-avisos"
-                disabled={!opciones}
-                checked={opciones?.notificarAvisosPorCorreo ?? false}
-                onCheckedChange={(activada) => cambiarOpcion("notificarAvisosPorCorreo", activada)}
-              />
-              <FieldLabel htmlFor="pref-correo-avisos">
-                Recibir avisos institucionales por correo
-              </FieldLabel>
-            </Field>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-      <div className="flex justify-end">
-        <Button disabled={!hayCambios || actualizar.isPending} onClick={() => void guardar()}>
-          {actualizar.isPending ? <Spinner /> : null}
-          Guardar
-        </Button>
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Notificaciones por correo</CardTitle>
+        <CardDescription>
+          Elegí qué correos querés recibir. Por defecto están desactivados.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup>
+          <Field orientation="horizontal">
+            <Switch
+              id="pref-correo-novedades"
+              disabled={deshabilitado}
+              checked={opciones?.notificarNovedadesPorCorreo ?? false}
+              onCheckedChange={(activada) =>
+                void cambiarOpcion("notificarNovedadesPorCorreo", activada)
+              }
+            />
+            <FieldLabel htmlFor="pref-correo-novedades">Recibir novedades por correo</FieldLabel>
+            {enCurso === "notificarNovedadesPorCorreo" ? <Spinner /> : null}
+          </Field>
+          <Field orientation="horizontal">
+            <Switch
+              id="pref-correo-avisos"
+              disabled={deshabilitado}
+              checked={opciones?.notificarAvisosPorCorreo ?? false}
+              onCheckedChange={(activada) =>
+                void cambiarOpcion("notificarAvisosPorCorreo", activada)
+              }
+            />
+            <FieldLabel htmlFor="pref-correo-avisos">
+              Recibir avisos institucionales por correo
+            </FieldLabel>
+            {enCurso === "notificarAvisosPorCorreo" ? <Spinner /> : null}
+          </Field>
+        </FieldGroup>
+      </CardContent>
+    </Card>
   );
 }

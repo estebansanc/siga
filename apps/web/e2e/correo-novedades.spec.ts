@@ -21,8 +21,7 @@ test.describe("Correo de novedades", () => {
     await expect(page.getByRole("switch", { name: switchAvisos })).not.toBeChecked();
 
     await page.getByRole("switch", { name: switchNovedades }).click();
-    await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Notificaciones guardadas")).toBeVisible();
+    await expect(page.getByText("Vas a recibir novedades por correo")).toBeVisible();
 
     await page.reload();
     await expect(page.getByRole("switch", { name: switchNovedades })).toBeChecked();
@@ -38,9 +37,9 @@ test.describe("Correo de novedades", () => {
     const { userId } = await readMeViaApi(page.request);
     await page.goto("/mi-cuenta/notificaciones");
     await page.getByRole("switch", { name: switchNovedades }).click();
+    await expect(page.getByRole("switch", { name: switchNovedades })).toBeChecked();
     await page.getByRole("switch", { name: switchAvisos }).click();
-    await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Notificaciones guardadas")).toBeVisible();
+    await expect(page.getByRole("switch", { name: switchAvisos })).toBeChecked();
 
     const anonymous = await browser.newContext({ baseURL });
     const baja = await anonymous.newPage();
@@ -84,9 +83,9 @@ test.describe("Correo de novedades", () => {
     const { userId } = await readMeViaApi(page.request);
     await page.goto("/mi-cuenta/notificaciones");
     await page.getByRole("switch", { name: switchNovedades }).click();
+    await expect(page.getByRole("switch", { name: switchNovedades })).toBeChecked();
     await page.getByRole("switch", { name: switchAvisos }).click();
-    await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Notificaciones guardadas")).toBeVisible();
+    await expect(page.getByRole("switch", { name: switchAvisos })).toBeChecked();
 
     const anonymous = await browser.newContext({ baseURL });
     const baja = await anonymous.newPage();

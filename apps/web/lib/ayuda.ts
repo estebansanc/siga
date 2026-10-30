@@ -83,9 +83,10 @@ const comisiones: SeccionManual = {
   pasos: [
     'En "Agregar comisión" elegí carrera, año y materia, y tocá "Agregar" en la comisión.',
     'Para dejar de seguir una comisión, tocá "Quitar".',
-    'Tocá "Guardar": recién ahí se aplican las comisiones agregadas o quitadas.',
   ],
-  mensajes: ['La comisión agregada pasa a decir "Agregada".'],
+  mensajes: [
+    'Los cambios se guardan en el momento: aparece "Comisión agregada" o "Comisión quitada" y la comisión agregada pasa a decir "Agregada".',
+  ],
 };
 
 const notificaciones: SeccionManual = {
@@ -94,10 +95,12 @@ const notificaciones: SeccionManual = {
   comoSeLlega:
     'Tocá tu nombre al pie del menú lateral, elegí "Mi cuenta" y la pestaña "Notificaciones".',
   pasos: [
-    'Activá "Recibir novedades por correo" o "Recibir avisos institucionales por correo".',
-    'Tocá "Guardar".',
+    'Activá o desactivá "Recibir novedades por correo" o "Recibir avisos institucionales por correo".',
   ],
-  mensajes: ["Por defecto los correos están desactivados."],
+  mensajes: [
+    "Los cambios se guardan en el momento.",
+    "Por defecto los correos están desactivados.",
+  ],
 };
 
 const asistencia: SeccionManual = {
@@ -344,7 +347,7 @@ export const ayudaPorPerfil: Record<Perfil, AyudaDelPerfil> = {
         pasos: [
           'Entrá a "Mis clases" y tocá "Elegir comisiones".',
           'En "Agregar comisión" elegí carrera, año y materia, y tocá "Agregar" en cada comisión.',
-          'Tocá "Guardar" para aplicar los cambios.',
+          "Cada cambio se guarda en el momento.",
         ],
       },
       {

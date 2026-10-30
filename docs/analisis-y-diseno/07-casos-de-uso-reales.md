@@ -45,10 +45,10 @@ Casos de uso "reales" (en el sentido de Larman): describen la interacción concr
 
 - **Actor**: estudiante.
 - **Flujo principal**
-  1. En M3 ve la lista de comisiones seguidas, cada una con botón "Quitar".
-  2. En el buscador elige carrera, año y materia; el sistema lista las comisiones y toca "Agregar".
-  3. Activa o desactiva "Recibir novedades por correo" y "Recibir avisos institucionales por correo".
-  4. Toca "Guardar"; toast "Preferencias guardadas".
+  1. En M3 ve la lista de comisiones seguidas, cada una con botón "Quitar"; al tocarlo se guarda al momento (toast "Comisión quitada").
+  2. En el buscador elige carrera, año y materia; el sistema lista las comisiones y toca "Agregar"; se guarda al momento (toast "Comisión agregada").
+  3. Activa o desactiva "Recibir novedades por correo" y "Recibir avisos institucionales por correo"; cada interruptor se guarda al cambiarlo (toast "Vas a recibir …" o "Ya no vas a recibir …").
+  4. Si el guardado falla, la pantalla vuelve a lo último guardado y se muestra el error.
 - **Poscondición**: M2 se filtra por las comisiones seguidas; los correos se envían solo si están habilitados.
 
 ## CUR-04 Ver avisos institucionales (pantalla M4)

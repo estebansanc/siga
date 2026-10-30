@@ -36,35 +36,40 @@ const anios = ["1", "2", "3", "4", "5", "6"];
 const describirComision = (comision: ComisionDto) =>
   `${comision.materia.anioCarrera}.º año · ${turnoLabels[comision.turno]} · ${comision.docentes.map((docente) => docente.nombre).join(", ") || "Sin docente"}`;
 
-// RF-17 / CUR-03: comisiones seguidas, buscador por carrera, año y materia, y Guardar.
+// RF-17 / CUR-03: comisiones seguidas, buscador por carrera, año y materia; cada acción se guarda al momento.
 export function ComisionesSection() {
   const preferencias = usePreferencias();
   const actualizar = useActualizarPreferencias();
-  // Lo guardado es el punto de partida; en cuanto el estudiante edita, manda su lista.
-  const [editadas, setEditadas] = useState<ComisionDto[] | null>(null);
-  const seguidas = editadas ?? preferencias.data?.comisiones ?? null;
+  const [enCurso, setEnCurso] = useState<string | null>(null);
+  const seguidas = preferencias.data?.comisiones ?? null;
   const [filtro, setFiltro] = useState({ carreraId: "", anio: "", materiaId: "" });
   const carreras = useCarreras();
   const materias = useMaterias({ carreraId: filtro.carreraId, anio: filtro.anio });
   const comisiones = useComisiones(filtro, Boolean(filtro.materiaId));
 
-  const guardadas = preferencias.data?.comisiones.map((comision) => comision.id) ?? [];
   const actuales = seguidas?.map((comision) => comision.id) ?? [];
-  const hayCambios =
-    actuales.length !== guardadas.length || actuales.some((id) => !guardadas.includes(id));
-  const agregar = (comision: ComisionDto) => setEditadas([...(seguidas ?? []), comision]);
-  const quitar = (comision: ComisionDto) =>
-    setEditadas((seguidas ?? []).filter((item) => item.id !== comision.id));
+  const guardando = actualizar.isPending;
 
-  const guardar = async () => {
+  // Cada guardado reemplaza la lista completa, por eso se bloquea todo mientras dura.
+  const guardar = async (comisionId: string, comisionIds: string[], mensaje: string) => {
+    setEnCurso(comisionId);
     try {
-      await actualizar.mutateAsync({ comisionIds: actuales });
-      setEditadas(null);
-      toast.success("Comisiones guardadas");
+      await actualizar.mutateAsync({ comisionIds });
+      toast.success(mensaje);
     } catch (error) {
       showRequestError(error);
+    } finally {
+      setEnCurso(null);
     }
   };
+  const agregar = (comision: ComisionDto) =>
+    guardar(comision.id, [...actuales, comision.id], "Comisión agregada");
+  const quitar = (comision: ComisionDto) =>
+    guardar(
+      comision.id,
+      actuales.filter((id) => id !== comision.id),
+      "Comisión quitada",
+    );
 
   return (
     <div className="flex flex-col gap-4">
@@ -97,7 +102,13 @@ export function ComisionesSection() {
                     <ItemDescription>{describirComision(comision)}</ItemDescription>
                   </ItemContent>
                   <ItemActions>
-                    <Button variant="ghost" size="sm" onClick={() => quitar(comision)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={guardando}
+                      onClick={() => void quitar(comision)}
+                    >
+                      {enCurso === comision.id ? <Spinner /> : null}
                       Quitar
                     </Button>
                   </ItemActions>
@@ -193,11 +204,11 @@ export function ComisionesSection() {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={yaSeguida}
-                        onClick={() => agregar(comision)}
+                        disabled={yaSeguida || guardando}
+                        onClick={() => void agregar(comision)}
                         aria-label={`Agregar ${comision.codigo} de ${comision.materia.nombre}`}
                       >
-                        <PlusIcon />
+                        {enCurso === comision.id ? <Spinner /> : <PlusIcon />}
                         {yaSeguida ? "Agregada" : "Agregar"}
                       </Button>
                     </ItemActions>
@@ -208,13 +219,6 @@ export function ComisionesSection() {
           )}
         </CardContent>
       </Card>
-
-      <div className="flex justify-end">
-        <Button disabled={!hayCambios || actualizar.isPending} onClick={() => void guardar()}>
-          {actualizar.isPending ? <Spinner /> : null}
-          Guardar
-        </Button>
-      </div>
     </div>
   );
 }

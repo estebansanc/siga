@@ -131,8 +131,7 @@ test.describe("Flujo principal de SiGA", () => {
     await expect(
       page.getByRole("button", { name: "Agregar 5K2 de Proyecto Final" }),
     ).toBeDisabled();
-    await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Comisiones guardadas")).toBeVisible();
+    await expect(page.getByText("Comisión agregada")).toBeVisible();
 
     await page.getByRole("link", { name: "Mis clases" }).click();
     await expect(page.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();

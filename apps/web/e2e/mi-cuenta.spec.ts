@@ -31,8 +31,7 @@ test.describe("Mi cuenta", () => {
   }) => {
     await page.goto("/mi-cuenta/notificaciones");
     await page.getByRole("switch", { name: "Recibir novedades por correo" }).click();
-    await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Notificaciones guardadas")).toBeVisible();
+    await expect(page.getByText("Vas a recibir novedades por correo")).toBeVisible();
 
     await page.goto("/mi-cuenta/comisiones");
     await page
@@ -41,14 +40,12 @@ test.describe("Mi cuenta", () => {
     await page.getByLabel("Año").selectOption("5");
     await page.getByLabel("Materia").selectOption({ label: "Proyecto Final" });
     await page.getByRole("button", { name: "Agregar 5K2 de Proyecto Final" }).click();
-    await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Comisiones guardadas")).toBeVisible();
+    await expect(page.getByText("Comisión agregada")).toBeVisible();
 
     await page.goto("/mi-cuenta/notificaciones");
     await expect(page.getByRole("switch", { name: "Recibir novedades por correo" })).toBeChecked();
     await page.getByRole("switch", { name: "Recibir novedades por correo" }).click();
-    await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Notificaciones guardadas")).toBeVisible();
+    await expect(page.getByText("Vas a recibir novedades por correo")).toBeVisible();
 
     await page.goto("/mi-cuenta/comisiones");
     await expect(page.getByText("Proyecto Final").first()).toBeVisible();
