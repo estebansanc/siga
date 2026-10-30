@@ -121,7 +121,7 @@ test.describe("Flujo principal de SiGA", () => {
     await expect(page.getByText("Todavía no seguís ninguna comisión")).toBeVisible();
 
     await page.getByRole("link", { name: "Elegir comisiones" }).click();
-    await expect(page).toHaveURL(/\/preferencias/);
+    await expect(page).toHaveURL(/\/mi-cuenta\/comisiones/);
     await page
       .getByLabel("Carrera")
       .selectOption({ label: "Ingeniería en Sistemas de Información" });
@@ -132,7 +132,7 @@ test.describe("Flujo principal de SiGA", () => {
       page.getByRole("button", { name: "Agregar 5K2 de Proyecto Final" }),
     ).toBeDisabled();
     await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Preferencias guardadas")).toBeVisible();
+    await expect(page.getByText("Comisiones guardadas")).toBeVisible();
 
     await page.getByRole("link", { name: "Mis clases" }).click();
     await expect(page.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();

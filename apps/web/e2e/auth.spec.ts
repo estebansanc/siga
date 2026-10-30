@@ -25,7 +25,7 @@ test.describe("Autenticación", () => {
     await verifyEmailViaLink(page, user);
     await expect(page.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
     await expect(page.getByText(user.email)).toBeVisible();
-    await expect(page.getByRole("link", { name: "Preferencias" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Preferencias" })).toHaveCount(0);
   });
 
   test("login con credenciales incorrectas avisa y no entra", async ({ page }) => {
@@ -78,12 +78,12 @@ test.describe("Autenticación", () => {
   });
 
   test("rutas protegidas redirigen a login y vuelven al destino", async ({ page, user }) => {
-    await page.goto("/mi-perfil");
-    await expect(page).toHaveURL(/\/login\?next=%2Fmi-perfil/);
+    await page.goto("/mi-cuenta");
+    await expect(page).toHaveURL(/\/login\?next=%2Fmi-cuenta/);
     await page.getByLabel("Email").fill(user.email);
     await page.getByLabel("Contraseña").fill(user.password);
     await page.getByRole("button", { name: "Ingresar" }).click();
-    await expect(page).toHaveURL(/\/mi-perfil/);
+    await expect(page).toHaveURL(/\/mi-cuenta/);
   });
 
   test("cerrar sesión vuelve al login", async ({ authenticatedPage: page, user }) => {
