@@ -6,7 +6,7 @@ Template para arrancar un producto nuevo con la misma base que ya funciona en pr
 
 - **Autenticación** con Better Auth: email y contraseña, Google, bearer token para móviles. Pantallas de login, registro (con verificación de correo) y activación de cuenta.
 - **Organizaciones**: cada cuenta nace con una organización propia donde es Administrador; invita miembros por email, los quita, cambia de organización desde la barra lateral.
-- **Configuración** (nombre de la organización, turnos, miembros, versión y Novedades) y **Mi cuenta** (Perfil, Comisiones y Notificaciones).
+- **Configuración** (nombre de la organización, turnos, miembros, versión y Qué hay de nuevo) y **Mi cuenta** (Perfil, Comisiones y Notificaciones).
 - **Infraestructura**: cola de emails con Resend, rate limit en Postgres, auditoría y medición por request, cliente de storage S3/R2 opcional, PWA instalable con página offline.
 - **Calidad**: unit tests, integración contra Postgres real, e2e con Playwright, lint, typecheck, contratos (`openapi.json` y migraciones) y CI en GitHub Actions.
 
