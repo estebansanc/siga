@@ -125,4 +125,36 @@ describe("NovedadesSection", () => {
     expect(links[0]).toHaveAttribute("target", "_blank");
     expect(screen.queryByText(enlaceVirtual)).not.toBeInTheDocument();
   });
+
+  it("ordena tipo, fechas, materia y comisión, mensaje, link y pie, con las fechas destacadas", () => {
+    state.novedades = [
+      {
+        ...novedad,
+        tipo: "VIRTUAL",
+        minutosDemora: null,
+        enlaceVirtual: "https://meet.google.com/abc-defg-hij",
+        mensaje: "Por Meet",
+        clases: [
+          { ...novedad.clases[0] },
+          { ...novedad.clases[0], id: "clase-2", fecha: "2026-10-22" },
+        ],
+      },
+    ];
+    renderWithProviders(<NovedadesSection puedePublicar />);
+    const fechas = screen.getByText("15/10/2026 19:00, 22/10/2026 19:00");
+    expect(fechas).toHaveClass("font-medium");
+    const orden = [
+      screen.getByText("Virtual"),
+      fechas,
+      screen.getByText("Proyecto Final · 5K2"),
+      screen.getByText("“Por Meet”"),
+      screen.getByRole("link", { name: "Entrar a la clase virtual" }),
+      screen.getByText(/Bedelía/),
+    ];
+    orden.slice(1).forEach((elemento, indice) => {
+      expect(
+        orden[indice].compareDocumentPosition(elemento) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+  });
 });

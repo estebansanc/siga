@@ -1,4 +1,11 @@
-import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
+import { focoVisible } from "./support/accesibilidad";
+import {
+  expect,
+  expectNoHorizontalPageScroll,
+  loginViaUi,
+  seededUsers,
+  test,
+} from "./support/fixtures";
 
 const fechaArgentina = (instante: Date) =>
   new Date(instante.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -18,7 +25,11 @@ const terceraClaseDeProyectoFinal = () => {
 test.describe("Novedad Virtual", () => {
   test("la tarjeta muestra el link a la clase virtual y no la URL, y lo quita al finalizar", async ({
     page,
+    browser,
+    baseURL,
+    isMobile,
   }) => {
+    test.setTimeout(120_000);
     const enlace = "https://meet.google.com/abc-defg-hij";
     const marca = Date.now().toString(36);
 
@@ -39,6 +50,43 @@ test.describe("Novedad Virtual", () => {
     await expect(link).toHaveAttribute("href", enlace);
     await expect(link).toHaveAttribute("target", "_blank");
     await expect(novedad).not.toContainText(enlace);
+
+    await page.context().route(enlace, (route) => route.fulfill({ body: "ok" }));
+    await link.focus();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Shift+Tab");
+    expect(await focoVisible(page)).toBe(true);
+    const popupPromise = page.context().waitForEvent("page");
+    await page.keyboard.press("Enter");
+    const popup = await popupPromise;
+    await popup.waitForURL(enlace);
+    await popup.close();
+    await expect(page).toHaveURL(/\/novedades$/);
+    await expect(novedad).toBeVisible();
+
+    if (isMobile) {
+      const caja = await link.boundingBox();
+      expect(caja?.width).toBeGreaterThanOrEqual(44);
+      expect(caja?.height).toBeGreaterThanOrEqual(44);
+      await expectNoHorizontalPageScroll(page);
+    }
+
+    const contenido = await novedad.textContent();
+    for (const usuario of [seededUsers.bedel, seededUsers.autoridad]) {
+      const contexto = await browser.newContext({ baseURL });
+      const otra = await contexto.newPage();
+      await loginViaUi(otra, usuario);
+      await otra.goto("/novedades");
+      const tarjeta = otra.locator('[data-slot="item"]').filter({ hasText: marca });
+      await expect(
+        tarjeta.getByRole("link", { name: "Entrar a la clase virtual" }),
+      ).toHaveAttribute("href", enlace);
+      expect(await tarjeta.textContent()).toBe(contenido);
+      await expect(tarjeta.getByRole("button", { name: /Acciones de la novedad/ })).toHaveCount(
+        usuario === seededUsers.bedel ? 1 : 0,
+      );
+      await contexto.close();
+    }
 
     await novedad.getByRole("button", { name: /Acciones de la novedad/ }).click();
     await page.getByRole("menuitem", { name: "Finalizar novedad" }).click();
