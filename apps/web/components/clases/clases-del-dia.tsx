@@ -29,7 +29,7 @@ export function ClasesDelDia({
     <div className="flex flex-col gap-4">
       <CierreBanner estado={estado.data} />
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="font-medium capitalize">
+        <h2 className="font-medium">
           {clases.data ? `Hoy · ${formatFechaLarga(clases.data.fecha)}` : "Hoy"}
         </h2>
         {clases.data ? (

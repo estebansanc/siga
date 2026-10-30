@@ -11,10 +11,10 @@ import {
   CardTitle,
 } from "@repo/ui/components/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Spinner } from "@repo/ui/components/spinner";
-import { useForm } from "react-hook-form";
+import { TimeInput } from "@repo/ui/components/time-input";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
@@ -69,16 +69,36 @@ function TurnosForm({ turnos }: { turnos: Turnos }) {
               <FieldLabel htmlFor={`turno-${turno}-inicio`}>
                 {turnoLabels[turno]}: inicio
               </FieldLabel>
-              <Input
-                id={`turno-${turno}-inicio`}
-                type="time"
-                {...form.register(`${turno}.inicio`)}
+              <Controller
+                control={form.control}
+                name={`${turno}.inicio`}
+                render={({ field }) => (
+                  <TimeInput
+                    id={`turno-${turno}-inicio`}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    aria-invalid={Boolean(form.formState.errors[turno]?.inicio)}
+                  />
+                )}
               />
               <FieldError>{form.formState.errors[turno]?.inicio?.message}</FieldError>
             </Field>
             <Field data-invalid={Boolean(form.formState.errors[turno]?.fin)}>
               <FieldLabel htmlFor={`turno-${turno}-fin`}>{turnoLabels[turno]}: fin</FieldLabel>
-              <Input id={`turno-${turno}-fin`} type="time" {...form.register(`${turno}.fin`)} />
+              <Controller
+                control={form.control}
+                name={`${turno}.fin`}
+                render={({ field }) => (
+                  <TimeInput
+                    id={`turno-${turno}-fin`}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    aria-invalid={Boolean(form.formState.errors[turno]?.fin)}
+                  />
+                )}
+              />
               <FieldError>{form.formState.errors[turno]?.fin?.message}</FieldError>
             </Field>
           </div>

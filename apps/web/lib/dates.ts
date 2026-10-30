@@ -36,6 +36,8 @@ export const formatFechaHora = (value: Date | string) =>
 export const formatFechaLarga = (fecha: string) =>
   format(new Date(`${fecha}T12:00:00`), "EEEE d 'de' MMMM", { locale: es });
 
+export const capitalizarPrimera = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1);
+
 // "14/10/2026", a partir de una fecha `yyyy-mm-dd`.
 export const formatFechaCorta = (fecha: string) => fecha.split("-").reverse().join("/");
 
@@ -43,6 +45,10 @@ export const formatFechaCorta = (fecha: string) => fecha.split("-").reverse().jo
 // queda como "" para que el esquema lo trate como no informado.
 export const inputArgentinoAIso = (value: unknown) =>
   typeof value === "string" && value ? `${value}:00-03:00` : "";
+
+// Inversa de `inputArgentinoAIso`: lo que el control de fecha y hora necesita para mostrarse.
+export const isoArgentinoAInput = (valor: unknown) =>
+  typeof valor === "string" ? valor.replace(/:00-03:00$/, "") : "";
 
 export const isoAInputArgentino = (iso: string) => {
   const instante = new Date(iso);

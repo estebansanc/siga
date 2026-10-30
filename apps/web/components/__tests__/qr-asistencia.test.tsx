@@ -77,9 +77,9 @@ describe("QrAsistencia", () => {
 
   it("ofrece los turnos con su rango y hoy preseleccionado", () => {
     renderWithProviders(<QrAsistencia />);
-    expect(screen.getByRole("option", { name: "Mañana 7:00–13:00" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Tarde 13:00–18:00" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Noche 18:00–23:00" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Mañana 07:00 – 13:00" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Tarde 13:00 – 18:00" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Noche 18:00 – 23:00" })).toBeInTheDocument();
     expect(screen.getByLabelText("Fecha")).toHaveValue(fechaArgentina(new Date()));
   });
 

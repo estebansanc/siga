@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useClases } from "@/hooks/use-clases";
 import { useEstadoInstitucional } from "@/hooks/use-estado-institucional";
 import { usePreferencias } from "@/hooks/use-preferencias";
-import { formatFechaLarga } from "@/lib/dates";
+import { capitalizarPrimera, formatFechaLarga } from "@/lib/dates";
 
 import { CierreBanner, ClasesEmpty, ClasesList, ClasesSkeleton } from "./clases-list";
 
@@ -22,8 +22,8 @@ export function MisClasesHoy() {
     <div className="flex flex-col gap-4">
       <CierreBanner estado={estado.data} />
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="font-medium capitalize">
-          {clases.data ? formatFechaLarga(clases.data.fecha) : "Hoy"}
+        <h2 className="font-medium">
+          {clases.data ? capitalizarPrimera(formatFechaLarga(clases.data.fecha)) : "Hoy"}
         </h2>
         {clases.data && sigueComisiones ? (
           <span className="text-muted-foreground text-sm">

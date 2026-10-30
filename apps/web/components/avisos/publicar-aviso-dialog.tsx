@@ -17,6 +17,7 @@ import {
 } from "@repo/domain";
 import { Button } from "@repo/ui/components/button";
 import { Checkbox } from "@repo/ui/components/checkbox";
+import { DateTimeInput } from "@repo/ui/components/datetime-input";
 import {
   Dialog,
   DialogDescription,
@@ -38,13 +39,13 @@ import { NativeSelect, NativeSelectOption } from "@repo/ui/components/native-sel
 import { Spinner } from "@repo/ui/components/spinner";
 import { Switch } from "@repo/ui/components/switch";
 import { Textarea } from "@repo/ui/components/textarea";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { FormDialogContent } from "@/components/form-dialog-content";
 import { usePublicarAviso } from "@/hooks/use-avisos";
 import { useCarreras, useComisiones } from "@/hooks/use-datos-academicos";
-import { inputArgentinoAIso } from "@/lib/dates";
+import { inputArgentinoAIso, isoArgentinoAInput } from "@/lib/dates";
 import { showRequestError } from "@/lib/form-errors";
 
 const tituloMax = 100;
@@ -158,8 +159,8 @@ export function PublicarAvisoDialog({
       cuerpo: precargado?.cuerpo ?? "",
       prioridad: precargado?.prioridad ?? "NORMAL",
       destinatarios: { ...segmentoVacio, todos: true },
-      desde: ahoraEnInput(),
-      hasta: precargado?.hasta ?? "",
+      desde: inputArgentinoAIso(ahoraEnInput()),
+      hasta: inputArgentinoAIso(precargado?.hasta),
       enviarPorCorreo: false,
     },
   });
@@ -243,19 +244,37 @@ export function PublicarAvisoDialog({
             <div className="grid gap-4 sm:grid-cols-2">
               <Field data-invalid={Boolean(errors.desde)}>
                 <FieldLabel htmlFor="aviso-desde">Desde</FieldLabel>
-                <Input
-                  id="aviso-desde"
-                  type="datetime-local"
-                  {...form.register("desde", { setValueAs: inputArgentinoAIso })}
+                <Controller
+                  control={form.control}
+                  name="desde"
+                  render={({ field }) => (
+                    <DateTimeInput
+                      id="aviso-desde"
+                      value={isoArgentinoAInput(field.value)}
+                      onChange={(valor) => field.onChange(inputArgentinoAIso(valor))}
+                      onBlur={field.onBlur}
+                      horaLabel="Hora de inicio"
+                      aria-invalid={Boolean(errors.desde)}
+                    />
+                  )}
                 />
                 <FieldError>{errors.desde?.message}</FieldError>
               </Field>
               <Field data-invalid={Boolean(errors.hasta)}>
                 <FieldLabel htmlFor="aviso-hasta">Hasta</FieldLabel>
-                <Input
-                  id="aviso-hasta"
-                  type="datetime-local"
-                  {...form.register("hasta", { setValueAs: inputArgentinoAIso })}
+                <Controller
+                  control={form.control}
+                  name="hasta"
+                  render={({ field }) => (
+                    <DateTimeInput
+                      id="aviso-hasta"
+                      value={isoArgentinoAInput(field.value)}
+                      onChange={(valor) => field.onChange(inputArgentinoAIso(valor))}
+                      onBlur={field.onBlur}
+                      horaLabel="Hora de fin"
+                      aria-invalid={Boolean(errors.hasta)}
+                    />
+                  )}
                 />
                 <FieldError>{errors.hasta?.message}</FieldError>
               </Field>

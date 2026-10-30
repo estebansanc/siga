@@ -107,7 +107,7 @@ describe("MisClasesHoy", () => {
 
   it("lista cada clase con materia, comisión, horario, aula, estado y la novedad activa", () => {
     renderWithProviders(<MisClasesHoy />);
-    expect(screen.getByText("miércoles 14 de octubre")).toBeInTheDocument();
+    expect(screen.getByText("Miércoles 14 de octubre")).toBeInTheDocument();
     expect(screen.getByText("1 clase · 5K2")).toBeInTheDocument();
     expect(screen.getByText("Proyecto Final")).toBeInTheDocument();
     expect(screen.getByText("19:00 – 23:00 · Aula 12, Edificio A, 1.º piso")).toBeInTheDocument();
