@@ -125,6 +125,25 @@ describe("UsuariosSection", () => {
     );
   });
 
+  it("los dos filtros conservan sus opciones y textos", () => {
+    renderWithProviders(<UsuariosSection />);
+    const opciones = (etiqueta: string) =>
+      within(screen.getByLabelText(etiqueta))
+        .getAllByRole("option")
+        .map((opcion) => opcion.textContent);
+    expect(opciones("Filtrar por perfil")).toEqual([
+      "Todos los perfiles",
+      "Estudiante",
+      "Docente",
+      "Bedel",
+      "Autoridad académica",
+    ]);
+    expect(opciones("Filtrar por solicitud de baja")).toEqual([
+      "Todas las cuentas",
+      "Baja solicitada",
+    ]);
+  });
+
   it("marca la baja solicitada con fecha y motivo y filtra esas cuentas", async () => {
     state.usuarios = [
       usuario({

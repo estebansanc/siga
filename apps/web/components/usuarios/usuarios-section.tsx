@@ -186,17 +186,18 @@ export function UsuariosSection() {
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Input
             type="search"
             aria-label="Buscar usuarios"
+            className="sm:basis-full lg:min-w-0 lg:flex-1 lg:basis-0"
             placeholder="Buscar por nombre, correo o DNI"
             value={busqueda}
             onChange={(event) => setBusqueda(event.target.value)}
           />
           <NativeSelect
             aria-label="Filtrar por perfil"
-            className="w-full sm:w-52"
+            className="w-full sm:w-[11.5rem] sm:shrink-0"
             value={perfil}
             onChange={(event) => setPerfil(event.target.value)}
           >
@@ -209,7 +210,7 @@ export function UsuariosSection() {
           </NativeSelect>
           <NativeSelect
             aria-label="Filtrar por solicitud de baja"
-            className="w-full sm:w-52"
+            className="w-full sm:w-[10rem] sm:shrink-0"
             value={bajaSolicitada}
             onChange={(event) => setBajaSolicitada(event.target.value)}
           >

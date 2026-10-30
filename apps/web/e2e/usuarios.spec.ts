@@ -238,6 +238,74 @@ test.describe("Usuarios", () => {
     await anonimo.close();
   });
 
+  for (const { ancho, enUnaFila } of [
+    { ancho: 1366, enUnaFila: true },
+    { ancho: 768, enUnaFila: false },
+  ]) {
+    test(`a ${ancho} px los filtros y el placeholder se leen completos y los filtros no cambian de ancho`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: ancho, height: 850 });
+      await loginViaUi(page, seededUsers.bedel);
+      await page.goto("/usuarios");
+      const buscador = page.getByLabel("Buscar usuarios");
+      const perfil = page.getByLabel("Filtrar por perfil");
+      const baja = page.getByLabel("Filtrar por solicitud de baja");
+      const cajaBuscador = await buscador.boundingBox();
+      const cajaPerfil = await perfil.boundingBox();
+      const cajaBaja = await baja.boundingBox();
+      expect(cajaPerfil?.y).toBe(cajaBaja?.y);
+      if (enUnaFila) {
+        expect(cajaBuscador?.y).toBe(cajaPerfil?.y);
+      } else {
+        expect(cajaPerfil!.y).toBeGreaterThan(cajaBuscador!.y + cajaBuscador!.height - 1);
+      }
+
+      const holguraDelTexto = (selector: typeof buscador, usaPlaceholder: boolean) =>
+        selector.evaluate((el, placeholder) => {
+          const campo = el as HTMLInputElement | HTMLSelectElement;
+          const estilo = getComputedStyle(campo);
+          const contexto = document.createElement("canvas").getContext("2d")!;
+          contexto.font = `${estilo.fontWeight} ${estilo.fontSize} ${estilo.fontFamily}`;
+          const texto = placeholder
+            ? (campo as HTMLInputElement).placeholder
+            : (campo as HTMLSelectElement).selectedOptions[0].text;
+          const disponible =
+            campo.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
+          return disponible - contexto.measureText(texto).width;
+        }, usaPlaceholder);
+
+      expect(await holguraDelTexto(buscador, true)).toBeGreaterThanOrEqual(0);
+      for (const { selector, opciones } of [
+        { selector: perfil, opciones: ["Todos los perfiles", "Autoridad académica"] },
+        { selector: baja, opciones: ["Todas las cuentas", "Baja solicitada"] },
+      ]) {
+        const caja = await selector.boundingBox();
+        for (const opcion of opciones) {
+          await selector.selectOption({ label: opcion });
+          expect(await holguraDelTexto(selector, false)).toBeGreaterThanOrEqual(0);
+          expect((await selector.boundingBox())?.width).toBe(caja?.width);
+        }
+        await selector.selectOption({ index: 0 });
+      }
+      await expectNoHorizontalPageScroll(page);
+    });
+  }
+
+  test("en mobile el buscador y los filtros se apilan sin scroll horizontal", async ({ page }) => {
+    await page.setViewportSize({ width: 412, height: 915 });
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/usuarios");
+    const cajas = await Promise.all(
+      ["Buscar usuarios", "Filtrar por perfil", "Filtrar por solicitud de baja"].map((nombre) =>
+        page.getByLabel(nombre).boundingBox(),
+      ),
+    );
+    expect(cajas[1]!.y).toBeGreaterThan(cajas[0]!.y);
+    expect(cajas[2]!.y).toBeGreaterThan(cajas[1]!.y);
+    await expectNoHorizontalPageScroll(page);
+  });
+
   test("el estudiante no ve Usuarios, vuelve al inicio y de los docentes ve solo el nombre", async ({
     page,
   }) => {
