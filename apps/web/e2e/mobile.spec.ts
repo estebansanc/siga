@@ -47,8 +47,8 @@ test.describe("Móvil", () => {
     test.skip(!isMobile, "Solo aplica al viewport de celular");
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/qr");
-    const generar = await page.getByRole("heading", { name: "Generar QR" }).boundingBox();
-    const manual = await page.getByRole("heading", { name: "Registro manual" }).boundingBox();
+    const generar = await page.getByText("Generar QR", { exact: true }).first().boundingBox();
+    const manual = await page.getByText("Registro manual", { exact: true }).first().boundingBox();
     expect(manual!.y).toBeGreaterThan(generar!.y + generar!.height);
     await expectNoHorizontalPageScroll(page);
   });

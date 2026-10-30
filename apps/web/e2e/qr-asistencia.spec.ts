@@ -14,6 +14,19 @@ const proximaClaseEnAula12 = () => {
 };
 
 test.describe("Asistencia docente", () => {
+  test("Turno arranca en el actual según la hora de Argentina y las dos tarjetas conviven", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    await page.clock.setFixedTime(new Date("2026-10-30T18:30:00Z"));
+    await page.goto("/qr");
+    await expect(page.getByRole("heading", { name: "Asistencia docente" })).toBeVisible();
+    await expect(page.getByLabel("Turno")).toHaveValue("TARDE");
+    await expect(page.getByText("Generar QR", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Registro manual", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Registrar asistencia manual" })).toBeVisible();
+  });
+
   test("el bedel genera el QR, ve las clases del turno y el código se renueva solo", async ({
     page,
   }) => {
