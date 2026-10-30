@@ -168,14 +168,14 @@ test.describe("Asistencia docente", () => {
     await expect(page.getByText("Turnos actualizados")).toBeVisible();
 
     await page.goto("/qr");
-    await expect(page.getByRole("option", { name: "Noche 18:00–23:00" })).toBeAttached();
+    await expect(page.getByRole("option", { name: "Noche 18:00 – 23:00" })).toBeAttached();
 
     await page.goto("/configuracion");
     await page.getByLabel("Noche: fin").fill("23:30");
     await page.getByRole("button", { name: "Guardar turnos" }).click();
     await expect(page.getByText("Turnos actualizados").last()).toBeVisible();
     await page.goto("/qr");
-    await expect(page.getByRole("option", { name: "Noche 18:00–23:30" })).toBeAttached();
+    await expect(page.getByRole("option", { name: "Noche 18:00 – 23:30" })).toBeAttached();
   });
 
   test("un docente no ve el ítem y por URL vuelve al inicio", async ({ page }) => {
