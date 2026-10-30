@@ -140,8 +140,23 @@ test.describe("Móvil", () => {
     const detalle = page.getByRole("dialog", { name: `${codigo} · Mobiliario` });
     await expect(detalle.getByText("Se pidió reposición al área de mantenimiento")).toBeVisible();
     await sinScrollHorizontalEnDialogo();
+    await page.keyboard.press("Escape");
+
+    await page.request.post(`/api/v1/incidencias/${id}/estado`, { data: { estado: "RESUELTA" } });
+    await page.reload();
+    await page.getByRole("tab", { name: "Historial" }).click();
+    await expect(page.getByLabel("Indicadores")).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
 
     await page.request.post(`/api/v1/aulas/${aulaId}/baja`);
+  });
+
+  test("el Historial de Novedades no scrollea a lo ancho", async ({ page }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/novedades");
+    await page.getByRole("tab", { name: "Historial" }).click();
+    await expect(page.getByLabel("Indicadores")).toBeVisible();
+    await expectNoHorizontalPageScroll(page);
   });
 
   test("Datos académicos no scrollea a lo ancho en ninguna de sus seis pestañas", async ({

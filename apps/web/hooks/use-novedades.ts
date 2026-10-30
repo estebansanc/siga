@@ -1,19 +1,36 @@
 "use client";
 
-import type { AulaDto, NovedadDto } from "@repo/api/client";
-import type { EditarNovedadInput, PublicarNovedad } from "@repo/domain";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { AulaDto, ConsultaNovedadesResultadoDto, NovedadDto } from "@repo/api/client";
+import type {
+  ConsultaNovedades,
+  ConsultaNovedadesInput,
+  EditarNovedadInput,
+  PublicarNovedad,
+} from "@repo/domain";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, unwrap } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
 import { realtimeQueryOptions } from "./use-estado-institucional";
+import { comoQuery } from "./use-historico";
 
 export const useNovedades = () =>
   useQuery({
     queryKey: queryKeys.novedades,
-    queryFn: () => unwrap<NovedadDto[]>(api.novedades.$get({ query: {} })),
+    queryFn: () => unwrap<NovedadDto[]>(api.novedades.$get()),
     ...realtimeQueryOptions,
+  });
+
+export const useHistorialNovedades = (consulta: ConsultaNovedades | null) =>
+  useQuery({
+    queryKey: queryKeys.novedadesHistorial(consulta ? comoQuery(consulta) : {}),
+    queryFn: () =>
+      unwrap<ConsultaNovedadesResultadoDto>(
+        api.novedades.historial.$get({ query: comoQuery(consulta!) as ConsultaNovedadesInput }),
+      ),
+    enabled: consulta !== null,
+    placeholderData: keepPreviousData,
   });
 
 const invalidarClasesYNovedades = (queryClient: ReturnType<typeof useQueryClient>) =>

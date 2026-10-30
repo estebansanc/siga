@@ -63,6 +63,11 @@ const consultasHistoricas: NavigationItem = {
   href: "/historico",
   icon: HistoryIcon,
 };
+const incidencias: NavigationItem = {
+  title: "Incidencias",
+  href: "/incidencias",
+  icon: TriangleAlertIcon,
+};
 const aulas: NavigationItem = { title: "Aulas", href: "/aulas", icon: DoorOpenIcon };
 const configuracion: NavigationItem = {
   title: "Configuración",
@@ -96,13 +101,23 @@ const navigationByPerfil: Record<Perfil, NavigationItem[]> = {
     aulas,
     { title: "QR de asistencia", href: "/qr", icon: QrCodeIcon },
     { title: "Solicitudes", href: "/solicitudes", icon: InboxIcon },
-    { title: "Incidencias", href: "/incidencias", icon: TriangleAlertIcon },
+    incidencias,
     consultasHistoricas,
     avisos,
     usuarios,
     datosAcademicos,
   ],
-  AUTORIDAD: [clases, consultasHistoricas, avisos, aulas, estado, usuarios, datosAcademicos],
+  AUTORIDAD: [
+    clases,
+    novedades,
+    incidencias,
+    consultasHistoricas,
+    avisos,
+    aulas,
+    estado,
+    usuarios,
+    datosAcademicos,
+  ],
 };
 
 // Configuración sigue siendo del Administrador de la organización, cualquiera sea su perfil.
