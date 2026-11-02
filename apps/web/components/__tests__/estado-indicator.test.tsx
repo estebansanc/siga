@@ -75,6 +75,14 @@ describe("EstadoIndicator", () => {
     ).toBeVisible();
   });
 
+  it("el motivo cede espacio antes que 'Desde …', que nunca se recorta", () => {
+    state.estado = { ...abierta, estado: "CERRADA", motivo: "Corte de energía" };
+    render(<EstadoIndicator />);
+    expect(screen.getByText("Corte de energía").className).toContain("shrink-[999]");
+    expect(screen.getByText("Desde las 07:30").className).toContain("shrink-0");
+    expect(screen.getByText("Desde las 07:30").className).not.toContain("truncate");
+  });
+
   it("pasa de hoy a ayer al refrescar después de la medianoche argentina", () => {
     const { rerender } = render(<EstadoIndicator />);
     expect(screen.getByText("Desde las 07:30")).toBeInTheDocument();

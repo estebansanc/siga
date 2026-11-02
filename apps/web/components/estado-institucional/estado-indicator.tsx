@@ -65,16 +65,19 @@ export function EstadoIndicator() {
   return (
     <Link
       href="/estado-institucional"
-      className="focus-visible:ring-ring pointer-coarse:min-h-11 flex shrink-0 items-center gap-2 rounded-full outline-none hover:opacity-80 focus-visible:ring-2 sm:min-w-0 sm:shrink"
+      className={cn(
+        "focus-visible:ring-ring pointer-coarse:min-h-11 flex shrink-0 items-center gap-2 rounded-full outline-none hover:opacity-80 focus-visible:ring-2",
+        motivo && "sm:min-w-0 sm:shrink",
+      )}
       aria-label={nombreAccesible(estado.data, ahora)}
     >
       <EstadoInstitucionBadge estado={estado.data} className="shrink-0" />
       {motivo ? (
-        <span className="text-muted-foreground hidden min-w-0 truncate text-xs sm:inline">
+        <span className="text-muted-foreground hidden min-w-0 shrink-[999] truncate text-xs sm:inline">
           {motivo}
         </span>
       ) : null}
-      <span className="text-muted-foreground hidden min-w-0 truncate text-xs sm:inline">
+      <span className="text-muted-foreground hidden shrink-0 text-xs lg:inline">
         Desde {formatDesde(estado.data.desde, ahora)}
       </span>
     </Link>
