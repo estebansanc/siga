@@ -50,6 +50,7 @@ const usuario = (cambios: Partial<UsuarioDto>): UsuarioDto => ({
   estado: "ACTIVO",
   comisiones: [],
   esPropio: false,
+  esAdministrador: false,
   bajaSolicitada: null,
   ...cambios,
 });
@@ -124,6 +125,25 @@ describe("UsuariosSection", () => {
     );
   });
 
+  it("los dos filtros conservan sus opciones y textos", () => {
+    renderWithProviders(<UsuariosSection />);
+    const opciones = (etiqueta: string) =>
+      within(screen.getByLabelText(etiqueta))
+        .getAllByRole("option")
+        .map((opcion) => opcion.textContent);
+    expect(opciones("Filtrar por perfil")).toEqual([
+      "Todos los perfiles",
+      "Estudiante",
+      "Docente",
+      "Bedel",
+      "Autoridad académica",
+    ]);
+    expect(opciones("Filtrar por solicitud de baja")).toEqual([
+      "Todas las cuentas",
+      "Baja solicitada",
+    ]);
+  });
+
   it("marca la baja solicitada con fecha y motivo y filtra esas cuentas", async () => {
     state.usuarios = [
       usuario({
@@ -158,6 +178,22 @@ describe("UsuariosSection", () => {
     const dialog = await screen.findByRole("dialog", { name: "Editar Bea Bedel" });
     expect(within(dialog).getByLabelText("Perfil")).toBeDisabled();
     expect(within(dialog).getByLabelText("Correo")).toBeDisabled();
+  });
+
+  it("marca solo al Administrador y no le ofrece Desactivar", async () => {
+    const admin = usuario({
+      id: "adm",
+      nombre: "Ada Admin",
+      correo: "ada@example.com",
+      perfil: "AUTORIDAD",
+      esAdministrador: true,
+    });
+    state.usuarios = [admin, pendiente];
+    renderWithProviders(<UsuariosSection />);
+    expect(await screen.findAllByText("Administrador")).toHaveLength(1);
+    await abrirAcciones("Ada Admin");
+    expect(await screen.findByRole("menuitem", { name: "Editar" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Desactivar" })).not.toBeInTheDocument();
   });
 
   it("desactiva con confirmación y reactiva sin ella", async () => {

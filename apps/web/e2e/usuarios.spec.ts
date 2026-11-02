@@ -41,6 +41,24 @@ const completarAlta = async (
 test.describe("Usuarios", () => {
   test.afterEach(() => borrarClaseDeAsistencia());
 
+  for (const perfil of ["bedel", "autoridad"] as const) {
+    test(`${perfil}: el Administrador lleva el distintivo y no se puede desactivar`, async ({
+      page,
+    }) => {
+      await loginViaUi(page, seededUsers[perfil]);
+      await page.goto("/usuarios");
+      await expect(page.getByRole("row").filter({ hasText: "Administrador" })).toHaveCount(1);
+      const admin = fila(page, seededUsers.bedel.email);
+      await expect(admin).toContainText("Administrador");
+      await expectNoHorizontalPageScroll(page);
+      if (perfil === "autoridad") {
+        await admin.getByRole("button", { name: /^Acciones de/ }).click();
+        await expect(page.getByRole("menuitem", { name: "Editar" })).toBeVisible();
+        await expect(page.getByRole("menuitem", { name: "Desactivar" })).toHaveCount(0);
+      }
+    });
+  }
+
   test("el bedel da de alta a un docente, que activa su cuenta; luego lo desactiva y lo reactiva", async ({
     page,
     browser,
@@ -134,7 +152,7 @@ test.describe("Usuarios", () => {
     await paginaDocente.getByRole("button", { name: /Definir contraseña/ }).click();
     await aceptarPoliticaViaUi(paginaDocente);
 
-    await paginaDocente.goto("/mi-perfil");
+    await paginaDocente.goto("/mi-cuenta");
     await paginaDocente.getByLabel("Apellido y nombre").fill(`${docente.nombre} Editado`);
     await paginaDocente.getByLabel("Legajo").fill("L-BAJA");
     await paginaDocente.getByRole("button", { name: "Guardar" }).click();
@@ -167,7 +185,7 @@ test.describe("Usuarios", () => {
 
     await accionDeFila(page, `${docente.nombre} Editado`, "Reactivar");
     await expect(fila(page, docente.correo)).not.toContainText("Desactivado");
-    await paginaDocente.goto("/mi-perfil");
+    await paginaDocente.goto("/mi-cuenta");
     await expect(
       paginaDocente.getByRole("button", { name: "Solicitar baja de mi cuenta" }),
     ).toBeVisible();
@@ -218,6 +236,74 @@ test.describe("Usuarios", () => {
     await verifyEmailViaLink(paginaAnonima, usuario);
     await expect(paginaAnonima.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
     await anonimo.close();
+  });
+
+  for (const { ancho, enUnaFila } of [
+    { ancho: 1366, enUnaFila: true },
+    { ancho: 768, enUnaFila: false },
+  ]) {
+    test(`a ${ancho} px los filtros y el placeholder se leen completos y los filtros no cambian de ancho`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: ancho, height: 850 });
+      await loginViaUi(page, seededUsers.bedel);
+      await page.goto("/usuarios");
+      const buscador = page.getByLabel("Buscar usuarios");
+      const perfil = page.getByLabel("Filtrar por perfil");
+      const baja = page.getByLabel("Filtrar por solicitud de baja");
+      const cajaBuscador = await buscador.boundingBox();
+      const cajaPerfil = await perfil.boundingBox();
+      const cajaBaja = await baja.boundingBox();
+      expect(cajaPerfil?.y).toBe(cajaBaja?.y);
+      if (enUnaFila) {
+        expect(cajaBuscador?.y).toBe(cajaPerfil?.y);
+      } else {
+        expect(cajaPerfil!.y).toBeGreaterThan(cajaBuscador!.y + cajaBuscador!.height - 1);
+      }
+
+      const holguraDelTexto = (selector: typeof buscador, usaPlaceholder: boolean) =>
+        selector.evaluate((el, placeholder) => {
+          const campo = el as HTMLInputElement | HTMLSelectElement;
+          const estilo = getComputedStyle(campo);
+          const contexto = document.createElement("canvas").getContext("2d")!;
+          contexto.font = `${estilo.fontWeight} ${estilo.fontSize} ${estilo.fontFamily}`;
+          const texto = placeholder
+            ? (campo as HTMLInputElement).placeholder
+            : (campo as HTMLSelectElement).selectedOptions[0].text;
+          const disponible =
+            campo.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
+          return disponible - contexto.measureText(texto).width;
+        }, usaPlaceholder);
+
+      expect(await holguraDelTexto(buscador, true)).toBeGreaterThanOrEqual(0);
+      for (const { selector, opciones } of [
+        { selector: perfil, opciones: ["Todos los perfiles", "Autoridad académica"] },
+        { selector: baja, opciones: ["Todas las cuentas", "Baja solicitada"] },
+      ]) {
+        const caja = await selector.boundingBox();
+        for (const opcion of opciones) {
+          await selector.selectOption({ label: opcion });
+          expect(await holguraDelTexto(selector, false)).toBeGreaterThanOrEqual(0);
+          expect((await selector.boundingBox())?.width).toBe(caja?.width);
+        }
+        await selector.selectOption({ index: 0 });
+      }
+      await expectNoHorizontalPageScroll(page);
+    });
+  }
+
+  test("en mobile el buscador y los filtros se apilan sin scroll horizontal", async ({ page }) => {
+    await page.setViewportSize({ width: 412, height: 915 });
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/usuarios");
+    const cajas = await Promise.all(
+      ["Buscar usuarios", "Filtrar por perfil", "Filtrar por solicitud de baja"].map((nombre) =>
+        page.getByLabel(nombre).boundingBox(),
+      ),
+    );
+    expect(cajas[1]!.y).toBeGreaterThan(cajas[0]!.y);
+    expect(cajas[2]!.y).toBeGreaterThan(cajas[1]!.y);
+    await expectNoHorizontalPageScroll(page);
   });
 
   test("el estudiante no ve Usuarios, vuelve al inicio y de los docentes ve solo el nombre", async ({

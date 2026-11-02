@@ -34,11 +34,12 @@ const estadoPorError = (error: unknown): EstadoCamara =>
     ? "denegada"
     : "no-disponible";
 
-// La cámara se abre al montar y sigue encendida mientras la pantalla esté abierta; `pausado`
-// solo detiene la lectura (mientras se valida un código o se muestra un resultado).
+// La cámara se abre al montar (o al reintentar, sin desmontar la pantalla) y sigue encendida
+// mientras la pantalla esté abierta; `pausado` solo detiene la lectura (mientras se valida un código o se muestra un resultado).
 export function useEscanerQr(alDetectar: (codigo: string) => void, pausado: boolean) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [estado, setEstado] = useState<EstadoCamara>("iniciando");
+  const [intento, setIntento] = useState(0);
   const alDetectarRef = useRef(alDetectar);
   const pausadoRef = useRef(pausado);
 
@@ -94,7 +95,12 @@ export function useEscanerQr(alDetectar: (codigo: string) => void, pausado: bool
       clearTimeout(temporizador);
       flujo?.getTracks().forEach((pista) => pista.stop());
     };
-  }, []);
+  }, [intento]);
 
-  return { videoRef, estado };
+  const reintentar = () => {
+    setEstado("iniciando");
+    setIntento((anterior) => anterior + 1);
+  };
+
+  return { videoRef, estado, reintentar };
 }

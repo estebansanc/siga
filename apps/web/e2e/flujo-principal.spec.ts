@@ -92,6 +92,8 @@ test.describe("Flujo principal de SiGA", () => {
 
     await loginViaUi(page, seededUsers.docente);
     await expect(page.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Acciones rápidas" })).toHaveCount(0);
+    await page.goto("/novedades");
     await page.getByRole("button", { name: "Publicar novedad" }).click();
     const dialog = page.getByRole("dialog", { name: "Publicar novedad" });
     await dialog.getByLabel("Fecha de las clases").fill(fecha);
@@ -129,6 +131,8 @@ test.describe("Flujo principal de SiGA", () => {
     await page.getByRole("menuitem", { name: "Finalizar novedad" }).click();
     await page.getByRole("button", { name: "Finalizar" }).click();
     await expect(page.getByText("Novedad finalizada")).toBeVisible();
+    await expect(novedad).toHaveCount(0);
+    await page.getByRole("tab", { name: "Historial" }).click();
     await expect(novedad).toContainText("Finalizada");
 
     await page.goto("/clases");
@@ -143,7 +147,7 @@ test.describe("Flujo principal de SiGA", () => {
     await expect(page.getByText("Todavía no seguís ninguna comisión")).toBeVisible();
 
     await page.getByRole("link", { name: "Elegir comisiones" }).click();
-    await expect(page).toHaveURL(/\/preferencias/);
+    await expect(page).toHaveURL(/\/mi-cuenta\/comisiones/);
     await page
       .getByLabel("Carrera")
       .selectOption({ label: "Ingeniería en Sistemas de Información" });
@@ -153,12 +157,22 @@ test.describe("Flujo principal de SiGA", () => {
     await expect(
       page.getByRole("button", { name: "Agregar 5K2 de Proyecto Final" }),
     ).toBeDisabled();
-    await page.getByRole("button", { name: "Guardar" }).click();
-    await expect(page.getByText("Preferencias guardadas")).toBeVisible();
+    await expect(page.getByText("Comisión agregada")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Guardar" })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Quitar" })).toHaveCount(1);
 
     await page.getByRole("link", { name: "Mis clases" }).click();
     await expect(page.getByRole("heading", { name: "Mis clases de hoy" })).toBeVisible();
     await expect(page.getByText(/\d+ clases? · 5K2/)).toBeVisible();
     await expect(page.getByText("Todavía no seguís ninguna comisión")).toHaveCount(0);
+
+    await page.goto("/mi-cuenta/comisiones");
+    await page.getByRole("button", { name: "Quitar" }).click();
+    await expect(page.getByText("Comisión quitada")).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Quitar" })).toHaveCount(0);
+    await page.getByRole("link", { name: "Mis clases" }).click();
+    await expect(page.getByText("Todavía no seguís ninguna comisión")).toBeVisible();
   });
 });

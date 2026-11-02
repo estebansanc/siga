@@ -11,11 +11,6 @@ export type MemberRole = z.infer<typeof memberRoleSchema>;
 export const roleOf = (role: string): MemberRole =>
   role.split(",").includes("owner") ? "owner" : "member";
 
-export const memberRoleLabels: Record<MemberRole, string> = {
-  owner: "Administrador",
-  member: "Miembro",
-};
-
 // ---------- SiGA ----------
 
 export const perfilSchema = z.enum(["ESTUDIANTE", "DOCENTE", "BEDEL", "AUTORIDAD"]);

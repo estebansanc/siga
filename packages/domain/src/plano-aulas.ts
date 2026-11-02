@@ -48,6 +48,29 @@ export const compararPisos = (a: string, b: string) => {
   return rangoA.grupo - rangoB.grupo || rangoA.numero - rangoB.numero || collator.compare(a, b);
 };
 
+export type ConteoPiso = { libres: number; ocupadas: number; noDisponibles: number };
+
+// Pendiente cuenta como ocupada: ambas tienen una clase en curso.
+export const contarEstadosDelPiso = (estados: EstadoPlano[]): ConteoPiso => {
+  const conteo: ConteoPiso = { libres: 0, ocupadas: 0, noDisponibles: 0 };
+  for (const estado of estados) {
+    if (estado === "LIBRE") conteo.libres += 1;
+    else if (estado === "OCUPADA" || estado === "PENDIENTE") conteo.ocupadas += 1;
+    else conteo.noDisponibles += 1;
+  }
+  return conteo;
+};
+
+const pluralizar = (cantidad: number, singular: string, plural: string) =>
+  `${cantidad} ${cantidad === 1 ? singular : plural}`;
+
+export const describirConteoPiso = ({ libres, ocupadas, noDisponibles }: ConteoPiso) =>
+  [
+    pluralizar(libres, "libre", "libres"),
+    pluralizar(ocupadas, "ocupada", "ocupadas"),
+    ...(noDisponibles > 0 ? [pluralizar(noDisponibles, "no disponible", "no disponibles")] : []),
+  ].join(" · ");
+
 export type AccionPlano = "ASIGNAR" | "MOVER" | "REEMPLAZAR";
 
 export const accionPlanoLabels: Record<AccionPlano, string> = {

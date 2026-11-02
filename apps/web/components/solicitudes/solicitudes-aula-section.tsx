@@ -1,8 +1,19 @@
 "use client";
 
 import type { ClaseDto, SolicitudAulaDto } from "@repo/api/client";
-import { equipamientoLabels, type EstadoSolicitudAula, type Equipamiento } from "@repo/domain";
+import {
+  equipamientoLabels,
+  estadosSolicitudAulaOrden,
+  type Equipamiento,
+  type EstadoSolicitudAula,
+} from "@repo/domain";
 import { Button } from "@repo/ui/components/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@repo/ui/components/collapsible";
 import {
   Empty,
   EmptyDescription,
@@ -19,8 +30,8 @@ import {
   ItemTitle,
 } from "@repo/ui/components/item";
 import { Skeleton } from "@repo/ui/components/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui/components/tabs";
-import { DoorOpenIcon } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@repo/ui/components/toggle-group";
+import { ChevronDownIcon, DoorOpenIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { SolicitudEstadoBadge } from "@/components/aulas/solicitud-estado-badge";
@@ -34,6 +45,12 @@ import { formatFechaCorta } from "@/lib/dates";
 
 import { AsignarAulaDialog } from "./asignar-aula-dialog";
 import { ElegirAulaDialog } from "./elegir-aula-dialog";
+import {
+  estadoSignificados,
+  estadosPorDefecto,
+  filtroLabels,
+  ordenarEstados,
+} from "./estados-solicitud";
 import { RechazarSolicitudDialog } from "./rechazar-solicitud-dialog";
 
 type Accion =
@@ -41,21 +58,6 @@ type Accion =
   | { tipo: "rechazar"; solicitud: SolicitudAulaDto }
   | { tipo: "reasignar"; solicitud: SolicitudAulaDto }
   | { tipo: "asignar"; clase: ClaseDto };
-
-const tabs = [
-  { value: "PENDIENTE", label: "Pendientes" },
-  { value: "ASIGNADA", label: "Asignadas" },
-  { value: "APROBADA", label: "Aprobadas" },
-  { value: "RECHAZADA", label: "Rechazadas" },
-  { value: "SIN_AULA", label: "Clases sin aula" },
-] as const;
-
-const vacios: Record<EstadoSolicitudAula, string> = {
-  PENDIENTE: "No hay solicitudes pendientes",
-  ASIGNADA: "No hay asignaciones inmediatas",
-  APROBADA: "Todavía no aprobaste ninguna solicitud",
-  RECHAZADA: "Todavía no rechazaste ninguna solicitud",
-};
 
 const describirRecursos = (recursos: Equipamiento[]) =>
   recursos.length === 0
@@ -149,15 +151,18 @@ function SolicitudItem({
 }
 
 function SolicitudesLista({
-  estado,
+  estados,
   onAccion,
 }: {
-  estado: EstadoSolicitudAula;
+  estados: EstadoSolicitudAula[];
   onAccion: (accion: Accion) => void;
 }) {
-  const solicitudes = useSolicitudesAula(estado);
+  const solicitudes = useSolicitudesAula(estados);
+  if (estados.length === 0) return <Vacio titulo="Elegí al menos un estado para ver solicitudes" />;
   if (!solicitudes.data) return <Skeleton className="h-24 w-full" />;
-  if (solicitudes.data.length === 0) return <Vacio titulo={vacios[estado]} />;
+  if (solicitudes.data.length === 0) {
+    return <Vacio titulo="No hay solicitudes en los estados elegidos" />;
+  }
   return (
     <ItemGroup className="gap-2">
       {solicitudes.data.map((solicitud) => (
@@ -167,8 +172,42 @@ function SolicitudesLista({
   );
 }
 
-function ClasesSinAulaLista({ onAccion }: { onAccion: (accion: Accion) => void }) {
-  const clases = useClasesSinAula();
+function SignificadoDeEstados() {
+  return (
+    <Collapsible>
+      <CollapsibleTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="pointer-coarse:min-h-11 group -ml-2 justify-start"
+          />
+        }
+      >
+        Qué significa cada estado
+        <ChevronDownIcon className="group-data-panel-open:rotate-180 transition-transform" />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <ul className="text-muted-foreground flex flex-col gap-2 pt-2 text-sm">
+          {estadosSolicitudAulaOrden.map((estado) => (
+            <li key={estado}>
+              <strong className="text-foreground">{estadoSignificados[estado].nombre}</strong>:{" "}
+              {estadoSignificados[estado].texto}
+            </li>
+          ))}
+        </ul>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function ClasesSinAulaLista({
+  clases,
+  onAccion,
+}: {
+  clases: ReturnType<typeof useClasesSinAula>;
+  onAccion: (accion: Accion) => void;
+}) {
   if (!clases.data) return <Skeleton className="h-24 w-full" />;
   if (clases.data.clases.length === 0) {
     return (
@@ -239,31 +278,47 @@ function AccionDialog({ accion, onClose }: { accion: Accion; onClose: () => void
   }
 }
 
-// RF-16: el bedel resuelve las solicitudes de aula y asigna aula a las clases que no tienen.
+// RF-16: el bedel asigna aula a las clases que no tienen y resuelve las solicitudes de aula.
 export function SolicitudesAulaSection() {
   const [accion, setAccion] = useState<Accion | null>(null);
-  const [tab, setTab] = useState<string>("PENDIENTE");
+  const [estados, setEstados] = useState<EstadoSolicitudAula[]>(estadosPorDefecto);
+  const clasesSinAula = useClasesSinAula();
 
   return (
     <>
-      <Tabs value={tab} onValueChange={(valor) => setTab(String(valor))}>
-        <TabsList className="h-auto w-full flex-wrap justify-start">
-          {tabs.map(({ value, label }) => (
-            <TabsTrigger key={value} value={value}>
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {tabs.map(({ value }) => (
-          <TabsContent key={value} value={value} className="pt-4">
-            {value === "SIN_AULA" ? (
-              <ClasesSinAulaLista onAccion={setAccion} />
-            ) : (
-              <SolicitudesLista estado={value} onAccion={setAccion} />
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Clases sin aula{clasesSinAula.data ? ` (${clasesSinAula.data.clases.length})` : ""}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ClasesSinAulaLista clases={clasesSinAula} onAccion={setAccion} />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Solicitudes</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <ToggleGroup
+            multiple
+            variant="outline"
+            className="flex-wrap"
+            value={estados}
+            onValueChange={(value: string[]) => setEstados(ordenarEstados(value))}
+            aria-label="Estados a mostrar"
+          >
+            {estadosSolicitudAulaOrden.map((estado) => (
+              <ToggleGroupItem key={estado} value={estado}>
+                {filtroLabels[estado]}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+          <SignificadoDeEstados />
+          <SolicitudesLista estados={estados} onAccion={setAccion} />
+        </CardContent>
+      </Card>
       {accion ? <AccionDialog accion={accion} onClose={() => setAccion(null)} /> : null}
     </>
   );

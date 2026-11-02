@@ -23,7 +23,6 @@ import {
 import { NativeSelect, NativeSelectOption } from "@repo/ui/components/native-select";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Spinner } from "@repo/ui/components/spinner";
-import { Switch } from "@repo/ui/components/switch";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -32,65 +31,45 @@ import { useCarreras, useComisiones, useMaterias } from "@/hooks/use-datos-acade
 import { useActualizarPreferencias, usePreferencias } from "@/hooks/use-preferencias";
 import { showRequestError } from "@/lib/form-errors";
 
-type OpcionesDeCorreo = {
-  notificarNovedadesPorCorreo: boolean;
-  notificarAvisosPorCorreo: boolean;
-};
-
 const anios = ["1", "2", "3", "4", "5", "6"];
 
 const describirComision = (comision: ComisionDto) =>
   `${comision.materia.anioCarrera}.º año · ${turnoLabels[comision.turno]} · ${comision.docentes.map((docente) => docente.nombre).join(", ") || "Sin docente"}`;
 
-// RF-17 / CUR-03: comisiones seguidas, buscador por carrera, año y materia, y Guardar.
-export function PreferenciasSection() {
+// RF-17 / CUR-03: comisiones seguidas, buscador por carrera, año y materia; cada acción se guarda al momento.
+export function ComisionesSection() {
   const preferencias = usePreferencias();
   const actualizar = useActualizarPreferencias();
-  // Lo guardado es el punto de partida; en cuanto el estudiante edita, manda su lista.
-  const [editadas, setEditadas] = useState<ComisionDto[] | null>(null);
-  const seguidas = editadas ?? preferencias.data?.comisiones ?? null;
+  const [enCurso, setEnCurso] = useState<string | null>(null);
+  const seguidas = preferencias.data?.comisiones ?? null;
   const [filtro, setFiltro] = useState({ carreraId: "", anio: "", materiaId: "" });
   const carreras = useCarreras();
   const materias = useMaterias({ carreraId: filtro.carreraId, anio: filtro.anio });
   const comisiones = useComisiones(filtro, Boolean(filtro.materiaId));
 
-  const [opcionesEditadas, setOpcionesEditadas] = useState<OpcionesDeCorreo | null>(null);
-  const opciones: OpcionesDeCorreo | null = preferencias.data
-    ? (opcionesEditadas ?? {
-        notificarNovedadesPorCorreo: preferencias.data.notificarNovedadesPorCorreo,
-        notificarAvisosPorCorreo: preferencias.data.notificarAvisosPorCorreo,
-      })
-    : null;
-
-  const guardadas = preferencias.data?.comisiones.map((comision) => comision.id) ?? [];
   const actuales = seguidas?.map((comision) => comision.id) ?? [];
-  const cambiaronComisiones =
-    actuales.length !== guardadas.length || actuales.some((id) => !guardadas.includes(id));
-  const cambiaronOpciones =
-    opcionesEditadas !== null &&
-    (opcionesEditadas.notificarNovedadesPorCorreo !==
-      preferencias.data?.notificarNovedadesPorCorreo ||
-      opcionesEditadas.notificarAvisosPorCorreo !== preferencias.data?.notificarAvisosPorCorreo);
-  const hayCambios = cambiaronComisiones || cambiaronOpciones;
+  const guardando = actualizar.isPending || enCurso !== null;
 
-  const cambiarOpcion = (opcion: keyof OpcionesDeCorreo, activada: boolean) => {
-    if (opciones) setOpcionesEditadas({ ...opciones, [opcion]: activada });
-  };
-
-  const agregar = (comision: ComisionDto) => setEditadas([...(seguidas ?? []), comision]);
-  const quitar = (comision: ComisionDto) =>
-    setEditadas((seguidas ?? []).filter((item) => item.id !== comision.id));
-
-  const guardar = async () => {
+  // Cada guardado reemplaza la lista completa, por eso se bloquea todo mientras dura.
+  const guardar = async (comisionId: string, comisionIds: string[], mensaje: string) => {
+    setEnCurso(comisionId);
     try {
-      await actualizar.mutateAsync({ comisionIds: actuales, ...opciones });
-      setEditadas(null);
-      setOpcionesEditadas(null);
-      toast.success("Preferencias guardadas");
+      await actualizar.mutateAsync({ comisionIds });
+      toast.success(mensaje);
     } catch (error) {
       showRequestError(error);
+    } finally {
+      setEnCurso(null);
     }
   };
+  const agregar = (comision: ComisionDto) =>
+    guardar(comision.id, [...actuales, comision.id], "Comisión agregada");
+  const quitar = (comision: ComisionDto) =>
+    guardar(
+      comision.id,
+      actuales.filter((id) => id !== comision.id),
+      "Comisión quitada",
+    );
 
   return (
     <div className="flex flex-col gap-4">
@@ -123,7 +102,13 @@ export function PreferenciasSection() {
                     <ItemDescription>{describirComision(comision)}</ItemDescription>
                   </ItemContent>
                   <ItemActions>
-                    <Button variant="ghost" size="sm" onClick={() => quitar(comision)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={guardando}
+                      onClick={() => void quitar(comision)}
+                    >
+                      {enCurso === comision.id ? <Spinner /> : null}
                       Quitar
                     </Button>
                   </ItemActions>
@@ -219,11 +204,11 @@ export function PreferenciasSection() {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={yaSeguida}
-                        onClick={() => agregar(comision)}
+                        disabled={yaSeguida || guardando}
+                        onClick={() => void agregar(comision)}
                         aria-label={`Agregar ${comision.codigo} de ${comision.materia.nombre}`}
                       >
-                        <PlusIcon />
+                        {enCurso === comision.id ? <Spinner /> : <PlusIcon />}
                         {yaSeguida ? "Agregada" : "Agregar"}
                       </Button>
                     </ItemActions>
@@ -234,48 +219,6 @@ export function PreferenciasSection() {
           )}
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Notificaciones por correo</CardTitle>
-          <CardDescription>
-            Elegí qué correos querés recibir. Por defecto están desactivados.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <Field orientation="horizontal">
-              <Switch
-                id="pref-correo-novedades"
-                disabled={!opciones}
-                checked={opciones?.notificarNovedadesPorCorreo ?? false}
-                onCheckedChange={(activada) =>
-                  cambiarOpcion("notificarNovedadesPorCorreo", activada)
-                }
-              />
-              <FieldLabel htmlFor="pref-correo-novedades">Recibir novedades por correo</FieldLabel>
-            </Field>
-            <Field orientation="horizontal">
-              <Switch
-                id="pref-correo-avisos"
-                disabled={!opciones}
-                checked={opciones?.notificarAvisosPorCorreo ?? false}
-                onCheckedChange={(activada) => cambiarOpcion("notificarAvisosPorCorreo", activada)}
-              />
-              <FieldLabel htmlFor="pref-correo-avisos">
-                Recibir avisos institucionales por correo
-              </FieldLabel>
-            </Field>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end">
-        <Button disabled={!hayCambios || actualizar.isPending} onClick={() => void guardar()}>
-          {actualizar.isPending ? <Spinner /> : null}
-          Guardar
-        </Button>
-      </div>
     </div>
   );
 }

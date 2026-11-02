@@ -22,15 +22,13 @@ const pestanias = [
 export function DatosAcademicosSection() {
   return (
     <Tabs defaultValue="carreras" className="min-w-0">
-      <div className="overflow-x-auto">
-        <TabsList>
-          {pestanias.map((pestania) => (
-            <TabsTrigger key={pestania.valor} value={pestania.valor}>
-              {pestania.etiqueta}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
+      <TabsList>
+        {pestanias.map((pestania) => (
+          <TabsTrigger key={pestania.valor} value={pestania.valor}>
+            {pestania.etiqueta}
+          </TabsTrigger>
+        ))}
+      </TabsList>
       {pestanias.map((pestania) => (
         <TabsContent key={pestania.valor} value={pestania.valor}>
           {pestania.contenido}

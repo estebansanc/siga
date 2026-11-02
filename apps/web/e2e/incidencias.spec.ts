@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import {
   crearClaseDeHoyConAula,
   eliminarClaseConAula,
+  limpiarNovedades,
   incidenciasDelAula,
 } from "./support/clase-de-hoy";
 import {
@@ -91,7 +92,7 @@ test.describe("Incidencias de aulas", () => {
 
     await page.keyboard.press("Escape");
     await expect(item).toHaveCount(0);
-    await page.getByRole("button", { name: "Resuelta" }).click();
+    await page.getByRole("tab", { name: "Historial" }).click();
     await expect(item).toContainText("Resuelta");
 
     await page.request.post(`/api/v1/aulas/${aula.id}/baja`);
@@ -124,7 +125,7 @@ test.describe("Incidencias de aulas", () => {
     await page.request.post(`/api/v1/aulas/${aula.id}/baja`);
   });
 
-  for (const perfil of ["docente", "estudiante", "autoridad"] as const) {
+  for (const perfil of ["docente", "estudiante"] as const) {
     test(`${perfil} no ve ni gestiona Incidencias`, async ({ page }) => {
       await loginViaUi(page, seededUsers[perfil]);
       await expect(page.getByRole("link", { name: "Incidencias" })).toHaveCount(0);
@@ -140,8 +141,10 @@ test.describe("Incidencias de aulas", () => {
       await loginViaUi(page, seededUsers.docente);
       await page.goto("/");
       const tarjeta = page.locator(`[data-clase-id="${claseId}"]`);
-      await tarjeta.getByRole("button", { name: /Reportar incidencia en/ }).click();
+      await tarjeta.getByRole("button", { name: /^Acciones de/ }).click();
+      await page.getByRole("menuitem", { name: "Reportar incidencia" }).click();
       const reporte = page.getByRole("dialog", { name: "Nueva incidencia" });
+      await expect(page.getByRole("dialog")).toHaveCount(1);
       await expect(reporte.getByLabel("Aula", { exact: true })).toHaveCount(0);
       await expect(reporte.getByText(new RegExp(`en ${aulaCodigo}`))).toBeVisible();
       await reporte.getByRole("button", { name: "Reportar" }).click();
@@ -161,6 +164,77 @@ test.describe("Incidencias de aulas", () => {
         elemento: "CLIMATIZACION",
         reportadaPor: { email: seededUsers.docente.email },
       });
+    } finally {
+      await eliminarClaseConAula(claseId, aulaId);
+    }
+  });
+
+  test("el docente ve ⋯ sin botones de texto, sin scroll a lo ancho, y publica una Demora desde ⋯", async ({
+    page,
+  }) => {
+    const { aulaId, claseId } = await crearClaseDeHoyConAula(new Date(Date.now() - 5 * 60_000));
+    try {
+      await loginViaUi(page, seededUsers.docente);
+      await page.goto("/");
+      const tarjeta = page.locator(`[data-clase-id="${claseId}"]`);
+      await expect(tarjeta.getByRole("button", { name: /^(Incidencia|Novedad)$/ })).toHaveCount(0);
+      await expectNoHorizontalPageScroll(page);
+
+      await tarjeta.getByRole("button", { name: /^Acciones de/ }).click();
+      await expect(page.getByRole("menuitem", { name: "Reportar incidencia" })).toBeEnabled();
+      await page.getByRole("menuitem", { name: "Publicar novedad" }).click();
+      const dialog = page.getByRole("dialog", { name: "Publicar novedad" });
+      await expect(page.getByRole("dialog")).toHaveCount(1);
+      await expect(
+        dialog.getByRole("checkbox", { name: /Proyecto Final · 5K2/, checked: true }),
+      ).toHaveCount(1);
+      await dialog.getByRole("button", { name: "Demora" }).click();
+      await dialog.getByLabel("Minutos estimados de demora").fill("10");
+      await dialog.getByRole("button", { name: "Publicar" }).click();
+      await expect(page.getByText("Novedad publicada")).toBeVisible();
+      await expect(tarjeta).toContainText("Demorada 10 min");
+    } finally {
+      await limpiarNovedades(claseId);
+      await eliminarClaseConAula(claseId, aulaId);
+    }
+  });
+
+  test("el docente no puede publicar una novedad sobre una clase Finalizada", async ({ page }) => {
+    const { aulaId, claseId } = await crearClaseDeHoyConAula(
+      new Date(Date.now() - 3 * 60 * 60_000),
+    );
+    try {
+      await loginViaUi(page, seededUsers.docente);
+      await page.goto("/");
+      const tarjeta = page.locator(`[data-clase-id="${claseId}"]`);
+      await expect(tarjeta).toContainText("Finalizada");
+      await tarjeta.getByRole("button", { name: /^Acciones de/ }).click();
+      const publicar = page.getByRole("menuitem", { name: /^Publicar novedad/ });
+      await expect(publicar).toBeDisabled();
+      await expect(publicar).toContainText("La clase está Finalizada");
+      await expect(page.getByRole("menuitem", { name: "Reportar incidencia" })).toBeEnabled();
+    } finally {
+      await eliminarClaseConAula(claseId, aulaId);
+    }
+  });
+
+  test("el menú ⋯ se abre y recorre con teclado", async ({ page }) => {
+    const { aulaId, claseId } = await crearClaseDeHoyConAula(new Date(Date.now() - 5 * 60_000));
+    try {
+      await loginViaUi(page, seededUsers.docente);
+      await page.goto("/");
+      const tarjeta = page.locator(`[data-clase-id="${claseId}"]`);
+      await tarjeta.getByRole("button", { name: /^Acciones de/ }).focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("menuitem", { name: "Reportar incidencia" })).toBeVisible();
+      await expect(async () => {
+        await page.keyboard.press("ArrowDown");
+        await expect(page.getByRole("menuitem", { name: /^Publicar novedad/ })).toBeFocused({
+          timeout: 500,
+        });
+      }).toPass();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("dialog", { name: "Publicar novedad" })).toBeVisible();
     } finally {
       await eliminarClaseConAula(claseId, aulaId);
     }

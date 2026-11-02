@@ -9,7 +9,6 @@ import { renderWithProviders } from "@/test/render";
 const state = vi.hoisted(() => ({
   incidencias: [] as IncidenciaDto[],
   detalle: undefined as IncidenciaDetalleDto | undefined,
-  estadosPedidos: [] as string[][],
   aula: undefined as AulaDetalleDto | undefined,
 }));
 const reportar = vi.hoisted(() => vi.fn());
@@ -17,13 +16,13 @@ const cambiarEstado = vi.hoisted(() => vi.fn());
 const actualizarAula = vi.hoisted(() => vi.fn());
 
 vi.mock("@/hooks/use-incidencias", () => ({
-  useIncidencias: (estados: string[]) => {
-    state.estadosPedidos.push(estados);
-    return { data: state.incidencias };
-  },
+  useIncidencias: () => ({ data: state.incidencias }),
   useIncidencia: () => ({ data: state.detalle }),
   useReportarIncidencia: () => ({ mutateAsync: reportar, isPending: false }),
   useCambiarEstadoIncidencia: () => ({ mutateAsync: cambiarEstado, isPending: false }),
+}));
+vi.mock("@/components/incidencias/historial-incidencias", () => ({
+  HistorialIncidencias: () => <p>Historial de incidencias resueltas</p>,
 }));
 vi.mock("@/hooks/use-aulas", () => ({
   useAulas: () => ({
@@ -66,7 +65,6 @@ const clase = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  state.estadosPedidos = [];
   state.incidencias = [incidencia];
   state.detalle = {
     ...incidencia,
@@ -97,23 +95,40 @@ beforeEach(() => {
 });
 
 describe("IncidenciasSection", () => {
-  it("lista aula, elemento, gravedad, estado, fecha y quién reportó, y pide Abiertas y En curso", () => {
-    renderWithProviders(<IncidenciasSection />);
+  it("abre en Abiertas y lista aula, elemento, gravedad, estado, fecha y quién reportó, sin filtro de estado", () => {
+    renderWithProviders(<IncidenciasSection puedeGestionar />);
+    expect(screen.getByRole("tab", { name: "Abiertas", selected: true })).toBeVisible();
     const item = screen.getByText(/Aula 12 · Proyector/).closest('[data-slot="item"]');
     expect(item).toHaveTextContent("Abierta");
     expect(item).toHaveTextContent("Impide el uso del aula");
     expect(item).toHaveTextContent("Rosa Benítez");
-    expect(state.estadosPedidos[0]).toEqual(["ABIERTA", "EN_CURSO"]);
+    expect(screen.queryByRole("group", { name: "Estados a mostrar" })).toBeNull();
   });
 
-  it("filtra por estado y mantiene al menos uno elegido", async () => {
-    renderWithProviders(<IncidenciasSection />);
-    await userEvent.click(screen.getByRole("button", { name: "Resuelta" }));
-    expect(state.estadosPedidos.at(-1)).toEqual(["ABIERTA", "EN_CURSO", "RESUELTA"]);
+  it("el Historial es otra pestaña y oculta Nueva incidencia", async () => {
+    renderWithProviders(<IncidenciasSection puedeGestionar />);
+    await userEvent.click(screen.getByRole("tab", { name: "Historial" }));
+    expect(await screen.findByText("Historial de incidencias resueltas")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Nueva incidencia" })).toBeNull();
+  });
+
+  it("la Autoridad lee sin Nueva incidencia ni acciones en el detalle", async () => {
+    state.detalle = {
+      ...state.detalle!,
+      estado: "EN_CURSO",
+      aula: { ...aula, estado: "DISPONIBLE" },
+    };
+    renderWithProviders(<IncidenciasSection puedeGestionar={false} />);
+    expect(screen.queryByRole("button", { name: "Nueva incidencia" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Detalle" }));
+    const detalle = await screen.findByRole("dialog", { name: /Aula 12 · Proyector/ });
+    for (const accion of ["Resolver", "Pasar a En curso", "Pasar a Fuera de servicio"]) {
+      expect(within(detalle).queryByRole("button", { name: accion })).toBeNull();
+    }
   });
 
   it("al reportar una que impide el uso propone Fuera de servicio con las clases afectadas", async () => {
-    renderWithProviders(<IncidenciasSection />);
+    renderWithProviders(<IncidenciasSection puedeGestionar />);
     await userEvent.click(screen.getByRole("button", { name: "Nueva incidencia" }));
     const dialog = await screen.findByRole("dialog", { name: "Nueva incidencia" });
     await userEvent.selectOptions(within(dialog).getByLabelText("Aula"), "a12");
@@ -138,7 +153,7 @@ describe("IncidenciasSection", () => {
       estado: "EN_CURSO",
       aula: { ...aula, estado: "FUERA_DE_SERVICIO" },
     };
-    renderWithProviders(<IncidenciasSection />);
+    renderWithProviders(<IncidenciasSection puedeGestionar />);
     await userEvent.click(screen.getByRole("button", { name: "Detalle" }));
     const detalle = await screen.findByRole("dialog", { name: /Aula 12 · Proyector/ });
     expect(within(detalle).getByRole("img", { name: "Foto de la incidencia" })).toHaveAttribute(
@@ -165,7 +180,7 @@ describe("IncidenciasSection", () => {
 
   it("una incidencia Resuelta no ofrece más cambios", async () => {
     state.detalle = { ...state.detalle!, estado: "RESUELTA" };
-    renderWithProviders(<IncidenciasSection />);
+    renderWithProviders(<IncidenciasSection puedeGestionar />);
     await userEvent.click(screen.getByRole("button", { name: "Detalle" }));
     const detalle = await screen.findByRole("dialog", { name: /Aula 12 · Proyector/ });
     expect(within(detalle).queryByRole("button", { name: "Resolver" })).toBeNull();

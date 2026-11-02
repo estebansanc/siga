@@ -47,7 +47,7 @@ const simularCamaraConQr = (token: string) => {
 
 const generarQrEnPantalla = async (page: Page, turno: keyof typeof etiquetaDeTurno) => {
   await page.goto("/qr");
-  await page.getByLabel("Aula").selectOption({ label: "Aula 7" });
+  await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 7" });
   await page.getByLabel("Turno").selectOption(turno);
   await page.getByRole("button", { name: "Generar QR" }).click();
 };
@@ -136,6 +136,49 @@ test.describe("Asistencia docente por QR", () => {
 
     await expect(docente.getByText("La cámara está bloqueada")).toBeVisible({ timeout: 30_000 });
     await expect(docente.getByText(/Cámara > Permitir/)).toBeVisible();
+    await expect(
+      docente.getByText(/pedile al bedel que registre tu asistencia a mano/),
+    ).toBeVisible();
+    await context.close();
+  });
+
+  test("sin cámara guía a escanear desde el celular y reintenta sin recargar", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext();
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+        configurable: true,
+        value: () => {
+          const w = window as unknown as { pedidosDeCamara?: number };
+          w.pedidosDeCamara = (w.pedidosDeCamara ?? 0) + 1;
+          return Promise.reject(new DOMException("sin cámara", "NotFoundError"));
+        },
+      });
+    });
+    const docente = await context.newPage();
+    await loginViaUi(docente, seededUsers.docente);
+    await docente.goto("/asistencia");
+
+    await expect(docente.getByText("Escaneá el QR desde tu celular")).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(
+      docente.getByText(/pedile al bedel que registre tu asistencia a mano/),
+    ).toBeVisible();
+    await docente.evaluate(() => {
+      (window as unknown as { marca: boolean }).marca = true;
+    });
+    await docente.getByRole("button", { name: "Volver a intentar" }).click();
+    await expect
+      .poll(() =>
+        docente.evaluate(() => (window as unknown as { pedidosDeCamara?: number }).pedidosDeCamara),
+      )
+      .toBe(2);
+    await expect(docente.getByText("Escaneá el QR desde tu celular")).toBeVisible();
+    expect(await docente.evaluate(() => (window as unknown as { marca?: boolean }).marca)).toBe(
+      true,
+    );
     await context.close();
   });
 

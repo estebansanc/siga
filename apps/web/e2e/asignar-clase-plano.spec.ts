@@ -20,7 +20,7 @@ test.afterEach(async () => {
 
 const abrirPlano = async (page: Page, usuario: typeof seededUsers.bedel) => {
   await loginViaUi(page, usuario);
-  await page.goto("/plano-de-aulas");
+  await page.goto("/aulas?vista=plano");
   await page.getByRole("button", { name: escenario.edificio }).click();
 };
 
@@ -51,15 +51,16 @@ test.describe("Asignar, mover y reemplazar desde el plano", () => {
     await expect(mover).toBeHidden();
     await page.keyboard.press("Escape");
 
-    await page.getByRole("button", { name: "PB", exact: true }).click();
     await expect(celda(page, escenario.conClase.codigo)).toContainText("Libre");
-    await page.getByRole("button", { name: "1.º piso" }).click();
     await expect(celda(page, escenario.destino.codigo)).toContainText("Pendiente");
   });
 
   test("la autoridad reemplaza la clase de un aula", async ({ page }) => {
     test.setTimeout(120_000);
-    await abrirPlano(page, seededUsers.autoridad);
+    await loginViaUi(page, seededUsers.autoridad);
+    await page.getByRole("link", { name: "Aulas", exact: true }).click();
+    await expect(page.getByRole("group", { name: "Vista" })).toHaveCount(0);
+    await page.getByRole("button", { name: escenario.edificio }).click();
     await celda(page, escenario.conClase.codigo).click();
     await page.getByRole("button", { name: "Reemplazar clase" }).click();
     const reemplazar = page.getByRole("dialog", { name: "Reemplazar clase" });
@@ -69,7 +70,6 @@ test.describe("Asignar, mover y reemplazar desde el plano", () => {
     await expect(reemplazar).toBeHidden();
     await page.keyboard.press("Escape");
 
-    await page.getByRole("button", { name: "1.º piso" }).click();
     await expect(celda(page, escenario.destino.codigo)).toContainText("Pendiente");
   });
 

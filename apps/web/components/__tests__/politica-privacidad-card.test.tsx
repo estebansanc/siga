@@ -28,11 +28,11 @@ vi.mock("@/hooks/use-politica-privacidad", async () => {
   };
 });
 
-const politicaV1: PoliticaPrivacidadDto = {
-  version: 1,
+const politicaVigente: PoliticaPrivacidadDto = {
+  version: 2,
   titulo: "Política de privacidad",
   texto:
-    "Texto de ejemplo: esta no es la política definitiva\n\nPrimer párrafo.\n\nSegundo párrafo.",
+    "1. Responsable\n\nLa UTN Facultad Regional Tucumán.\n\n2. Datos que tratamos\n\nTu nombre y tu correo.",
   publicadaEn: "2026-10-28T12:00:00.000Z",
   aceptadaEn: null,
 };
@@ -45,32 +45,32 @@ beforeEach(() => {
 describe("PoliticaPrivacidadCard", () => {
   it("pendiente: muestra título, versión, texto completo y las dos acciones", () => {
     renderWithProviders(
-      <PoliticaPrivacidadCard initialPolitica={politicaV1} pendiente destino="/novedades" />,
+      <PoliticaPrivacidadCard initialPolitica={politicaVigente} pendiente destino="/novedades" />,
     );
     expect(screen.getByRole("heading", { level: 1, name: "Política de privacidad" })).toBeVisible();
-    expect(screen.getByText("Versión 1")).toBeVisible();
-    expect(screen.getByText("Texto de ejemplo: esta no es la política definitiva")).toBeVisible();
-    expect(screen.getByText("Segundo párrafo.")).toBeVisible();
+    expect(screen.getByText("Versión 2")).toBeVisible();
+    expect(screen.getByText("1. Responsable")).toBeVisible();
+    expect(screen.getByText("Tu nombre y tu correo.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Aceptar y continuar" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Cerrar sesión" })).toBeVisible();
   });
 
   it("aceptar registra la versión vista y vuelve a la pantalla pedida", async () => {
-    aceptar.mockResolvedValue({ ...politicaV1, aceptadaEn: "2026-10-28T15:00:00.000Z" });
+    aceptar.mockResolvedValue({ ...politicaVigente, aceptadaEn: "2026-10-28T15:00:00.000Z" });
     renderWithProviders(
-      <PoliticaPrivacidadCard initialPolitica={politicaV1} pendiente destino="/novedades" />,
+      <PoliticaPrivacidadCard initialPolitica={politicaVigente} pendiente destino="/novedades" />,
     );
     await userEvent.click(screen.getByRole("button", { name: "Aceptar y continuar" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/novedades"));
-    expect(aceptar).toHaveBeenCalledWith(1);
+    expect(aceptar).toHaveBeenCalledWith(2);
   });
 
   it("si se publicó una versión nueva avisa, muestra la nueva y no continúa", async () => {
-    const politicaV2 = { ...politicaV1, version: 2, texto: "Texto nuevo." };
+    const politicaNueva = { ...politicaVigente, version: 3, texto: "Texto nuevo." };
     aceptar.mockRejectedValue(new RequestError(409, "CONFLICT", "x"));
-    vigente.mockResolvedValue(politicaV2);
+    vigente.mockResolvedValue(politicaNueva);
     const { queryClient } = renderWithProviders(
-      <PoliticaPrivacidadCard initialPolitica={politicaV1} pendiente destino="/" />,
+      <PoliticaPrivacidadCard initialPolitica={politicaVigente} pendiente destino="/" />,
     );
     await userEvent.click(screen.getByRole("button", { name: "Aceptar y continuar" }));
     expect(
@@ -78,15 +78,15 @@ describe("PoliticaPrivacidadCard", () => {
         "Se publicó una nueva versión de la política de privacidad. Leela y aceptala para continuar.",
       ),
     ).toBeVisible();
-    expect(await screen.findByText("Versión 2")).toBeVisible();
+    expect(await screen.findByText("Versión 3")).toBeVisible();
     expect(screen.getByText("Texto nuevo.")).toBeVisible();
     expect(push).not.toHaveBeenCalled();
-    expect(queryClient.getQueryData(queryKeys.politicaPrivacidad)).toEqual(politicaV2);
+    expect(queryClient.getQueryData(queryKeys.politicaPrivacidad)).toEqual(politicaNueva);
   });
 
   it("cerrar sesión no acepta y va al login", async () => {
     renderWithProviders(
-      <PoliticaPrivacidadCard initialPolitica={politicaV1} pendiente destino="/" />,
+      <PoliticaPrivacidadCard initialPolitica={politicaVigente} pendiente destino="/" />,
     );
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/login"));
@@ -96,7 +96,7 @@ describe("PoliticaPrivacidadCard", () => {
   it("aceptada: modo lectura con la fecha de aceptación y sin acciones", () => {
     renderWithProviders(
       <PoliticaPrivacidadCard
-        initialPolitica={{ ...politicaV1, aceptadaEn: "2026-10-28T15:00:00.000Z" }}
+        initialPolitica={{ ...politicaVigente, aceptadaEn: "2026-10-28T15:00:00.000Z" }}
         pendiente={false}
         destino="/"
       />,

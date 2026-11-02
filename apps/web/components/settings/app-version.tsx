@@ -17,7 +17,7 @@ export function AppVersion() {
       <Button
         variant="ghost"
         size="icon-xs"
-        aria-label="Novedades"
+        aria-label="Qué hay de nuevo"
         onClick={() => setShowingNotes(true)}
       >
         <CircleHelpIcon />

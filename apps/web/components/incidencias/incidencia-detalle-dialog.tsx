@@ -22,12 +22,21 @@ import { ProponerFueraDeServicioDialog } from "./proponer-fuera-de-servicio-dial
 
 type Accion = { tipo: "estado"; estado: EstadoIncidencia } | { tipo: "fuera-de-servicio" };
 
-export function IncidenciaDetalleDialog({ id, onClose }: { id: string; onClose: () => void }) {
+export function IncidenciaDetalleDialog({
+  id,
+  soloLectura = false,
+  onClose,
+}: {
+  id: string;
+  soloLectura?: boolean;
+  onClose: () => void;
+}) {
   const incidencia = useIncidencia(id);
   const detalle = incidencia.data;
   const [accion, setAccion] = useState<Accion | null>(null);
-  const siguiente = detalle ? siguienteEstadoIncidencia(detalle.estado) : null;
+  const siguiente = detalle && !soloLectura ? siguienteEstadoIncidencia(detalle.estado) : null;
   const proponeFueraDeServicio =
+    !soloLectura &&
     detalle?.gravedad === "IMPIDE_USO" &&
     detalle.estado !== "RESUELTA" &&
     detalle.aula.estado !== "FUERA_DE_SERVICIO";

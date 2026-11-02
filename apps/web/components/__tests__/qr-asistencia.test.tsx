@@ -1,8 +1,8 @@
 import type { AulaGestionDto } from "@repo/api/client";
 import { fechaArgentina } from "@repo/domain";
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { QrAsistencia } from "@/components/qr/qr-asistencia";
 import { renderWithProviders } from "@/test/render";
@@ -46,12 +46,40 @@ vi.mock("@/hooks/use-settings", () => ({
   }),
 }));
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("QrAsistencia", () => {
+  it("preselecciona el turno de la franja que contiene la hora de Argentina", () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-30T18:30:00Z") });
+    renderWithProviders(<QrAsistencia />);
+    expect(screen.getByLabelText("Turno")).toHaveValue("TARDE");
+  });
+
+  it("no pisa el turno elegido a mano al cambiar la fecha", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-30T18:30:00Z") });
+    renderWithProviders(<QrAsistencia />);
+    await userEvent.selectOptions(screen.getByLabelText("Turno"), "NOCHE");
+    fireEvent.change(screen.getByLabelText("Fecha"), { target: { value: "2026-11-02" } });
+    expect(screen.getByLabelText("Turno")).toHaveValue("NOCHE");
+  });
+
+  it("muestra las dos tarjetas con su descripción y botón principal", () => {
+    renderWithProviders(<QrAsistencia />);
+    expect(screen.getByText("Generar QR", { selector: '[data-slot="card-title"]' })).toBeVisible();
+    expect(
+      screen.getByText("El docente lo escanea al llegar al aula. Cada código vale 60 segundos."),
+    ).toBeVisible();
+    expect(screen.getByText("Para cuando el docente no puede escanear el QR.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Registrar asistencia manual" })).toBeVisible();
+  });
+
   it("ofrece los turnos con su rango y hoy preseleccionado", () => {
     renderWithProviders(<QrAsistencia />);
-    expect(screen.getByRole("option", { name: "Mañana 7:00–13:00" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Tarde 13:00–18:00" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Noche 18:00–23:00" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Mañana 07:00 – 13:00" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Tarde 13:00 – 18:00" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Noche 18:00 – 23:00" })).toBeInTheDocument();
     expect(screen.getByLabelText("Fecha")).toHaveValue(fechaArgentina(new Date()));
   });
 
@@ -75,7 +103,7 @@ describe("QrAsistencia", () => {
   it("abre el registro manual sin depender del QR", async () => {
     renderWithProviders(<QrAsistencia />);
     expect(screen.queryByTestId("registro-manual")).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Registro manual" }));
+    await userEvent.click(screen.getByRole("button", { name: "Registrar asistencia manual" }));
     expect(screen.getByTestId("registro-manual")).toBeInTheDocument();
     expect(screen.queryByTestId("qr-en-vivo")).not.toBeInTheDocument();
   });

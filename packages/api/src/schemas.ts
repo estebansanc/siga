@@ -494,6 +494,19 @@ export const buscarAulasQuerySchema = z.object({
     }),
 });
 
+export const listarSolicitudesAulaQuerySchema = z.object({
+  estado: z
+    .preprocess(
+      (value) => (typeof value === "string" ? value.split(",").filter(Boolean) : value),
+      z.array(estadoSolicitudAulaSchema).min(1),
+    )
+    .openapi({
+      description: "Estados separados por coma; la respuesta los agrupa en el orden del enum",
+      param: { style: "form", explode: false },
+      example: ["PENDIENTE", "ASIGNADA"],
+    }),
+});
+
 export const clasesSolicitablesQuerySchema = z.object({
   fecha: z.iso.date().optional().openapi({ description: "yyyy-mm-dd; por defecto hoy" }),
 });
@@ -590,23 +603,6 @@ export const notificacionAvisoSchema = z
   .openapi("NotificacionAviso");
 export type NotificacionAvisoDto = z.infer<typeof notificacionAvisoSchema>;
 
-export const novedadHistoricaSchema = z
-  .object({
-    id: z.string(),
-    publicadaEn: z.string(),
-    tipo: tipoNovedadSchema,
-    estado: estadoNovedadSchema,
-    materia: z.string(),
-    comision: z.string(),
-    fechaClaseDesde: z.string().nullable(),
-    fechaClaseHasta: z.string().nullable(),
-    docentes: z.array(z.string()),
-    publicadaPor: z.string(),
-    publicadaPorBedelia: z.boolean(),
-  })
-  .openapi("NovedadHistorica");
-export type NovedadHistoricaDto = z.infer<typeof novedadHistoricaSchema>;
-
 export const consultaNovedadesResultadoSchema = z
   .object({
     total: z.number().int(),
@@ -620,7 +616,7 @@ export const consultaNovedadesResultadoSchema = z
     pagina: z.number().int(),
     tamanioPagina: z.number().int(),
     totalPaginas: z.number().int(),
-    novedades: z.array(novedadHistoricaSchema),
+    novedades: z.array(novedadSchema),
   })
   .openapi("ConsultaNovedadesResultado");
 export type ConsultaNovedadesResultadoDto = z.infer<typeof consultaNovedadesResultadoSchema>;
@@ -646,11 +642,6 @@ export type IncidenciaHistoricaDto = z.infer<typeof incidenciaHistoricaSchema>;
 export const consultaIncidenciasResultadoSchema = z
   .object({
     total: z.number().int(),
-    porEstado: z.object({
-      ABIERTA: z.number().int(),
-      EN_CURSO: z.number().int(),
-      RESUELTA: z.number().int(),
-    }),
     pagina: z.number().int(),
     tamanioPagina: z.number().int(),
     totalPaginas: z.number().int(),
@@ -847,6 +838,9 @@ export const usuarioSchema = z
       .array(z.object({ id: z.string(), codigo: z.string(), materia: z.string() }))
       .openapi({ description: "Comisiones que dicta (solo Docente)" }),
     esPropio: z.boolean().openapi({ description: "Es la cuenta de quien consulta" }),
+    esAdministrador: z
+      .boolean()
+      .openapi({ description: "Es el Administrador de la institución; no se puede desactivar" }),
     bajaSolicitada: z
       .object({ solicitadaEn: z.iso.datetime(), motivo: z.string().nullable() })
       .nullable()

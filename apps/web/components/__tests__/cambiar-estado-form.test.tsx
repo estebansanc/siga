@@ -1,5 +1,5 @@
 import type { EstadoInstitucionalDto } from "@repo/api/client";
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -50,14 +50,23 @@ describe("CambiarEstadoForm", () => {
     expect(await screen.findByText("Indicá el motivo")).toBeVisible();
     expect(cambiar).not.toHaveBeenCalled();
 
-    await userEvent.type(screen.getByLabelText(/Motivo/), "Paro");
+    await userEvent.type(screen.getByLabelText("Motivo"), "Paro");
     expect(screen.getByText("4 / 280")).toBeInTheDocument();
+  });
+
+  it("la etiqueta es solo Motivo y la ayuda está asociada al cuadro de texto", () => {
+    renderWithProviders(<CambiarEstadoForm />);
+    const ayuda = screen.getByText(
+      "Obligatorio para Cerrada y Abierta con novedades. Máximo 280 caracteres.",
+    );
+    expect(screen.getByLabelText("Motivo")).toHaveAccessibleDescription(ayuda.textContent);
+    expect(screen.getByText("0 / 280")).toBeInTheDocument();
   });
 
   it("cerrar pide confirmación con el impacto y recién entonces registra el cambio", async () => {
     renderWithProviders(<CambiarEstadoForm />);
     await userEvent.selectOptions(screen.getByLabelText("Nuevo estado"), "CERRADA");
-    await userEvent.type(screen.getByLabelText(/Motivo/), "Corte de energía");
+    await userEvent.type(screen.getByLabelText("Motivo"), "Corte de energía");
     await userEvent.click(screen.getByRole("button", { name: "Cambiar estado" }));
     const alert = await screen.findByRole("alertdialog", { name: "¿Cerrar la institución?" });
     expect(within(alert).getByText(/pasarán a Suspendida/)).toBeInTheDocument();
@@ -85,7 +94,7 @@ describe("CambiarEstadoForm", () => {
     });
     renderWithProviders(<CambiarEstadoForm />);
     await userEvent.selectOptions(screen.getByLabelText("Nuevo estado"), "CERRADA");
-    await userEvent.type(screen.getByLabelText(/Motivo/), "Corte de energía");
+    await userEvent.type(screen.getByLabelText("Motivo"), "Corte de energía");
     await userEvent.click(screen.getByRole("button", { name: "Cambiar estado" }));
     const confirmacion = await screen.findByRole("alertdialog", {
       name: "¿Cerrar la institución?",
@@ -110,10 +119,9 @@ describe("CambiarEstadoForm", () => {
     });
     renderWithProviders(<CambiarEstadoForm />);
     await userEvent.selectOptions(screen.getByLabelText("Nuevo estado"), "ABIERTA_CON_NOVEDADES");
-    await userEvent.type(screen.getByLabelText(/Motivo/), "Paro de transporte");
-    fireEvent.change(screen.getByLabelText(/Vigencia estimada/), {
-      target: { value: "2026-10-14T23:30" },
-    });
+    await userEvent.type(screen.getByLabelText("Motivo"), "Paro de transporte");
+    await userEvent.type(screen.getByLabelText(/Vigencia estimada/), "14/10/2026");
+    await userEvent.type(screen.getByLabelText("Hora de la vigencia"), "23:30");
     await userEvent.click(screen.getByRole("button", { name: "Cambiar estado" }));
     await waitFor(() =>
       expect(cambiar).toHaveBeenCalledWith({

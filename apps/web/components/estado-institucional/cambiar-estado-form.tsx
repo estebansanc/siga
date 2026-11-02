@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
+import { DateTimeInput } from "@repo/ui/components/datetime-input";
 import {
   Field,
   FieldDescription,
@@ -23,12 +24,11 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
 import { NativeSelect, NativeSelectOption } from "@repo/ui/components/native-select";
 import { Spinner } from "@repo/ui/components/spinner";
 import { Textarea } from "@repo/ui/components/textarea";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { OfrecerAvisoDialog } from "@/components/avisos/ofrecer-aviso-dialog";
@@ -38,6 +38,7 @@ import {
   useEstadoInstitucional,
 } from "@/hooks/use-estado-institucional";
 import { ofreceAviso, type CambioDeEstado } from "@/lib/aviso-precargado";
+import { isoArgentinoAInput } from "@/lib/dates";
 import { showRequestError } from "@/lib/form-errors";
 
 const motivoMax = 280;
@@ -106,16 +107,15 @@ export function CambiarEstadoForm() {
               <FieldError>{form.formState.errors.estado?.message}</FieldError>
             </Field>
             <Field data-invalid={Boolean(form.formState.errors.motivo)}>
-              <FieldLabel htmlFor="estado-motivo">
-                Motivo{" "}
-                <span className="text-muted-foreground font-normal">
-                  (obligatorio para Cerrada y Abierta con novedades, máx. {motivoMax})
-                </span>
-              </FieldLabel>
+              <FieldLabel htmlFor="estado-motivo">Motivo</FieldLabel>
+              <FieldDescription id="estado-motivo-ayuda">
+                Obligatorio para Cerrada y Abierta con novedades. Máximo {motivoMax} caracteres.
+              </FieldDescription>
               <Textarea
                 id="estado-motivo"
                 rows={3}
                 maxLength={motivoMax}
+                aria-describedby="estado-motivo-ayuda"
                 {...form.register("motivo")}
               />
               <FieldDescription>
@@ -125,10 +125,19 @@ export function CambiarEstadoForm() {
             </Field>
             <Field data-invalid={Boolean(form.formState.errors.vigenciaHasta)}>
               <FieldLabel htmlFor="estado-vigencia">Vigencia estimada hasta (opcional)</FieldLabel>
-              <Input
-                id="estado-vigencia"
-                type="datetime-local"
-                {...form.register("vigenciaHasta", { setValueAs: aIsoArgentino })}
+              <Controller
+                control={form.control}
+                name="vigenciaHasta"
+                render={({ field }) => (
+                  <DateTimeInput
+                    id="estado-vigencia"
+                    value={isoArgentinoAInput(field.value)}
+                    onChange={(valor) => field.onChange(aIsoArgentino(valor))}
+                    onBlur={field.onBlur}
+                    horaLabel="Hora de la vigencia"
+                    aria-invalid={Boolean(form.formState.errors.vigenciaHasta)}
+                  />
+                )}
               />
               <FieldError>{form.formState.errors.vigenciaHasta?.message}</FieldError>
             </Field>

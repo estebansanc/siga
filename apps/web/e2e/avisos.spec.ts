@@ -1,8 +1,21 @@
+import type { Locator } from "@playwright/test";
+
 import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
 
-// Valor de un `datetime-local` en hora argentina, a `minutos` de ahora.
-const enMinutos = (minutos: number) =>
-  new Date(Date.now() + minutos * 60_000 - 3 * 60 * 60_000).toISOString().slice(0, 16);
+// Fecha `dd/mm/aaaa` y hora 24 h en hora argentina, a `minutos` de ahora.
+const enMinutos = (minutos: number) => {
+  const [fecha, hora] = new Date(Date.now() + minutos * 60_000 - 3 * 60 * 60_000)
+    .toISOString()
+    .slice(0, 16)
+    .split("T") as [string, string];
+  return { fecha: fecha.split("-").reverse().join("/"), hora };
+};
+
+const cargarVigencia = async (dialog: Locator, campo: "Desde" | "Hasta", minutos: number) => {
+  const { fecha, hora } = enMinutos(minutos);
+  await dialog.getByLabel(campo, { exact: true }).fill(fecha);
+  await dialog.getByLabel(campo === "Desde" ? "Hora de inicio" : "Hora de fin").fill(hora);
+};
 
 test.describe("Avisos institucionales", () => {
   test("el bedel valida, publica un urgente con correo y lo ve en todos lados", async ({
@@ -31,19 +44,19 @@ test.describe("Avisos institucionales", () => {
     await dialog.getByLabel("Cuerpo").fill("Prueba");
     await dialog.getByLabel("Prioridad").selectOption("URGENTE");
     await dialog.getByRole("checkbox", { name: "Bedel" }).click();
-    await dialog.getByLabel("Hasta").fill(enMinutos(-60));
+    await cargarVigencia(dialog, "Hasta", -60);
     await dialog.getByRole("button", { name: "Publicar" }).click();
     await expect(dialog.getByText("La vigencia tiene que terminar en el futuro")).toBeVisible();
 
-    await dialog.getByLabel("Desde").fill(enMinutos(24 * 60));
-    await dialog.getByLabel("Hasta").fill(enMinutos(23 * 60));
+    await cargarVigencia(dialog, "Desde", 24 * 60);
+    await cargarVigencia(dialog, "Hasta", 23 * 60);
     await dialog.getByRole("button", { name: "Publicar" }).click();
     await expect(
       dialog.getByText("La vigencia tiene que terminar después de empezar"),
     ).toBeVisible();
 
-    await dialog.getByLabel("Desde").fill(enMinutos(-1));
-    await dialog.getByLabel("Hasta").fill(enMinutos(10));
+    await cargarVigencia(dialog, "Desde", -1);
+    await cargarVigencia(dialog, "Hasta", 10);
     await dialog.getByRole("switch", { name: "Enviar por correo" }).click();
     await dialog.getByRole("button", { name: "Publicar" }).click();
     await expect(page.getByText("Aviso publicado")).toBeVisible();

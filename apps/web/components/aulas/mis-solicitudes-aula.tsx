@@ -2,7 +2,7 @@
 
 import type { SolicitudAulaDto } from "@repo/api/client";
 import { equipamientoLabels, type Equipamiento } from "@repo/domain";
-import { buttonVariants } from "@repo/ui/components/button";
+import { Button } from "@repo/ui/components/button";
 import {
   Empty,
   EmptyDescription,
@@ -13,11 +13,12 @@ import {
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemTitle } from "@repo/ui/components/item";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { DoorOpenIcon, PlusIcon } from "lucide-react";
-import Link from "next/link";
+import { useState } from "react";
 
 import { useMisSolicitudesAula } from "@/hooks/use-solicitudes-aula";
 import { formatFechaCorta } from "@/lib/dates";
 
+import { SolicitarAulaDialog } from "./solicitar-aula-dialog";
 import { SolicitudEstadoBadge } from "./solicitud-estado-badge";
 
 const describirRecursos = (recursos: Equipamiento[]) =>
@@ -52,15 +53,16 @@ function SolicitudItem({ solicitud }: { solicitud: SolicitudAulaDto }) {
 // RF-06: las solicitudes de aula propias, recientes primero.
 export function MisSolicitudesAula() {
   const solicitudes = useMisSolicitudesAula();
+  const [dialogoAbierto, setDialogoAbierto] = useState(false);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-medium">Mis solicitudes de aula</h2>
-        <Link href="/aulas/solicitar" className={buttonVariants({ size: "sm" })}>
+        <Button size="sm" onClick={() => setDialogoAbierto(true)}>
           <PlusIcon />
-          Solicitar aula
-        </Link>
+          Nueva solicitud
+        </Button>
       </div>
       {!solicitudes.data ? (
         <Skeleton className="h-24 w-full" />
@@ -83,6 +85,7 @@ export function MisSolicitudesAula() {
           ))}
         </ItemGroup>
       )}
+      <SolicitarAulaDialog open={dialogoAbierto} onOpenChange={setDialogoAbierto} />
     </div>
   );
 }

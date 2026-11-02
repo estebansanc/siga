@@ -84,9 +84,9 @@ export function NavUser({ user }: { user: { name: string; email: string } }) {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem render={<Link href="/mi-perfil" />}>
+              <DropdownMenuItem render={<Link href="/mi-cuenta" />}>
                 <UserIcon />
-                Mi perfil
+                Mi cuenta
               </DropdownMenuItem>
               <DropdownMenuItem render={<Link href="/politica-de-privacidad" />}>
                 <ShieldCheckIcon />

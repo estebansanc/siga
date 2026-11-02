@@ -77,4 +77,37 @@ describe("opciones de correo", () => {
       notificarAvisosPorCorreo: true,
     });
   });
+
+  it("guardar solo opciones no toca las comisiones y al revés", async () => {
+    const auth = authOf(institution, estudiante);
+    await actualizarPreferencias(auth, { comisionIds: [fixture.comisionId] });
+    expect(await actualizarPreferencias(auth, { notificarNovedadesPorCorreo: true })).toMatchObject(
+      {
+        comisiones: [expect.objectContaining({ id: fixture.comisionId })],
+        notificarNovedadesPorCorreo: true,
+      },
+    );
+    expect(await actualizarPreferencias(auth, { comisionIds: [] })).toMatchObject({
+      comisiones: [],
+      notificarNovedadesPorCorreo: true,
+    });
+  });
+
+  it("agregar, quitar y cada interruptor en secuencia persisten al releer", async () => {
+    const auth = authOf(institution, estudiante);
+    await actualizarPreferencias(auth, { comisionIds: [fixture.comisionId] });
+    await actualizarPreferencias(auth, { notificarNovedadesPorCorreo: true });
+    await actualizarPreferencias(auth, { notificarAvisosPorCorreo: true });
+    await actualizarPreferencias(auth, { notificarNovedadesPorCorreo: false });
+    expect(await obtenerPreferencias(auth)).toMatchObject({
+      comisiones: [expect.objectContaining({ id: fixture.comisionId })],
+      notificarNovedadesPorCorreo: false,
+      notificarAvisosPorCorreo: true,
+    });
+    await actualizarPreferencias(auth, { comisionIds: [] });
+    expect(await obtenerPreferencias(auth)).toMatchObject({
+      comisiones: [],
+      notificarAvisosPorCorreo: true,
+    });
+  });
 });

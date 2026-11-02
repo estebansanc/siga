@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { useClases } from "@/hooks/use-clases";
 import { usePreferencias } from "@/hooks/use-preferencias";
-import { formatFechaLarga } from "@/lib/dates";
+import { capitalizarPrimera, formatFechaLarga } from "@/lib/dates";
 
 import { ClasesEmpty, ClasesList, ClasesSkeleton } from "./clases-list";
 
@@ -19,8 +19,8 @@ export function MisClasesHoy() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="font-medium capitalize">
-          {clases.data ? formatFechaLarga(clases.data.fecha) : "Hoy"}
+        <h2 className="font-medium">
+          {clases.data ? capitalizarPrimera(formatFechaLarga(clases.data.fecha)) : "Hoy"}
         </h2>
         {clases.data && sigueComisiones ? (
           <span className="text-muted-foreground text-sm">
@@ -39,7 +39,7 @@ export function MisClasesHoy() {
           title="Todavía no seguís ninguna comisión"
           description="Elegí las comisiones que cursás para ver el estado de tus clases de hoy."
         >
-          <Link href="/preferencias" className={buttonVariants()}>
+          <Link href="/mi-cuenta/comisiones" className={buttonVariants()}>
             Elegir comisiones
           </Link>
         </ClasesEmpty>

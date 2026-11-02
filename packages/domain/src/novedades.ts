@@ -2,9 +2,10 @@ import { z } from "zod";
 
 import { idSchema, optionalText } from "./common";
 import {
-  estadoNovedadSchema,
   tipoNovedadLabels,
   tipoNovedadSchema,
+  type EstadoClase,
+  type EstadoNovedad,
   type TipoNovedad,
 } from "./enums";
 
@@ -64,10 +65,19 @@ export const publicarNovedadSchema = z
 export type PublicarNovedadInput = z.input<typeof publicarNovedadSchema>;
 export type PublicarNovedad = z.infer<typeof publicarNovedadSchema>;
 
-export const listarNovedadesQuerySchema = z.object({
-  estado: estadoNovedadSchema.optional(),
-});
-export type ListarNovedadesQuery = z.infer<typeof listarNovedadesQuerySchema>;
+type ClaseDeNovedad = { estado: EstadoClase; fin: Date };
+
+// Una clase terminó cuando su franja pasó; las Ausentes y Suspendidas no pasan a Finalizada
+// por horario, por eso se mira también el fin.
+export const claseTerminada = (clase: ClaseDeNovedad, ahora: Date) =>
+  clase.estado === "FINALIZADA" || clase.fin < ahora;
+
+// Activa = no finalizada y con alguna clase futura o en curso (Ausencia y Suspensión no se
+// finalizan: dejan de ser activas cuando pasan sus clases). El resto es Historial.
+export const novedadActiva = (
+  novedad: { estado: EstadoNovedad; clases: ClaseDeNovedad[] },
+  ahora: Date,
+) => novedad.estado === "ACTIVA" && novedad.clases.some((clase) => !claseTerminada(clase, ahora));
 
 const camposDeEdicion = ["minutosDemora", "enlaceVirtual", "aulaNuevaId"] as const;
 type CampoDeEdicion = (typeof camposDeEdicion)[number];

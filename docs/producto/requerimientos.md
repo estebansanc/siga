@@ -72,7 +72,7 @@ Al iniciar sesión, cada perfil llega a un panel propio:
 - **Estudiante**: Mis clases de hoy, estado institucional, avisos.
 - **Docente**: Mis clases, Registrar asistencia, Publicar novedad, Solicitar aula.
 - **Bedel**: Estado institucional, Aulas, QR de asistencia, Solicitudes, Incidencias, Avisos, Usuarios.
-- **Autoridad académica**: Clases (su inicio, con filtros y la fecha de hoy), Consultas históricas, Avisos.
+- **Autoridad académica**: Clases (su inicio, con filtros y la fecha de hoy), Novedades e Incidencias (solo lectura), Consultas históricas, Avisos.
 
 El indicador de estado institucional se muestra en la parte superior de todas las pantallas, para todos los perfiles.
 

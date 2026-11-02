@@ -2,6 +2,7 @@ import type { ClaseDto, EstadoInstitucionalDto, PreferenciasDto } from "@repo/ap
 import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ClasesDelDia } from "@/components/clases/clases-del-dia";
 import { MisClasesHoy } from "@/components/clases/mis-clases-hoy";
 import { renderWithProviders } from "@/test/render";
 
@@ -94,7 +95,7 @@ describe("MisClasesHoy", () => {
     expect(screen.getByText("Todavía no seguís ninguna comisión")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Elegir comisiones" })).toHaveAttribute(
       "href",
-      "/preferencias",
+      "/mi-cuenta/comisiones",
     );
   });
 
@@ -106,7 +107,7 @@ describe("MisClasesHoy", () => {
 
   it("lista cada clase con materia, comisión, horario, aula, estado y la novedad activa", () => {
     renderWithProviders(<MisClasesHoy />);
-    expect(screen.getByText("miércoles 14 de octubre")).toBeInTheDocument();
+    expect(screen.getByText("Miércoles 14 de octubre")).toBeInTheDocument();
     expect(screen.getByText("1 clase · 5K2")).toBeInTheDocument();
     expect(screen.getByText("Proyecto Final")).toBeInTheDocument();
     expect(screen.getByText("19:00 – 23:00 · Aula 12, Edificio A, 1.º piso")).toBeInTheDocument();
@@ -123,5 +124,23 @@ describe("MisClasesHoy", () => {
     expect(screen.queryByText("Institución cerrada")).not.toBeInTheDocument();
     expect(screen.queryByText("Paro docente nacional")).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("el Estudiante y la Autoridad no ven el menú de acciones en sus tarjetas", () => {
+    renderWithProviders(<MisClasesHoy />);
+    expect(screen.getByText("Proyecto Final")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Acciones de/ })).toBeNull();
+  });
+
+  it("la Autoridad ve las clases de hoy sin menú de acciones", () => {
+    renderWithProviders(<ClasesDelDia ambito="todas" emptyTitle="Sin clases" />);
+    expect(screen.getByText("Proyecto Final")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Acciones de/ })).toBeNull();
+  });
+
+  it("el encabezado del Bedel va en minúscula salvo el inicio: Hoy · jueves 29 de octubre", () => {
+    state.clases = { fecha: "2026-10-29", clases: [clase] };
+    renderWithProviders(<ClasesDelDia ambito="todas" emptyTitle="Sin clases" />);
+    expect(screen.getByRole("heading", { name: "Hoy · jueves 29 de octubre" })).toBeVisible();
   });
 });

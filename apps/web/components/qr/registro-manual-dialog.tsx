@@ -24,12 +24,12 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@repo/ui/components/field";
-import { Input } from "@repo/ui/components/input";
 import { NativeSelect, NativeSelectOption } from "@repo/ui/components/native-select";
 import { Spinner } from "@repo/ui/components/spinner";
 import { Textarea } from "@repo/ui/components/textarea";
+import { TimeInput } from "@repo/ui/components/time-input";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { FormDialogContent } from "@/components/form-dialog-content";
@@ -128,7 +128,19 @@ export function RegistroManualDialog({ onClose }: { onClose: () => void }) {
             </Field>
             <Field data-invalid={Boolean(errors.horaLlegada)}>
               <FieldLabel htmlFor="registro-hora">Hora de llegada</FieldLabel>
-              <Input id="registro-hora" type="time" {...form.register("horaLlegada")} />
+              <Controller
+                control={form.control}
+                name="horaLlegada"
+                render={({ field }) => (
+                  <TimeInput
+                    id="registro-hora"
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    aria-invalid={Boolean(errors.horaLlegada)}
+                  />
+                )}
+              />
               <FieldError>{errors.horaLlegada?.message}</FieldError>
             </Field>
             <Field data-invalid={Boolean(errors.motivo)}>

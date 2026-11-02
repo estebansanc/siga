@@ -268,6 +268,16 @@ describe("listado", () => {
   });
 });
 
+describe("distintivo de Administrador", () => {
+  it("marca solo al Administrador de la institución", async () => {
+    await createUserWithPerfil(institution, "BEDEL");
+    const lista = await listarUsuarios(bedel(), {});
+    expect(lista.filter((usuario) => usuario.esAdministrador).map((u) => u.id)).toEqual([
+      institution.userId,
+    ]);
+  });
+});
+
 describe("edición", () => {
   it("cambia nombre, DNI, legajo, perfil y comisiones; el correo no cambia", async () => {
     const { comisionId } = await seedAcademicFixture(institution);
@@ -338,6 +348,21 @@ describe("desactivar y reactivar", () => {
     expect(await rejection(desactivarUsuario(bedel(), institution.userId))).toMatchObject({
       status: 422,
     });
+  });
+
+  it("el Administrador no se desactiva ni desde otra cuenta", async () => {
+    const autoridad = await createUserWithPerfil(institution, "AUTORIDAD");
+    const rechazo = await rejection(
+      desactivarUsuario(authOf(institution, autoridad), institution.userId),
+    );
+    expect(rechazo).toMatchObject({
+      status: 422,
+      message: "No se puede desactivar al Administrador de la institución",
+    });
+    const lista = await listarUsuarios(authOf(institution, autoridad), {});
+    expect(lista.find((usuario) => usuario.id === institution.userId)?.estado).not.toBe(
+      "DESACTIVADO",
+    );
   });
 
   it("desactivar dos veces es un conflicto", async () => {

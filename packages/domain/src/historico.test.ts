@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   calcularIndicadoresAsistencia,
-  calcularIndicadoresIncidencias,
   consultaIncidenciasSchema,
   consultaAsistenciasSchema,
   consultaNovedadesSchema,
@@ -27,10 +26,9 @@ describe("consulta histórica de novedades", () => {
     const resultado = consultaNovedadesSchema.parse({
       desde: "2026-01-01",
       hasta: "2026-01-31",
-      carreraId: "",
       tipo: "",
     });
-    expect(resultado).toMatchObject({ pagina: 1, carreraId: undefined, tipo: undefined });
+    expect(resultado).toMatchObject({ pagina: 1, tipo: undefined });
   });
 
   it("pide cada fecha por separado", () => {
@@ -219,18 +217,5 @@ describe("consulta histórica de incidencias", () => {
     expect(mensajesIncidencias({ desde: "2025-10-21", hasta: "2026-10-22" })).toEqual([
       ["hasta", "El rango de fechas no puede superar los 12 meses"],
     ]);
-  });
-
-  it("cuenta el total y cada estado, con 0 si no hay", () => {
-    expect(calcularIndicadoresIncidencias([])).toEqual({
-      total: 0,
-      porEstado: { ABIERTA: 0, EN_CURSO: 0, RESUELTA: 0 },
-    });
-    expect(
-      calcularIndicadoresIncidencias([
-        { estado: "EN_CURSO", cantidad: 2 },
-        { estado: "RESUELTA", cantidad: 5 },
-      ]),
-    ).toEqual({ total: 7, porEstado: { ABIERTA: 0, EN_CURSO: 2, RESUELTA: 5 } });
   });
 });

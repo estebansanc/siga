@@ -1,4 +1,5 @@
 import type { MeDto } from "@repo/api/client";
+import { perfilLabels } from "@repo/domain";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -46,15 +47,26 @@ describe("ProfileSection", () => {
     renderWithProviders(<ProfileSection initialMe={me} />);
     expect(screen.getByLabelText("Apellido y nombre")).toHaveValue("Ana Demo");
     expect(screen.getByLabelText("DNI")).toHaveValue("30123456");
-    expect(screen.getByLabelText("Legajo")).toHaveValue("L-10");
-    expect(screen.getByLabelText("Correo")).toBeDisabled();
-    expect(screen.getByLabelText("Perfil")).toHaveValue("Bedel");
-    expect(screen.getByLabelText("Perfil")).toBeDisabled();
+    expect(screen.getByLabelText(/^Legajo/)).toHaveValue("L-10");
+    expect(screen.getByText("Correo")).toBeInTheDocument();
+    expect(screen.getByTestId("profile-email")).toHaveTextContent("ana@example.com");
+    expect(screen.queryByLabelText("Correo")).not.toBeInTheDocument();
+    expect(screen.getByText("Perfil", { selector: "[data-slot=field-label]" })).toBeInTheDocument();
+    expect(screen.getByTestId("profile-perfil")).toHaveTextContent("Bedel");
+    expect(screen.getByText("(opcional)")).toHaveClass("text-muted-foreground");
     expect(
       screen.getByText("Para cambiar el correo o el perfil, pedíselo a Bedelía."),
     ).toBeInTheDocument();
     expect(guardar()).toBeDisabled();
   });
+
+  it.each(["ESTUDIANTE", "DOCENTE", "BEDEL", "AUTORIDAD"] as const)(
+    "el badge de perfil muestra el nombre del perfil %s",
+    (perfil) => {
+      renderWithProviders(<ProfileSection initialMe={{ ...me, perfil }} />);
+      expect(screen.getByTestId("profile-perfil")).toHaveTextContent(perfilLabels[perfil]);
+    },
+  );
 
   it("guarda nombre, DNI y legajo, avisa y vuelve a deshabilitar Guardar", async () => {
     renderWithProviders(<ProfileSection initialMe={me} />);

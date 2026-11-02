@@ -155,8 +155,9 @@ export const medirFoco = async (page: Page, pasos = 25): Promise<Hallazgo[]> => 
         ${utilidadesDeColor}
         const el = document.activeElement;
         if (!el || el === document.body) return [];
-        const s = getComputedStyle(el);
-        const fondo = fondoDe(el.parentElement ?? el);
+        const marco = el.matches("[data-slot=input-group-control]") ? el.closest("[data-slot=input-group]") ?? el : el;
+        const s = getComputedStyle(marco);
+        const fondo = fondoDe(marco.parentElement ?? marco);
         const contorno = s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0 ? rgba(s.outlineColor) : null;
         const borde = parseFloat(s.borderTopWidth) > 0 ? rgba(s.borderTopColor) : null;
         const anillos = [...s.boxShadow.matchAll(/[a-z]+\\([^)]*\\)/g)].map((m) => rgba(m[0]));

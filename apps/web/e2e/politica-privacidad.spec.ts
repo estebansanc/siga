@@ -23,16 +23,17 @@ test.describe("Política de privacidad", () => {
 
     await expect(page).toHaveURL(/\/politica-de-privacidad/);
     await expect(page.getByRole("heading", { name: "Política de privacidad" })).toBeVisible();
-    await expect(page.getByText("Versión 1")).toBeVisible();
-    await expect(page.getByText(avisoDeEjemplo)).toBeVisible();
+    await expect(page.getByText("Versión 2", { exact: true })).toBeVisible();
+    await expect(page.getByText(avisoDeEjemplo)).toHaveCount(0);
+    await expect(page.getByText("11. Cambios")).toBeVisible();
     await expect(page.getByTestId("user-menu-trigger")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Preferencias" })).toHaveCount(0);
 
-    await page.goto("/preferencias");
-    await expect(page).toHaveURL(/\/politica-de-privacidad\?next=%2Fpreferencias/);
+    await page.goto("/mi-cuenta/comisiones");
+    await expect(page).toHaveURL(/\/politica-de-privacidad\?next=%2Fmi-cuenta%2Fcomisiones/);
 
     await page.getByRole("button", { name: "Aceptar y continuar" }).click();
-    await expect(page).toHaveURL(/\/preferencias$/);
+    await expect(page).toHaveURL(/\/mi-cuenta\/comisiones$/);
     await expect(page.getByTestId("user-menu-trigger")).toBeVisible();
 
     await logoutViaUi(page);
@@ -62,7 +63,7 @@ test.describe("Política de privacidad", () => {
     await page.getByRole("menuitem", { name: "Política de privacidad" }).click();
     await expect(page).toHaveURL(/\/politica-de-privacidad$/);
     await expect(page.getByText(/Aceptaste esta versión el \d{2}\/\d{2}\/\d{4}/)).toBeVisible();
-    await expect(page.getByText("Versión 1")).toBeVisible();
+    await expect(page.getByText("Versión 2", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Aceptar y continuar" })).toHaveCount(0);
     await expect(page.getByTestId("user-menu-trigger")).toBeVisible();
   });
@@ -73,9 +74,9 @@ test.describe("Política de privacidad", () => {
   }) => {
     const user = await cuentaSinAceptar(request);
     await loginViaUi(page, user);
-    await expect(page.getByText("Versión 1")).toBeVisible();
+    await expect(page.getByText("Versión 2", { exact: true })).toBeVisible();
 
-    publicarPolitica(2, "Texto de la versión dos.");
+    publicarPolitica(3, "Texto de la versión tres.");
     try {
       await page.getByRole("button", { name: "Aceptar y continuar" }).click();
       await expect(
@@ -83,25 +84,25 @@ test.describe("Política de privacidad", () => {
           "Se publicó una nueva versión de la política de privacidad. Leela y aceptala para continuar.",
         ),
       ).toBeVisible();
-      await expect(page.getByText("Versión 2")).toBeVisible();
-      await expect(page.getByText("Texto de la versión dos.")).toBeVisible();
+      await expect(page.getByText("Versión 3")).toBeVisible();
+      await expect(page.getByText("Texto de la versión tres.")).toBeVisible();
       await expect(page).toHaveURL(/\/politica-de-privacidad/);
 
       await page.getByRole("button", { name: "Aceptar y continuar" }).click();
       await expect(page).not.toHaveURL(/\/politica-de-privacidad/);
     } finally {
-      retirarPolitica(2);
+      retirarPolitica(3);
     }
   });
 
-  test("quien aceptó la versión 1 debe aceptar la 2 cuando se publica", async ({ page }) => {
-    publicarPolitica(2, "Texto de la versión dos.");
+  test("quien aceptó la versión vigente debe aceptar la 3 cuando se publica", async ({ page }) => {
+    publicarPolitica(3, "Texto de la versión tres.");
     try {
       await loginViaUi(page, seededUsers.estudiante);
       await expect(page).toHaveURL(/\/politica-de-privacidad/);
-      await expect(page.getByText("Versión 2")).toBeVisible();
+      await expect(page.getByText("Versión 3")).toBeVisible();
     } finally {
-      retirarPolitica(2);
+      retirarPolitica(3);
     }
   });
 });

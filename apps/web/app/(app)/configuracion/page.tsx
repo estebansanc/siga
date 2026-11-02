@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { PageBody } from "@/components/layout/page-body";
 import { PageHeader } from "@/components/layout/page-header";
 import { AppVersion } from "@/components/settings/app-version";
-import { MembersSection } from "@/components/settings/members-section";
 import { OrganizationSection } from "@/components/settings/organization-section";
 import { PresenciaSection } from "@/components/settings/presencia-section";
 import { TurnosSection } from "@/components/settings/turnos-section";
@@ -26,7 +25,6 @@ export default async function SettingsPage() {
           <OrganizationSection />
           <TurnosSection />
           <PresenciaSection />
-          <MembersSection currentUserId={session.userId} />
           <AppVersion />
         </div>
       </PageBody>

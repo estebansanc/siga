@@ -12,7 +12,7 @@ const env = { ...process.env, DATABASE_URL: e2eDatabaseUrl, DIRECT_URL: e2eDatab
 // con cuentas nuevas.
 const aceptarPoliticaDeLosUsuariosDelSeed = `
   INSERT INTO aceptacion_politica ("id", "userId", "version")
-  SELECT 'e2e-' || id, id, 1 FROM "user"
+  SELECT 'e2e-' || id, id, 2 FROM "user"
   ON CONFLICT DO NOTHING;
 `;
 

@@ -12,7 +12,8 @@ const abrirBase = async () => {
 
 // Una aula nueva y una clase de hoy de 5K2 Proyecto Final (docente@example.com) en ella, para
 // que el escenario no dependa del día de la semana en que corre el seed.
-export const crearClaseDeHoyConAula = async () => {
+// Con `inicio` la clase dura dos horas desde ese instante (en curso, futura o ya vencida).
+export const crearClaseDeHoyConAula = async (inicioClase?: Date) => {
   const { prisma, toDateColumn } = await abrirBase();
   const comision = await prisma.comision.findUniqueOrThrow({ where: { id: "comision-5k2-pf" } });
   const hoy = fechaArgentina(new Date());
@@ -31,8 +32,10 @@ export const crearClaseDeHoyConAula = async () => {
       organizationId: comision.organizationId,
       comisionId: comision.id,
       fecha: toDateColumn(hoy),
-      inicio: instanteArgentino(hoy, `00:${minuto}`),
-      fin: instanteArgentino(hoy, `01:${minuto}`),
+      inicio: inicioClase ?? instanteArgentino(hoy, `00:${minuto}`),
+      fin: inicioClase
+        ? new Date(inicioClase.getTime() + 120 * 60_000)
+        : instanteArgentino(hoy, `01:${minuto}`),
       aulaId: aula.id,
     },
   });
@@ -45,6 +48,11 @@ export const incidenciasDelAula = async (aulaId: string) => {
     where: { aulaId },
     include: { reportadaPor: { select: { email: true } } },
   });
+};
+
+export const limpiarNovedades = async (claseId: string) => {
+  const { prisma } = await abrirBase();
+  await prisma.novedad.deleteMany({ where: { clases: { some: { claseId } } } });
 };
 
 export const eliminarClaseConAula = async (claseId: string, aulaId: string) => {
@@ -205,4 +213,80 @@ export const eliminarEscenarioDeAsignacion = async (
       ],
     },
   });
+};
+
+// Novedades para las pestañas Activas / Historial: una activa y una finalizada de 5K2 Proyecto
+// Final (del docente), dos de una comisión ajena y 21 finalizadas sueltas para cortar en dos
+// páginas. Todas llevan la marca en el mensaje.
+export const crearNovedadesDeHistorial = async () => {
+  const { prisma, toDateColumn } = await abrirBase();
+  const marca = Date.now().toString(36);
+  const comision = await prisma.comision.findUniqueOrThrow({ where: { id: "comision-5k2-pf" } });
+  const ajena = await prisma.comision.findFirstOrThrow({
+    where: {
+      organizationId: comision.organizationId,
+      docentes: { none: { docente: { email: "docente@example.com" } } },
+    },
+  });
+  const docente = await prisma.user.findUniqueOrThrow({ where: { email: "docente@example.com" } });
+  const bedel = await prisma.user.findUniqueOrThrow({ where: { email: "demo@example.com" } });
+  const fecha = sumarDias(fechaArgentina(new Date()), 3);
+
+  const nueva = async (
+    comisionId: string,
+    publicadaPorId: string,
+    mensaje: string,
+    estado: "ACTIVA" | "FINALIZADA",
+    conClase = true,
+  ) => {
+    const inicio = new Date(
+      instanteArgentino(fecha, "03:00").getTime() + Math.floor(Math.random() * 7200) * 1000,
+    );
+    const clase = conClase
+      ? await prisma.claseProgramada.create({
+          data: {
+            organizationId: comision.organizationId,
+            comisionId,
+            fecha: toDateColumn(fecha),
+            inicio,
+            fin: new Date(inicio.getTime() + 3_600_000),
+          },
+        })
+      : null;
+    return prisma.novedad.create({
+      data: {
+        organizationId: comision.organizationId,
+        comisionId,
+        tipo: "DEMORA",
+        minutosDemora: 10,
+        mensaje: `${mensaje} ${marca}`,
+        estado,
+        finalizadaEn: estado === "FINALIZADA" ? new Date() : null,
+        publicadaPorId,
+        clases: clase ? { create: { claseId: clase.id } } : undefined,
+      },
+    });
+  };
+
+  for (let numero = 1; numero <= 21; numero++) {
+    await nueva(comision.id, docente.id, `Masiva ${numero}`, "FINALIZADA", false);
+  }
+  await nueva(comision.id, docente.id, "Finalizada propia", "FINALIZADA");
+  await nueva(ajena.id, bedel.id, "Finalizada ajena", "FINALIZADA");
+  await nueva(ajena.id, bedel.id, "Activa ajena", "ACTIVA");
+  await nueva(comision.id, docente.id, "Activa propia", "ACTIVA");
+
+  const limpiar = async () => {
+    const novedades = await prisma.novedad.findMany({
+      where: { mensaje: { endsWith: marca } },
+      select: { id: true, clases: { select: { claseId: true } } },
+    });
+    await prisma.novedad.deleteMany({ where: { id: { in: novedades.map(({ id }) => id) } } });
+    await prisma.claseProgramada.deleteMany({
+      where: {
+        id: { in: novedades.flatMap(({ clases }) => clases.map(({ claseId }) => claseId)) },
+      },
+    });
+  };
+  return { marca, limpiar };
 };

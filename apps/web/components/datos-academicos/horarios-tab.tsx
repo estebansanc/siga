@@ -9,10 +9,10 @@ import {
   type CrearHorario,
   type CrearHorarioInput,
 } from "@repo/domain";
-import { Input } from "@repo/ui/components/input";
 import { NativeSelect, NativeSelectOption } from "@repo/ui/components/native-select";
+import { TimeInput } from "@repo/ui/components/time-input";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import {
@@ -100,10 +100,34 @@ function HorarioFormDialog({
       </CampoEntidad>
       <div className="grid gap-4 sm:grid-cols-2">
         <CampoEntidad id="horario-inicio" label="Desde" error={errors.horaInicio?.message}>
-          <Input id="horario-inicio" type="time" {...form.register("horaInicio")} />
+          <Controller
+            control={form.control}
+            name="horaInicio"
+            render={({ field }) => (
+              <TimeInput
+                id="horario-inicio"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                aria-invalid={Boolean(errors.horaInicio)}
+              />
+            )}
+          />
         </CampoEntidad>
         <CampoEntidad id="horario-fin" label="Hasta" error={errors.horaFin?.message}>
-          <Input id="horario-fin" type="time" {...form.register("horaFin")} />
+          <Controller
+            control={form.control}
+            name="horaFin"
+            render={({ field }) => (
+              <TimeInput
+                id="horario-fin"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                aria-invalid={Boolean(errors.horaFin)}
+              />
+            )}
+          />
         </CampoEntidad>
       </div>
       <CampoEntidad id="horario-aula" label="Aula habitual" error={errors.aulaHabitualId?.message}>
@@ -136,7 +160,7 @@ export function HorariosTab() {
         filas={horarios.data?.map((horario) => ({
           id: horario.id,
           titulo: `${horario.comision.codigo} · ${horario.comision.materia}`,
-          descripcion: `${nombreDiaSemana(horario.diaSemana)} ${horario.horaInicio}–${horario.horaFin} · ${
+          descripcion: `${nombreDiaSemana(horario.diaSemana)} ${horario.horaInicio} – ${horario.horaFin} · ${
             horario.aulaHabitual?.codigo ?? "Sin aula habitual"
           }`,
           activo: horario.activo,

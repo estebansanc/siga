@@ -8,6 +8,7 @@ import {
   updateProfileFormSchema,
   type UpdateProfileFormInput,
 } from "@repo/domain";
+import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
@@ -22,6 +23,7 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldTitle,
 } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
@@ -43,7 +45,7 @@ export function ProfileSection({ initialMe }: { initialMe: MeDto }) {
       <Card>
         <CardHeader>
           <CardTitle>Perfil</CardTitle>
-          <CardDescription>Cómo te ven en todas tus organizaciones.</CardDescription>
+          <CardDescription>Así te ven los demás usuarios.</CardDescription>
         </CardHeader>
         <CardContent>
           <ProfileForm key={`${me.userName}|${me.dni}|${me.legajo}`} me={me} />
@@ -90,17 +92,25 @@ function ProfileForm({ me }: { me: MeDto }) {
           <FieldError>{errors.dni?.message}</FieldError>
         </Field>
         <Field data-invalid={Boolean(errors.legajo)}>
-          <FieldLabel htmlFor="profile-legajo">Legajo</FieldLabel>
+          <FieldLabel htmlFor="profile-legajo">
+            Legajo <span className="text-muted-foreground font-normal">(opcional)</span>
+          </FieldLabel>
           <Input id="profile-legajo" {...form.register("legajo")} />
           <FieldError>{errors.legajo?.message}</FieldError>
         </Field>
         <Field>
-          <FieldLabel htmlFor="profile-email">Correo</FieldLabel>
-          <Input id="profile-email" type="email" value={me.userEmail} disabled readOnly />
+          <FieldTitle>Correo</FieldTitle>
+          <p className="text-sm" data-testid="profile-email">
+            {me.userEmail}
+          </p>
         </Field>
         <Field>
-          <FieldLabel htmlFor="profile-perfil">Perfil</FieldLabel>
-          <Input id="profile-perfil" value={perfilLabels[me.perfil]} disabled readOnly />
+          <FieldTitle>Perfil</FieldTitle>
+          <div>
+            <Badge variant="secondary" data-testid="profile-perfil">
+              {perfilLabels[me.perfil]}
+            </Badge>
+          </div>
           <FieldDescription>
             Para cambiar el correo o el perfil, pedíselo a Bedelía.
           </FieldDescription>

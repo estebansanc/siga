@@ -80,7 +80,7 @@ export function ReleaseNotesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Novedades</DialogTitle>
+          <DialogTitle>Qué hay de nuevo</DialogTitle>
           <DialogDescription>Qué cambió en cada versión del sistema.</DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[60dvh]">

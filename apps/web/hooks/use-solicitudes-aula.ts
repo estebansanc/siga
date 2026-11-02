@@ -69,10 +69,14 @@ export const useCrearSolicitudAula = () => {
   });
 };
 
-export const useSolicitudesAula = (estado: EstadoSolicitudAula) =>
+export const useSolicitudesAula = (estados: EstadoSolicitudAula[]) =>
   useQuery({
-    queryKey: queryKeys.solicitudesAula(estado),
-    queryFn: () => unwrap<SolicitudAulaDto[]>(api["solicitudes-aula"].$get({ query: { estado } })),
+    queryKey: queryKeys.solicitudesAula(estados),
+    queryFn: () =>
+      unwrap<SolicitudAulaDto[]>(
+        api["solicitudes-aula"].$get({ query: { estado: estados.join(",") } }),
+      ),
+    enabled: estados.length > 0,
     ...realtimeQueryOptions,
   });
 

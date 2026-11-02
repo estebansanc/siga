@@ -75,6 +75,8 @@ test.describe("Editar una novedad", () => {
     await page.getByRole("menuitem", { name: "Finalizar novedad" }).click();
     await page.getByRole("button", { name: "Finalizar" }).click();
     await expect(page.getByText("Novedad finalizada")).toBeVisible();
+    await expect(novedad).toHaveCount(0);
+    await page.getByRole("tab", { name: "Historial" }).click();
     await expect(novedad).toContainText("Finalizada");
     await expect(novedad.getByRole("button", { name: /Acciones de la novedad/ })).toHaveCount(0);
   });

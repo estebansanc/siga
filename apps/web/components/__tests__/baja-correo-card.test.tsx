@@ -2,7 +2,7 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { BajaCorreoCard } from "@/components/preferencias/baja-correo-card";
+import { BajaCorreoCard } from "@/components/mi-cuenta/baja-correo-card";
 import { RequestError } from "@/lib/api-client";
 import { renderWithProviders } from "@/test/render";
 
@@ -21,10 +21,14 @@ describe("BajaCorreoCard", () => {
     await userEvent.click(screen.getByRole("button", { name: /Dejar de recibir/ }));
     expect(
       await screen.findByText(
-        "Listo. Ya no vas a recibir novedades de clase por correo. Podés volver a activarlas desde Preferencias.",
+        "Listo. Ya no vas a recibir novedades de clase por correo. Podés volver a activarlas desde Mi cuenta → Notificaciones.",
       ),
     ).toBeInTheDocument();
     expect(baja).toHaveBeenCalledWith("abc.def");
+    expect(screen.getByRole("link", { name: "Ir a Notificaciones" })).toHaveAttribute(
+      "href",
+      "/mi-cuenta/notificaciones",
+    );
   });
 
   it("la baja de avisos confirma con el texto de avisos institucionales", async () => {

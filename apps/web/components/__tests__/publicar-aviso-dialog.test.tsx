@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -18,10 +18,22 @@ vi.mock("@/hooks/use-datos-academicos", () => ({
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-const enUnaHora = () => {
-  const fecha = new Date(Date.now() + 60 * 60_000);
+const manana = (): [string, string] => {
+  const fecha = new Date(Date.now() + 24 * 60 * 60_000);
   const parte = (valor: number) => String(valor).padStart(2, "0");
-  return `${fecha.getFullYear()}-${parte(fecha.getMonth() + 1)}-${parte(fecha.getDate())}T${parte(fecha.getHours())}:${parte(fecha.getMinutes())}`;
+  return [
+    `${parte(fecha.getDate())}/${parte(fecha.getMonth() + 1)}/${fecha.getFullYear()}`,
+    "10:00",
+  ];
+};
+
+const cargarFechaHora = async (label: string, horaLabel: string, fecha: string, hora: string) => {
+  const campoFecha = screen.getByLabelText(label);
+  const campoHora = screen.getByLabelText(horaLabel);
+  await userEvent.clear(campoFecha);
+  await userEvent.type(campoFecha, fecha);
+  await userEvent.clear(campoHora);
+  await userEvent.type(campoHora, hora);
 };
 
 const publicarBoton = () => screen.getByRole("button", { name: "Publicar" });
@@ -67,7 +79,7 @@ describe("PublicarAvisoDialog", () => {
     renderWithProviders(<PublicarAvisoDialog onClose={vi.fn()} />);
     await userEvent.type(screen.getByLabelText("Título"), "QA");
     await userEvent.type(screen.getByLabelText("Cuerpo"), "Prueba");
-    fireEvent.change(screen.getByLabelText("Hasta"), { target: { value: "2020-01-01T10:00" } });
+    await cargarFechaHora("Hasta", "Hora de fin", "01/01/2020", "10:00");
     await userEvent.click(publicarBoton());
     expect(await screen.findByText("La vigencia tiene que terminar en el futuro")).toBeVisible();
   });
@@ -81,7 +93,7 @@ describe("PublicarAvisoDialog", () => {
     await userEvent.click(screen.getByRole("checkbox", { name: "Todos" }));
     await userEvent.click(screen.getByRole("checkbox", { name: "Bedel" }));
     await userEvent.click(screen.getByRole("checkbox", { name: "5.º año" }));
-    fireEvent.change(screen.getByLabelText("Hasta"), { target: { value: enUnaHora() } });
+    await cargarFechaHora("Hasta", "Hora de fin", ...manana());
     await userEvent.click(screen.getByRole("switch", { name: "Enviar por correo" }));
     await userEvent.click(publicarBoton());
 
@@ -114,7 +126,8 @@ describe("PublicarAvisoDialog", () => {
     expect(screen.getByLabelText("Título")).toHaveValue("Institución cerrada");
     expect(screen.getByLabelText("Cuerpo")).toHaveValue("Corte de energía");
     expect(screen.getByLabelText("Prioridad")).toHaveValue("URGENTE");
-    expect(screen.getByLabelText("Hasta")).toHaveValue("2026-10-14T22:30");
+    expect(screen.getByLabelText("Hasta")).toHaveValue("14/10/2026");
+    expect(screen.getByLabelText("Hora de fin")).toHaveValue("22:30");
     expect(screen.getByRole("checkbox", { name: "Todos" })).toBeChecked();
     expect(publicar).not.toHaveBeenCalled();
   });

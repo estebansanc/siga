@@ -12,7 +12,7 @@ test.describe("Registro manual de asistencia", () => {
   }) => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/qr");
-    await page.getByRole("button", { name: "Registro manual" }).click();
+    await page.getByRole("button", { name: "Registrar asistencia manual" }).click();
     const dialog = page.getByRole("dialog", { name: "Registro manual" });
     await expect(dialog.getByLabel("Hora de llegada")).toHaveValue(/^\d{2}:\d{2}$/);
 
@@ -43,7 +43,7 @@ test.describe("Registro manual de asistencia", () => {
     ).toBeVisible();
     await expect(dialog).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Registro manual" }).click();
+    await page.getByRole("button", { name: "Registrar asistencia manual" }).click();
     await expect(
       page.getByRole("dialog").getByRole("option", { name: new RegExp(`^${materia} ${comision}`) }),
     ).toHaveCount(0);
@@ -74,6 +74,6 @@ test.describe("Registro manual de asistencia", () => {
     await loginViaUi(page, seededUsers.docente);
     await page.goto("/qr");
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("button", { name: "Registro manual" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Registrar asistencia manual" })).toHaveCount(0);
   });
 });

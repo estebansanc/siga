@@ -1,18 +1,23 @@
 import { expect, test } from "./support/fixtures";
 
-test.describe("Mi perfil", () => {
+test.describe("Mi cuenta: Perfil", () => {
   test("cambia el nombre con validación, persiste al recargar y se refleja en la barra lateral", async ({
     authenticatedPage: page,
     user,
   }) => {
     await page.getByTestId("user-menu-trigger").click();
-    await page.getByRole("menuitem", { name: "Mi perfil" }).click();
-    await expect(page).toHaveURL(/\/mi-perfil/);
+    await page.getByRole("menuitem", { name: "Mi cuenta" }).click();
+    await expect(page).toHaveURL(/\/mi-cuenta$/);
     const nameInput = page.getByLabel("Apellido y nombre");
+    await expect(page.getByText("Así te ven los demás usuarios.")).toBeVisible();
     await expect(nameInput).toHaveValue(user.name);
-    await expect(page.getByLabel("Correo")).toHaveValue(user.email);
-    await expect(page.getByLabel("Correo")).toBeDisabled();
+    await expect(page.getByTestId("profile-email")).toHaveText(user.email);
+    await expect(page.getByTestId("profile-perfil")).toHaveText("Estudiante");
+    await expect(page.getByLabel("Legajo (opcional)")).toBeVisible();
     await expect(page.getByRole("button", { name: "Guardar" })).toBeDisabled();
+    await page.getByLabel("Legajo (opcional)").fill("L-TAB");
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Guardar" })).toBeFocused();
 
     await nameInput.fill("   ");
     await page.getByRole("button", { name: "Guardar" }).click();
@@ -29,7 +34,7 @@ test.describe("Mi perfil", () => {
 
     const dni = String(10_000_000 + Math.floor(Math.random() * 89_999_999));
     await page.getByLabel("DNI").fill(dni);
-    await page.getByLabel("Legajo").fill("L-QA");
+    await page.getByLabel("Legajo (opcional)").fill("L-QA");
     const guardado = page.waitForResponse(
       (response) =>
         response.url().endsWith("/api/v1/me") && response.request().method() === "PATCH",
@@ -39,7 +44,7 @@ test.describe("Mi perfil", () => {
 
     await page.reload();
     await expect(page.getByLabel("DNI")).toHaveValue(dni);
-    await expect(page.getByLabel("Legajo")).toHaveValue("L-QA");
+    await expect(page.getByLabel("Legajo (opcional)")).toHaveValue("L-QA");
     await expect(page.getByLabel("Apellido y nombre")).toHaveValue("Nombre Nuevo QA");
     await expect(
       page.getByText("Para cambiar el correo o el perfil, pedíselo a Bedelía."),

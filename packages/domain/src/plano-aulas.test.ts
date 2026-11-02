@@ -4,6 +4,8 @@ import {
   accionesDelPlano,
   compararCodigosAula,
   compararPisos,
+  contarEstadosDelPiso,
+  describirConteoPiso,
   entraEnCapacidad,
   estadoPlanoDeAula,
   resolucionCorreoDeAula,
@@ -77,5 +79,37 @@ describe("asignación desde el plano", () => {
   it("avisa asignación si la clase no tenía aula y reasignación si cambió", () => {
     expect(resolucionCorreoDeAula(null)).toBe("ASIGNADA");
     expect(resolucionCorreoDeAula("Aula 7")).toBe("REASIGNADA");
+  });
+});
+
+describe("conteo del piso", () => {
+  it("cuenta Pendiente como ocupada y las aulas grises como no disponibles", () => {
+    expect(
+      contarEstadosDelPiso([
+        "LIBRE",
+        "OCUPADA",
+        "PENDIENTE",
+        "FUERA_DE_SERVICIO",
+        "EN_MANTENIMIENTO",
+      ]),
+    ).toEqual({ libres: 1, ocupadas: 2, noDisponibles: 2 });
+  });
+
+  it("omite no disponibles si no hay y usa singular con 1", () => {
+    expect(describirConteoPiso({ libres: 1, ocupadas: 1, noDisponibles: 0 })).toBe(
+      "1 libre · 1 ocupada",
+    );
+    expect(describirConteoPiso({ libres: 0, ocupadas: 3, noDisponibles: 0 })).toBe(
+      "0 libres · 3 ocupadas",
+    );
+  });
+
+  it("agrega no disponibles en singular y plural", () => {
+    expect(describirConteoPiso({ libres: 0, ocupadas: 0, noDisponibles: 1 })).toBe(
+      "0 libres · 0 ocupadas · 1 no disponible",
+    );
+    expect(describirConteoPiso({ libres: 2, ocupadas: 1, noDisponibles: 2 })).toBe(
+      "2 libres · 1 ocupada · 2 no disponibles",
+    );
   });
 });

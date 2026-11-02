@@ -13,17 +13,54 @@ const proximaClaseEnAula12 = () => {
   return fechaArgentina(dia);
 };
 
-test.describe("QR de asistencia", () => {
+test.describe("Asistencia docente", () => {
+  test("en escritorio las tarjetas van lado a lado con el mismo botón principal", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "El apilado en celular se prueba en mobile.spec.ts");
+    await loginViaUi(page, seededUsers.bedel);
+    await page.goto("/qr");
+    const tarjetaGenerar = page
+      .locator('[data-slot="card"]')
+      .filter({ hasText: "Cada código vale" });
+    const tarjetaManual = page
+      .locator('[data-slot="card"]')
+      .filter({ hasText: "no puede escanear" });
+    const generar = await tarjetaGenerar.boundingBox();
+    const manual = await tarjetaManual.boundingBox();
+    expect(manual!.y).toBe(generar!.y);
+    expect(manual!.x).toBeGreaterThan(generar!.x + generar!.width - 1);
+
+    const clases = async (nombre: string) =>
+      page.getByRole("button", { name: nombre, exact: true }).getAttribute("class");
+    expect(await clases("Registrar asistencia manual")).toBe(await clases("Generar QR"));
+  });
+
+  test("Turno arranca en el actual según la hora de Argentina y las dos tarjetas conviven", async ({
+    page,
+  }) => {
+    await loginViaUi(page, seededUsers.bedel);
+    await page.clock.setFixedTime(new Date("2026-10-30T18:30:00Z"));
+    await page.goto("/qr");
+    await expect(page.getByRole("heading", { name: "Asistencia docente" })).toBeVisible();
+    await expect(page).toHaveTitle(/^Asistencia docente/);
+    await expect(page.getByLabel("Turno")).toHaveValue("TARDE");
+    await expect(page.getByText("Generar QR", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Registro manual", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Registrar asistencia manual" })).toBeVisible();
+  });
+
   test("el bedel genera el QR, ve las clases del turno y el código se renueva solo", async ({
     page,
   }) => {
     test.setTimeout(120_000);
     await loginViaUi(page, seededUsers.bedel);
-    await page.getByRole("link", { name: "QR de asistencia" }).click();
-    await expect(page.getByRole("heading", { name: "QR de asistencia" })).toBeVisible();
+    await page.getByRole("link", { name: "Asistencia docente" }).click();
+    await expect(page.getByRole("heading", { name: "Asistencia docente" })).toBeVisible();
     await expect(page.getByLabel("Fecha")).toHaveValue(fechaArgentina(new Date()));
 
-    await page.getByLabel("Aula").selectOption({ label: "Aula 12" });
+    await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 12" });
     await page.getByLabel("Turno").selectOption("NOCHE");
     await page.getByLabel("Fecha").fill(proximaClaseEnAula12());
     await page.getByRole("button", { name: "Generar QR" }).click();
@@ -48,7 +85,7 @@ test.describe("QR de asistencia", () => {
   test("un aula sin clases en el turno da error y no muestra QR", async ({ page }) => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/qr");
-    await page.getByLabel("Aula").selectOption({ label: "Aula 3" });
+    await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 3" });
     await page.getByLabel("Turno").selectOption("MANANA");
     await page.getByLabel("Fecha").fill(proximaClaseEnAula12());
     await page.getByRole("button", { name: "Generar QR" }).click();
@@ -60,7 +97,7 @@ test.describe("QR de asistencia", () => {
   test("una fecha pasada da error y no muestra QR", async ({ page }) => {
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/qr");
-    await page.getByLabel("Aula").selectOption({ label: "Aula 12" });
+    await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 12" });
     await page.getByLabel("Turno").selectOption("NOCHE");
     await page.getByLabel("Fecha").fill("2020-01-06");
     await page.getByRole("button", { name: "Generar QR" }).click();
@@ -79,7 +116,7 @@ test.describe("QR de asistencia", () => {
 
     try {
       await page.goto("/qr");
-      await page.getByLabel("Aula").selectOption({ label: "Aula 12" });
+      await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 12" });
       await page.getByLabel("Turno").selectOption("MANANA");
       await page.getByRole("button", { name: "Generar QR" }).click();
       await expect(page.getByText("El turno ya terminó")).toBeVisible();
@@ -114,7 +151,7 @@ test.describe("QR de asistencia", () => {
     );
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/qr");
-    await page.getByLabel("Aula").selectOption({ label: "Aula 12" });
+    await page.getByLabel("Aula", { exact: true }).selectOption({ label: "Aula 12" });
     await page.getByLabel("Turno").selectOption("NOCHE");
     await page.getByRole("button", { name: "Generar QR" }).click();
 
@@ -131,19 +168,19 @@ test.describe("QR de asistencia", () => {
     await expect(page.getByText("Turnos actualizados")).toBeVisible();
 
     await page.goto("/qr");
-    await expect(page.getByRole("option", { name: "Noche 18:00–23:00" })).toBeAttached();
+    await expect(page.getByRole("option", { name: "Noche 18:00 – 23:00" })).toBeAttached();
 
     await page.goto("/configuracion");
     await page.getByLabel("Noche: fin").fill("23:30");
     await page.getByRole("button", { name: "Guardar turnos" }).click();
     await expect(page.getByText("Turnos actualizados").last()).toBeVisible();
     await page.goto("/qr");
-    await expect(page.getByRole("option", { name: "Noche 18:00–23:30" })).toBeAttached();
+    await expect(page.getByRole("option", { name: "Noche 18:00 – 23:30" })).toBeAttached();
   });
 
   test("un docente no ve el ítem y por URL vuelve al inicio", async ({ page }) => {
     await loginViaUi(page, seededUsers.docente);
-    await expect(page.getByRole("link", { name: "QR de asistencia" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Asistencia docente" })).toHaveCount(0);
     await page.goto("/qr");
     await expect(page).toHaveURL(/\/$/);
   });

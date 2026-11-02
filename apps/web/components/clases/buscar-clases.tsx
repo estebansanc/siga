@@ -8,7 +8,7 @@ import { useState } from "react";
 
 import { useClases } from "@/hooks/use-clases";
 import { useCarreras, useComisiones, useMaterias } from "@/hooks/use-datos-academicos";
-import { formatFechaLarga } from "@/lib/dates";
+import { capitalizarPrimera, formatFechaLarga } from "@/lib/dates";
 
 import { ClasesEmpty, ClasesList } from "./clases-list";
 
@@ -126,8 +126,8 @@ export function BuscarClases() {
           </NativeSelect>
         </Field>
       </FieldGroup>
-      <h2 className="font-medium capitalize">
-        {filtros.fecha ? formatFechaLarga(filtros.fecha) : "Elegí una fecha"}
+      <h2 className="font-medium">
+        {filtros.fecha ? capitalizarPrimera(formatFechaLarga(filtros.fecha)) : "Elegí una fecha"}
       </h2>
       <ClasesList
         clases={clases.data?.clases}
