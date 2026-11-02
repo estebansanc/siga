@@ -140,7 +140,7 @@ test.describe("Avisos institucionales", () => {
     for (const ruta of ["/clases", "/novedades"]) {
       await page.goto(ruta);
       const indicador = page.getByRole("link", {
-        name: /Institución cerrada, Corte de energía, actualizado/,
+        name: /Institución cerrada, Corte de energía, desde las/,
       });
       await expect(indicador).toBeVisible();
       await expect(indicador.getByText("Corte de energía")).toBeVisible();
