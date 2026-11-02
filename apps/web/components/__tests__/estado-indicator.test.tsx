@@ -4,10 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EstadoIndicator } from "@/components/estado-institucional/estado-indicator";
 
-const state = vi.hoisted(() => ({ estado: undefined as EstadoInstitucionalDto | undefined }));
+const state = vi.hoisted(() => ({ estado: undefined as EstadoInstitucionalDto | undefined,
+  ahora: 0,
+}));
 
 vi.mock("@/hooks/use-estado-institucional", () => ({
-  useEstadoInstitucional: () => ({ data: state.estado }),
+  useEstadoInstitucional: () => ({ data: state.estado, dataUpdatedAt: state.ahora }),
 }));
 
 const abierta: EstadoInstitucionalDto = {
@@ -21,6 +23,7 @@ const abierta: EstadoInstitucionalDto = {
 
 beforeEach(() => {
   state.estado = abierta;
+  state.ahora = Date.parse("2026-10-14T18:00:00.000Z");
 });
 
 describe("EstadoIndicator", () => {
@@ -30,12 +33,33 @@ describe("EstadoIndicator", () => {
     expect(document.querySelector('[data-slot="skeleton"]')).toBeInTheDocument();
   });
 
-  it("muestra el estado con color, icono, texto y la hora argentina de actualización, con link al detalle", () => {
+  it("muestra el estado con color, icono, texto y desde cuándo rige en hora argentina, con link al detalle", () => {
     render(<EstadoIndicator />);
-    const link = screen.getByRole("link", { name: "Institución abierta, actualizado 07:30" });
+    const link = screen.getByRole("link", { name: "Institución abierta, desde las 07:30" });
     expect(link).toHaveAttribute("href", "/estado-institucional");
     expect(screen.getByText("Institución abierta")).toHaveAttribute("data-estado", "ABIERTA");
     expect(link.querySelector("svg")).toBeInTheDocument();
+    expect(screen.getByText("Desde las 07:30")).toBeInTheDocument();
+    expect(screen.queryByText(/Actualizado/)).not.toBeInTheDocument();
+  });
+
+  it("dice ayer y la fecha completa cuando el estado no se registró hoy", () => {
+    state.estado = { ...abierta, desde: "2026-10-13T20:20:00.000Z" };
+    const { unmount } = render(<EstadoIndicator />);
+    expect(screen.getByText("Desde ayer 17:20")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Institución abierta, desde ayer 17:20" })).toBeVisible();
+    unmount();
+    state.estado = { ...abierta, desde: "2026-10-12T20:20:00.000Z" };
+    render(<EstadoIndicator />);
+    expect(screen.getByText("Desde el 12/10/2026 17:20")).toBeInTheDocument();
+  });
+
+  it("pasa de hoy a ayer al refrescar después de la medianoche argentina", () => {
+    const { rerender } = render(<EstadoIndicator />);
+    expect(screen.getByText("Desde las 07:30")).toBeInTheDocument();
+    state.ahora = Date.parse("2026-10-15T03:30:00.000Z");
+    rerender(<EstadoIndicator />);
+    expect(screen.getByText("Desde ayer 07:30")).toBeInTheDocument();
   });
 
   it("distingue cerrada y abierta con novedades", () => {
@@ -55,7 +79,7 @@ describe("EstadoIndicator", () => {
     expect(screen.getByText("Corte de energía").className).toContain("truncate");
     expect(
       screen.getByRole("link", {
-        name: "Institución cerrada, Corte de energía, actualizado 07:30",
+        name: "Institución cerrada, Corte de energía, desde las 07:30",
       }),
     ).toHaveAttribute("href", "/estado-institucional");
   });
@@ -72,7 +96,7 @@ describe("EstadoIndicator", () => {
     render(<EstadoIndicator />);
     expect(screen.queryByText("Resto de un motivo anterior")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Institución abierta, actualizado 07:30" }),
+      screen.getByRole("link", { name: "Institución abierta, desde las 07:30" }),
     ).toBeVisible();
   });
 });

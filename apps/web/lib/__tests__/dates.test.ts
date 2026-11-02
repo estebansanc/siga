@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   capitalizarPrimera,
   formatDate,
+  formatDesde,
   formatDateTime,
   formatFechaCorta,
   formatFechaHora,
@@ -25,6 +26,13 @@ describe("fechas en es-AR", () => {
   it("muestra horas e instantes en hora argentina con el formato dd/mm/aaaa hh:mm", () => {
     expect(formatHora("2026-10-14T22:00:00.000Z")).toBe("19:00");
     expect(formatFechaHora("2026-10-15T02:30:00.000Z")).toBe("14/10/2026 23:30");
+  });
+
+  it("dice desde cuándo rige según el día argentino, sin importar la zona del navegador", () => {
+    const ahora = new Date("2026-10-15T02:10:00.000Z");
+    expect(formatDesde("2026-10-14T18:32:00.000Z", ahora)).toBe("las 15:32");
+    expect(formatDesde("2026-10-14T02:59:00.000Z", ahora)).toBe("ayer 23:59");
+    expect(formatDesde("2026-10-12T20:20:00.000Z", ahora)).toBe("el 12/10/2026 17:20");
   });
 
   it("escribe una fecha de negocio larga y corta", () => {

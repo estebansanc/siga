@@ -61,6 +61,8 @@ test.describe("Flujo principal de SiGA", () => {
       await page.goto(ruta);
       await expect(indicador).toBeVisible();
       await expect(indicador).toContainText("Paro de transporte: las clases se dictan");
+      await expect(indicador).toContainText(/Desde las \d{2}:\d{2}/);
+      await expect(indicador).not.toContainText("Actualizado");
       const titulo = page.locator("header h1");
       expect(await titulo.evaluate((h1) => h1.scrollWidth <= h1.clientWidth)).toBe(true);
       await expect(page.locator("[data-slot=alert]")).toHaveCount(0);

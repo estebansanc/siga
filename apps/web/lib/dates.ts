@@ -1,4 +1,4 @@
-import { argentinaTimeZone, fechaArgentina, horaArgentina } from "@repo/domain";
+import { argentinaTimeZone, fechaArgentina, horaArgentina, sumarDias } from "@repo/domain";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -31,6 +31,17 @@ export const formatHora = (value: Date | string) => horaArgentinaFormatter.forma
 // `dd/mm/aaaa hh:mm`, el formato de DAT-1.
 export const formatFechaHora = (value: Date | string) =>
   fechaHoraArgentinaFormatter.format(new Date(value)).replace(",", "");
+
+// Desde cuándo rige algo, según el día argentino en que empezó: "las 15:32", "ayer 15:32" o
+// "el 21/10/2026 17:20".
+export const formatDesde = (desde: Date | string, ahora: Date = new Date()) => {
+  const instante = new Date(desde);
+  const diaDesde = fechaArgentina(instante);
+  const hoy = fechaArgentina(ahora);
+  if (diaDesde === hoy) return `las ${formatHora(instante)}`;
+  if (diaDesde === sumarDias(hoy, -1)) return `ayer ${formatHora(instante)}`;
+  return `el ${formatFechaHora(instante)}`;
+};
 
 // "martes 14 de octubre", a partir de una fecha `yyyy-mm-dd`.
 export const formatFechaLarga = (fecha: string) =>
