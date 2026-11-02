@@ -65,7 +65,7 @@ test.describe("Novedades: Activas e Historial", () => {
       await expect(page.locator('[data-slot="item"]')).toHaveCount(20);
       const total = await page.getByLabel("Indicadores").textContent();
 
-      await page.getByLabel("Desde").fill("2026-03-02");
+      await page.getByLabel("Desde", { exact: true }).fill("2026-03-02");
       await page.getByLabel("Hasta").fill("2026-03-01");
       await consultar.click();
       await expect(
@@ -73,7 +73,7 @@ test.describe("Novedades: Activas e Historial", () => {
       ).toBeVisible();
       await expect(page.getByLabel("Indicadores")).toHaveText(total ?? "");
 
-      await page.getByLabel("Desde").fill("2020-01-01");
+      await page.getByLabel("Desde", { exact: true }).fill("2020-01-01");
       await page.getByLabel("Hasta").fill("2021-01-02");
       await consultar.click();
       await expect(
@@ -86,7 +86,7 @@ test.describe("Novedades: Activas e Historial", () => {
       await expect(page.getByText(/no puede superar/)).toHaveCount(0);
 
       await page
-        .getByLabel("Desde")
+        .getByLabel("Desde", { exact: true })
         .fill(new Date(Date.now() - 86_400_000).toISOString().slice(0, 10));
       await page
         .getByLabel("Hasta")
@@ -214,7 +214,7 @@ test.describe("Incidencias: Abiertas e Historial", () => {
     await page.getByRole("button", { name: "Consultar" }).click();
     await expect(page.getByText("Sin registros para el período")).toBeVisible();
 
-    await page.getByLabel("Desde").fill("2026-03-02");
+    await page.getByLabel("Desde", { exact: true }).fill("2026-03-02");
     await page.getByLabel("Hasta").fill("2026-03-01");
     await page.getByRole("button", { name: "Consultar" }).click();
     await expect(

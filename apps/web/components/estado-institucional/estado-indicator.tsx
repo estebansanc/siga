@@ -51,7 +51,8 @@ function nombreAccesible(estado: EstadoInstitucionalDto, ahora: Date) {
   return `${label}${motivo}, desde ${formatDesde(estado.desde, ahora)}`;
 }
 
-// En todas las pantallas (RF-08): estado con color, icono y texto, desde cuándo rige, y desde 640 px el motivo si no está abierta; tocarlo lleva al detalle. Se actualiza solo cada 30 s.
+// En todas las pantallas (RF-08): estado con color, icono y texto, desde cuándo rige, y desde
+// 640 px el motivo si no está abierta; tocarlo lleva al detalle. Se actualiza solo cada 30 s.
 export function EstadoIndicator() {
   const estado = useEstadoInstitucional();
 
@@ -73,7 +74,7 @@ export function EstadoIndicator() {
           {motivo}
         </span>
       ) : null}
-      <span className="text-muted-foreground hidden shrink-0 text-xs sm:inline">
+      <span className="text-muted-foreground hidden min-w-0 truncate text-xs sm:inline">
         Desde {formatDesde(estado.data.desde, ahora)}
       </span>
     </Link>

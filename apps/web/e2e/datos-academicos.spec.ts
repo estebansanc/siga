@@ -122,7 +122,7 @@ test.describe("Datos académicos", () => {
       const nuevo = await abrirDialogo(page, "Nuevo horario", "Nuevo horario");
       await nuevo.getByLabel("Comisión").selectOption({ label: `${comision} · ${materia.nombre}` });
       await nuevo.getByLabel("Día").selectOption(dia);
-      await nuevo.getByLabel("Desde").fill(desde);
+      await nuevo.getByLabel("Desde", { exact: true }).fill(desde);
       await nuevo.getByLabel("Hasta").fill(hasta);
       await nuevo.getByLabel("Aula habitual").selectOption("aula-14");
       await nuevo.getByRole("button", { name: "Guardar" }).click();

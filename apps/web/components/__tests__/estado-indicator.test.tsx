@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EstadoIndicator } from "@/components/estado-institucional/estado-indicator";
 
-const state = vi.hoisted(() => ({ estado: undefined as EstadoInstitucionalDto | undefined,
+const state = vi.hoisted(() => ({
+  estado: undefined as EstadoInstitucionalDto | undefined,
   ahora: 0,
 }));
 
@@ -47,11 +48,31 @@ describe("EstadoIndicator", () => {
     state.estado = { ...abierta, desde: "2026-10-13T20:20:00.000Z" };
     const { unmount } = render(<EstadoIndicator />);
     expect(screen.getByText("Desde ayer 17:20")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Institución abierta, desde ayer 17:20" })).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Institución abierta, desde ayer 17:20" }),
+    ).toBeVisible();
     unmount();
     state.estado = { ...abierta, desde: "2026-10-12T20:20:00.000Z" };
     render(<EstadoIndicator />);
     expect(screen.getByText("Desde el 12/10/2026 17:20")).toBeInTheDocument();
+  });
+
+  it("muestra la hora del nuevo registro cuando el refresco trae un cambio de estado", () => {
+    const { rerender } = render(<EstadoIndicator />);
+    expect(screen.getByText("Desde las 07:30")).toBeInTheDocument();
+    state.estado = {
+      ...abierta,
+      id: "e2",
+      estado: "CERRADA",
+      motivo: "Paro",
+      desde: "2026-10-14T17:45:00.000Z",
+    };
+    state.ahora = Date.parse("2026-10-14T17:46:00.000Z");
+    rerender(<EstadoIndicator />);
+    expect(screen.getByText("Desde las 14:45")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Institución cerrada, Paro, desde las 14:45" }),
+    ).toBeVisible();
   });
 
   it("pasa de hoy a ayer al refrescar después de la medianoche argentina", () => {
