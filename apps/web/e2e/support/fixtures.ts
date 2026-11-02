@@ -98,6 +98,24 @@ export const expectNoHorizontalPageScroll = async (page: Page) => {
   expect(overflow).toBeLessThanOrEqual(0);
 };
 
+// Sin aviso urgente vigente (el caso más ajustado del encabezado), sin depender de otros specs.
+export const sinAvisosVigentes = (page: Page) =>
+  page.route("**/api/v1/avisos?vista=VIGENTES", (route) => route.fulfill({ json: [] }));
+
+// El badge de estado queda dentro del contenido del encabezado, sin invadir su padding.
+export const expectBadgeDentroDelEncabezado = async (page: Page) => {
+  const sobrante = await page.evaluate(() => {
+    const header = document.querySelector("header")!;
+    const padding = parseFloat(getComputedStyle(header).paddingRight);
+    const bordeDeContenido = header.getBoundingClientRect().right - padding;
+    return (
+      document.querySelector("header [data-estado]")!.getBoundingClientRect().right -
+      bordeDeContenido
+    );
+  });
+  expect(sobrante).toBeLessThanOrEqual(0.5);
+};
+
 type Fixtures = {
   user: User;
   authenticatedPage: Page;

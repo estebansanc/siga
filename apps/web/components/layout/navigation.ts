@@ -92,13 +92,7 @@ const navigationByPerfil: Record<
   Perfil,
   (configuracionItems: NavigationItem[]) => NavigationSection[]
 > = {
-  ESTUDIANTE: (configuracionItems) =>
-    flat([
-      misClases,
-      clases,
-      avisos,
-      ...configuracionItems,
-    ]),
+  ESTUDIANTE: (configuracionItems) => flat([misClases, clases, avisos, ...configuracionItems]),
   DOCENTE: (configuracionItems) =>
     flat([
       misClases,

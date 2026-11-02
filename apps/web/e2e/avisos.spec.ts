@@ -1,6 +1,12 @@
 import type { Locator } from "@playwright/test";
 
-import { expect, loginViaUi, seededUsers, test } from "./support/fixtures";
+import {
+  expect,
+  expectBadgeDentroDelEncabezado,
+  loginViaUi,
+  seededUsers,
+  test,
+} from "./support/fixtures";
 
 // Fecha `dd/mm/aaaa` y hora 24 h en hora argentina, a `minutos` de ahora.
 const enMinutos = (minutos: number) => {
@@ -141,7 +147,12 @@ test.describe("Avisos institucionales", () => {
       await expect(page.locator("[data-slot=alert]")).toHaveCount(0);
     }
 
+    await page.setViewportSize({ width: 360, height: 740 });
     await page.goto("/estado-institucional");
+    await expect(page.locator("header [data-estado=CERRADA]")).toBeVisible();
+    await expectBadgeDentroDelEncabezado(page);
+    await page.setViewportSize({ width: 1280, height: 720 });
+
     await page.getByLabel("Nuevo estado").selectOption("ABIERTA");
     await page.getByRole("button", { name: "Cambiar estado" }).click();
     await expect(page.getByRole("link", { name: /Institución abierta/ })).toBeVisible();

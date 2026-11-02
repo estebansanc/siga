@@ -1,11 +1,13 @@
 import {
   expect,
+  expectBadgeDentroDelEncabezado,
   expectNoHorizontalPageScroll,
   loginViaUi,
   logoutViaUi,
   newUser,
   registerViaUi,
   seededUsers,
+  sinAvisosVigentes,
   test,
   verifyEmailViaLink,
 } from "./support/fixtures";
@@ -63,16 +65,13 @@ test.describe("Flujo principal de SiGA", () => {
       expect(await titulo.evaluate((h1) => h1.scrollWidth <= h1.clientWidth)).toBe(true);
       await expect(page.locator("[data-slot=alert]")).toHaveCount(0);
     }
+    await sinAvisosVigentes(page);
     await page.setViewportSize({ width: 360, height: 740 });
     await page.goto("/estado-institucional");
     const badge = indicador.locator("[data-estado]");
     await expect(badge).toBeVisible();
     await expect(indicador.getByText("Paro de transporte")).toBeHidden();
-    const dentroDelEncabezado = await page.evaluate(() => {
-      const borde = document.querySelector("header [data-estado]")!.getBoundingClientRect().right;
-      return borde <= document.querySelector("header")!.getBoundingClientRect().right;
-    });
-    expect(dentroDelEncabezado).toBe(true);
+    await expectBadgeDentroDelEncabezado(page);
     await expectNoHorizontalPageScroll(page);
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto("/estado-institucional");
