@@ -1,4 +1,4 @@
-import { fromDateColumn, prisma, type Prisma } from "@repo/db";
+import { fromDateColumn, Prisma, prisma } from "@repo/db";
 import {
   compararCodigosAula,
   compararPisos,
@@ -12,6 +12,7 @@ import {
   type CrearAula,
 } from "@repo/domain";
 
+import { isStorageConfigured } from "../env";
 import { conflict, notFound, unprocessable } from "../errors";
 import type {
   AulaClaseDto,
@@ -19,6 +20,7 @@ import type {
   AulaDto,
   AulaGestionDto,
   PlanoAulaDto,
+  PlanoImagenDto,
 } from "../schemas";
 
 import { claseInclude, toClaseDto as toClaseCompletaDto } from "./clases";
@@ -163,7 +165,13 @@ export const actualizarAula = async (
   const actual = await buscarAula(organizationId, id);
   if (!actual.activa) throw unprocessable("El aula está dada de baja: reactivala para editarla");
   if (input.codigo !== undefined) await assertCodigoLibre(organizationId, input.codigo, id);
-  const aula = await prisma.aula.update({ where: { id }, data: input });
+  const cambiaDeUbicacion =
+    (input.edificio !== undefined && input.edificio !== actual.edificio) ||
+    (input.piso !== undefined && input.piso !== actual.piso);
+  const aula = await prisma.aula.update({
+    where: { id },
+    data: cambiaDeUbicacion ? { ...input, planoId: null, poligono: Prisma.DbNull } : input,
+  });
   return toGestionDto(aula, (await idsOcupadas([id], new Date())).has(id));
 };
 
@@ -228,7 +236,10 @@ export const listarPlanoAulas = async (
     where: { organizationId, activa: true },
     include: { plano: true },
   });
-  const planos = await imagenesDePlanos(aulas.flatMap((aula) => (aula.plano ? [aula.plano] : [])));
+  // El plano de aulas lo usan todos los perfiles: sin almacenamiento se muestra sin imagen.
+  const planos = isStorageConfigured()
+    ? await imagenesDePlanos(aulas.flatMap((aula) => (aula.plano ? [aula.plano] : [])))
+    : new Map<string, PlanoImagenDto>();
   const clases = await prisma.claseProgramada.findMany({
     where: {
       aulaId: { in: aulas.map((aula) => aula.id) },

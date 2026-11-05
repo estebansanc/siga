@@ -1,6 +1,8 @@
 import { prisma } from "@repo/db";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as Env from "../env";
+import { isStorageConfigured } from "../env";
 import { unavailable } from "../errors";
 import {
   assertStorageConfigured,
@@ -19,7 +21,7 @@ import {
   type TestOrganization,
 } from "../test/db";
 
-import { listarPlanoAulas } from "./aulas";
+import { actualizarAula, listarPlanoAulas } from "./aulas";
 import {
   crearUrlImagenPlano,
   guardarPlano,
@@ -28,6 +30,10 @@ import {
   obtenerPlano,
 } from "./planos";
 
+vi.mock("../env", async (importOriginal) => ({
+  ...(await importOriginal<typeof Env>()),
+  isStorageConfigured: vi.fn(() => true),
+}));
 vi.mock("../integrations/storage", () => ({
   assertStorageConfigured: vi.fn(),
   createUploadUrl: vi.fn((key: string) => Promise.resolve(`https://r2.test/upload/${key}`)),
@@ -286,5 +292,29 @@ describe("plano de aulas con plano y polígono", () => {
       plano: { id: guardado.id, ancho: 1200, alto: 800, imagenUrl: expect.any(String) },
     });
     expect(aulas.find((a) => a.codigo === "Aula 7")).toMatchObject({ plano: null, poligono: null });
+  });
+
+  it("sin almacenamiento configurado la vista sigue y el plano es nulo", async () => {
+    const { plano: guardado } = await guardarPlanoDelPiso();
+    await importar(guardado.id, [{ codigo: "Aula 12" }]);
+    vi.mocked(isStorageConfigured).mockReturnValueOnce(false);
+
+    const aulas = await listarPlanoAulas(institution.organizationId);
+
+    expect(aulas.find((a) => a.codigo === "Aula 12")).toMatchObject({
+      plano: null,
+      poligono: rectangulo(),
+    });
+  });
+
+  it("cambiar el piso de un aula ubicada la desubica; cambiar otro dato no", async () => {
+    const { plano: guardado } = await guardarPlanoDelPiso();
+    await importar(guardado.id, [{ codigo: "Aula 12" }]);
+
+    await actualizarAula(institution.organizationId, fixture.aulaId, { capacidad: 50 });
+    expect((await aulaPorCodigo("Aula 12")).planoId).toBe(guardado.id);
+
+    await actualizarAula(institution.organizationId, fixture.aulaId, { piso: "2.º piso" });
+    expect(await aulaPorCodigo("Aula 12")).toMatchObject({ planoId: null, poligono: null });
   });
 });

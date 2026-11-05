@@ -974,3 +974,38 @@ describe("política de privacidad por HTTP", () => {
     expect(await pendiente()).toBe(false);
   });
 });
+
+describe("Planos por HTTP", () => {
+  it("la importación responde 422 con un polígono inválido o códigos repetidos", async () => {
+    const institution = await createInstitution();
+    getAuthContext.mockResolvedValue(authOf(institution, institution));
+    const plano = await prisma.planoPiso.create({
+      data: {
+        organizationId: institution.organizationId,
+        edificio: "Edificio A",
+        piso: "PB",
+        imagenKey: "k",
+        ancho: 10,
+        alto: 10,
+      },
+    });
+    const poligono = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 1, y: 1 },
+    ];
+    const importar = (aulas: object[]) =>
+      call(`/planos/${plano.id}/aulas`, json({ capacidadPorDefecto: 30, aulas }));
+
+    expect((await importar([{ codigo: "A1", poligono: poligono.slice(0, 2) }])).status).toBe(422);
+    expect(
+      (await importar([{ codigo: "A1", poligono: [...poligono, { x: 2, y: 0 }] }])).status,
+    ).toBe(422);
+    const repetidas = [
+      { codigo: "A1", poligono },
+      { codigo: "A1", poligono },
+    ];
+    expect((await importar(repetidas)).status).toBe(422);
+    expect((await importar([{ codigo: "A1", poligono }])).status).toBe(201);
+  });
+});

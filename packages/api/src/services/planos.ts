@@ -1,7 +1,7 @@
 import type { AuthContext } from "@repo/auth";
 import { prisma, type Prisma } from "@repo/db";
 import {
-  compararCodigosAula,
+  compararPisos,
   planoImagenMaxBytes,
   planoTiposPermitidos,
   poligonoSchema,
@@ -125,7 +125,7 @@ export const listarPlanos = async (auth: AuthContext): Promise<PlanoPisoDto[]> =
     include: { _count: { select: { aulas: { where: { activa: true } } } } },
   });
   const ordenados = planos.sort(
-    (a, b) => a.edificio.localeCompare(b.edificio, "es") || compararCodigosAula(a.piso, b.piso),
+    (a, b) => a.edificio.localeCompare(b.edificio, "es") || compararPisos(a.piso, b.piso),
   );
   return Promise.all(ordenados.map((plano) => toPlanoDto(plano, plano._count.aulas)));
 };
