@@ -858,9 +858,29 @@ export const dominiosPermitidosDtoSchema = z
   .openapi("DominiosPermitidos");
 export type DominiosPermitidosDto = z.infer<typeof dominiosPermitidosDtoSchema>;
 
+export const puntoPlanoSchema = z.object({ x: z.number(), y: z.number() }).openapi("PuntoPlano");
+
+export const poligonoAulaSchema = z.array(puntoPlanoSchema).openapi({
+  description: "De 3 a 24 puntos con coordenadas relativas a la imagen (0 a 1)",
+});
+
+export const planoImagenSchema = z
+  .object({
+    id: z.string(),
+    ancho: z.number().int(),
+    alto: z.number().int(),
+    imagenUrl: z.string().openapi({ description: "URL firmada de lectura, válida 1 hora" }),
+  })
+  .openapi("PlanoImagen");
+export type PlanoImagenDto = z.infer<typeof planoImagenSchema>;
+
 export const planoAulaSchema = aulaSchema
   .pick({ id: true, codigo: true, edificio: true, piso: true, capacidad: true })
   .extend({
+    plano: planoImagenSchema.nullable().openapi({ description: "Nulo si el aula no está ubicada" }),
+    poligono: poligonoAulaSchema.nullable().openapi({
+      description: "Nulo si el aula no está ubicada",
+    }),
     estadoAula: estadoAulaSchema,
     estado: estadoPlanoSchema,
     claseEnCurso: claseSchema.nullable(),
@@ -870,3 +890,48 @@ export const planoAulaSchema = aulaSchema
   })
   .openapi("PlanoAula");
 export type PlanoAulaDto = z.infer<typeof planoAulaSchema>;
+
+export const imagenPlanoSubidaSchema = z
+  .object({
+    key: z.string().openapi({ description: "Se envía como `key` al guardar el plano" }),
+    uploadUrl: z
+      .string()
+      .openapi({ description: "URL firmada para un PUT directo, válida 5 minutos" }),
+  })
+  .openapi("ImagenPlanoSubida");
+export type ImagenPlanoSubidaDto = z.infer<typeof imagenPlanoSubidaSchema>;
+
+export const planoPisoSchema = planoImagenSchema
+  .extend({
+    edificio: z.string(),
+    piso: z.string(),
+    aulasUbicadas: z.number().int(),
+  })
+  .openapi("PlanoPiso");
+export type PlanoPisoDto = z.infer<typeof planoPisoSchema>;
+
+export const aulaUbicadaSchema = z
+  .object({
+    id: z.string(),
+    codigo: z.string(),
+    capacidad: z.number().int(),
+    poligono: poligonoAulaSchema,
+  })
+  .openapi("AulaUbicada");
+
+export const planoPisoDetalleSchema = planoPisoSchema
+  .extend({ aulas: z.array(aulaUbicadaSchema) })
+  .openapi("PlanoPisoDetalle");
+export type PlanoPisoDetalleDto = z.infer<typeof planoPisoDetalleSchema>;
+
+const aulaImportadaSchema = z.object({ id: z.string(), codigo: z.string() });
+
+export const importacionPlanoSchema = z
+  .object({
+    creadas: z.array(aulaImportadaSchema),
+    ubicadas: z.array(aulaImportadaSchema).openapi({
+      description: "Aulas existentes del piso que recibieron o reemplazaron su polígono",
+    }),
+  })
+  .openapi("ImportacionPlano");
+export type ImportacionPlanoDto = z.infer<typeof importacionPlanoSchema>;

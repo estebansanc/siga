@@ -3,7 +3,7 @@
   "info": {
     "title": "SiGA API",
     "version": "1.0.0",
-    "description": "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante, datos académicos base, aulas, solicitudes de aula, asistencia docente, incidencias de infraestructura y gestión de usuarios y perfiles. Autenticación por cookie (web) o bearer token (móvil)."
+    "description": "Sesión y perfil, estado institucional, clases programadas, novedades, avisos institucionales, preferencias del estudiante, datos académicos base, aulas, solicitudes de aula, asistencia docente, incidencias de infraestructura, planos de pisos y gestión de usuarios y perfiles. Autenticación por cookie (web) o bearer token (móvil)."
   },
   "security": [
     {
@@ -2199,6 +2199,19 @@
           "capacidad": {
             "type": "integer"
           },
+          "plano": {
+            "$ref": "#/components/schemas/PlanoImagen"
+          },
+          "poligono": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PuntoPlano"
+            },
+            "description": "Nulo si el aula no está ubicada"
+          },
           "estadoAula": {
             "type": "string",
             "enum": [
@@ -2251,10 +2264,55 @@
           "edificio",
           "piso",
           "capacidad",
+          "plano",
+          "poligono",
           "estadoAula",
           "estado",
           "claseEnCurso",
           "proximaClase"
+        ]
+      },
+      "PlanoImagen": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "ancho": {
+            "type": "integer"
+          },
+          "alto": {
+            "type": "integer"
+          },
+          "imagenUrl": {
+            "type": "string",
+            "description": "URL firmada de lectura, válida 1 hora"
+          }
+        },
+        "required": [
+          "id",
+          "ancho",
+          "alto",
+          "imagenUrl"
+        ],
+        "description": "Nulo si el aula no está ubicada"
+      },
+      "PuntoPlano": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
         ]
       },
       "ReemplazoAula": {
@@ -2905,6 +2963,143 @@
               "historial"
             ]
           }
+        ]
+      },
+      "ImagenPlanoSubida": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Se envía como `key` al guardar el plano"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "description": "URL firmada para un PUT directo, válida 5 minutos"
+          }
+        },
+        "required": [
+          "key",
+          "uploadUrl"
+        ]
+      },
+      "PlanoPiso": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PlanoImagen"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "edificio": {
+                "type": "string"
+              },
+              "piso": {
+                "type": "string"
+              },
+              "aulasUbicadas": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "edificio",
+              "piso",
+              "aulasUbicadas"
+            ]
+          }
+        ]
+      },
+      "PlanoPisoDetalle": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PlanoPiso"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "aulas": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AulaUbicada"
+                }
+              }
+            },
+            "required": [
+              "aulas"
+            ]
+          }
+        ]
+      },
+      "AulaUbicada": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "capacidad": {
+            "type": "integer"
+          },
+          "poligono": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PuntoPlano"
+            },
+            "description": "De 3 a 24 puntos con coordenadas relativas a la imagen (0 a 1)"
+          }
+        },
+        "required": [
+          "id",
+          "codigo",
+          "capacidad",
+          "poligono"
+        ]
+      },
+      "ImportacionPlano": {
+        "type": "object",
+        "properties": {
+          "creadas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "codigo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "codigo"
+              ]
+            }
+          },
+          "ubicadas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "codigo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "codigo"
+              ]
+            },
+            "description": "Aulas existentes del piso que recibieron o reemplazaron su polígono"
+          }
+        },
+        "required": [
+          "creadas",
+          "ubicadas"
         ]
       },
       "SesionQr": {
@@ -13888,6 +14083,579 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IncidenciaDetalle"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planos/imagen": {
+      "post": {
+        "tags": [
+          "Planos"
+        ],
+        "summary": "URL firmada para subir la imagen del plano de un piso",
+        "description": "Solo Bedel. Body `{ contentType, size }` (JPG o PNG, hasta 4 MB). El cliente hace un PUT directo a `uploadUrl` y envía `key` al guardar el plano. 503 si el almacenamiento (`STORAGE_*`) no está configurado.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "contentType": {
+                    "type": "string",
+                    "enum": [
+                      "image/jpeg",
+                      "image/png"
+                    ]
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 4194304
+                  }
+                },
+                "required": [
+                  "contentType",
+                  "size"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "URL de subida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImagenPlanoSubida"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planos": {
+      "post": {
+        "tags": [
+          "Planos"
+        ],
+        "summary": "Guardar o reemplazar el plano de un edificio y piso",
+        "description": "Solo Bedel. Responde 201 si crea el plano y 200 si reemplaza el de ese edificio y piso: la imagen anterior se borra y las aulas ubicadas conservan su polígono. `imagenUrl` es una URL firmada de lectura. 422 si la imagen no está subida o no es JPG o PNG de hasta 4 MB.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "edificio": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "piso": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "key": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "ancho": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "alto": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "edificio",
+                  "piso",
+                  "key",
+                  "ancho",
+                  "alto"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plano reemplazado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanoPiso"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Plano creado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanoPiso"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Planos"
+        ],
+        "summary": "Planos de los pisos",
+        "description": "Solo Bedel. Ordenados por edificio y piso, con la cantidad de aulas ubicadas.",
+        "responses": {
+          "200": {
+            "description": "Planos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanoPiso"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planos/{id}": {
+      "get": {
+        "tags": [
+          "Planos"
+        ],
+        "summary": "Plano de un piso con sus aulas ubicadas",
+        "description": "Solo Bedel. Cada aula trae su polígono.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plano",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanoPisoDetalle"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planos/{id}/aulas": {
+      "post": {
+        "tags": [
+          "Planos"
+        ],
+        "summary": "Importar en lote las aulas de un plano",
+        "description": "Solo Bedel. Todo o nada. Un código nuevo crea el aula Disponible, sin equipamiento, en el edificio y piso del plano, con su capacidad o `capacidadPorDefecto`. Un código activo del mismo piso solo se ubica: toma el polígono nuevo y conserva su capacidad. 409 nombrando el código si es de otro edificio o piso o está dado de baja; 422 ante polígonos inválidos o códigos repetidos. Queda en auditoría como cambio masivo.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "capacidadPorDefecto": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 500
+                  },
+                  "aulas": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "codigo": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 40
+                        },
+                        "poligono": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "x": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1
+                              },
+                              "y": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y"
+                            ]
+                          },
+                          "minItems": 3,
+                          "maxItems": 24
+                        },
+                        "capacidad": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 500
+                        }
+                      },
+                      "required": [
+                        "codigo",
+                        "poligono"
+                      ]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "capacidadPorDefecto",
+                  "aulas"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Aulas importadas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportacionPlano"
                 }
               }
             }

@@ -26,6 +26,7 @@ const tables = [
   "materia",
   "carrera",
   "aula",
+  "plano_piso",
   "user_profile",
   "audit_log",
   "email_outbox",

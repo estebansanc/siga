@@ -10,15 +10,17 @@ export const observacionesAulaMax = 500;
 const textoObligatorio = (mensaje: string, max: number) =>
   z.string().trim().min(1, mensaje).max(max, `Hasta ${max} caracteres`);
 
+export const capacidadAulaSchema = z.coerce
+  .number("Ingresá la capacidad")
+  .int("La capacidad debe ser un número entero")
+  .min(capacidadAulaMin, `La capacidad mínima es ${capacidadAulaMin}`)
+  .max(capacidadAulaMax, `La capacidad máxima es ${capacidadAulaMax}`);
+
 const aulaFields = {
   codigo: textoObligatorio("Ingresá el código", 40),
   edificio: textoObligatorio("Ingresá el edificio", 80),
   piso: textoObligatorio("Ingresá el piso", 40),
-  capacidad: z.coerce
-    .number("Ingresá la capacidad")
-    .int("La capacidad debe ser un número entero")
-    .min(capacidadAulaMin, `La capacidad mínima es ${capacidadAulaMin}`)
-    .max(capacidadAulaMax, `La capacidad máxima es ${capacidadAulaMax}`),
+  capacidad: capacidadAulaSchema,
   equipamiento: z.array(equipamientoSchema),
   estado: estadoAulaSchema,
   observaciones: optionalText(observacionesAulaMax),

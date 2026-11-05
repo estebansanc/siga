@@ -14,6 +14,7 @@ export * from "./novedades";
 export * from "./preferencias";
 export * from "./recuperar-contrasena";
 export * from "./plano-aulas";
+export * from "./planos";
 export * from "./presencia";
 export * from "./profile";
 export * from "./settings";

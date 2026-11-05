@@ -124,6 +124,7 @@ model Organization {
   horarios               Horario[]
   diasNoLaborables       DiaNoLaborable[]
   aulas                  Aula[]
+  planosPiso             PlanoPiso[]
   clases                 ClaseProgramada[]
   estadosInstitucionales EstadoInstitucional[]
   novedades              Novedad[]
@@ -461,9 +462,30 @@ model Aula {
   sesionesQr          SesionQr[]
   incidencias         Incidencia[]
   asignaciones        AsignacionAula[]
+  planoId             String?
+  plano               PlanoPiso?        @relation(fields: [planoId], references: [id], onDelete: SetNull)
+  poligono            Json?
 
   @@unique([organizationId, codigo])
+  @@index([planoId])
   @@map("aula")
+}
+
+model PlanoPiso {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  edificio       String
+  piso           String
+  imagenKey      String
+  ancho          Int
+  alto           Int
+  aulas          Aula[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, edificio, piso])
+  @@map("plano_piso")
 }
 
 // ---------- SiGA: clases, estado institucional y novedades ----------

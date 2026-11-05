@@ -4,6 +4,7 @@ import {
   compararPisos,
   estadoPlanoDeAula,
   horaArgentina,
+  poligonoSchema,
   fechaArgentina,
   rangoDelDia,
   sumarDias,
@@ -22,6 +23,7 @@ import type {
 
 import { claseInclude, toClaseDto as toClaseCompletaDto } from "./clases";
 import { listarIncidenciasDeAula } from "./incidencias";
+import { imagenesDePlanos } from "./planos";
 
 const diasProximos = 7;
 const estadosSinOcupacion = ["SUSPENDIDA", "AUSENTE", "VIRTUAL", "FINALIZADA"] as const;
@@ -222,7 +224,11 @@ export const listarPlanoAulas = async (
   organizationId: string,
   ahora = new Date(),
 ): Promise<PlanoAulaDto[]> => {
-  const aulas = await prisma.aula.findMany({ where: { organizationId, activa: true } });
+  const aulas = await prisma.aula.findMany({
+    where: { organizationId, activa: true },
+    include: { plano: true },
+  });
+  const planos = await imagenesDePlanos(aulas.flatMap((aula) => (aula.plano ? [aula.plano] : [])));
   const clases = await prisma.claseProgramada.findMany({
     where: {
       aulaId: { in: aulas.map((aula) => aula.id) },
@@ -246,6 +252,8 @@ export const listarPlanoAulas = async (
         edificio: aula.edificio,
         piso: aula.piso,
         capacidad: aula.capacidad,
+        plano: aula.plano && (planos.get(aula.plano.id) ?? null),
+        poligono: aula.poligono === null ? null : poligonoSchema.parse(aula.poligono),
         estadoAula: aula.estado,
         estado: estadoPlanoDeAula(aula.estado, enCurso?.estado ?? null),
         claseEnCurso: enCurso && toClaseCompletaDto(enCurso),
