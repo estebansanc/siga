@@ -42,7 +42,7 @@ Ambos caminos ejecutan la misma lógica de `packages/api/src/services`.
 ```
 routes/       createRoute + handler: valida, llama al servicio, devuelve DTO
 services/     lógica de negocio, acceso a Prisma, serialización a DTO
-integrations/ email (Resend), storage S3
+integrations/ email (Resend), storage S3 (fotos de incidencias e imágenes de planos)
 ```
 
 Las rutas no contienen lógica. Los servicios no conocen Hono.
