@@ -82,3 +82,12 @@ export const crearClaseDeAsistenciaHoy = () => {
   `);
   return fecha;
 };
+
+export const diasNoLaborablesCargados = () =>
+  readSql(`SELECT to_char(fecha, 'YYYY-MM-DD') || '|' || activo FROM dia_no_laborable;`)
+    .split("\n")
+    .filter(Boolean)
+    .map((linea) => {
+      const [fecha, activo] = linea.split("|");
+      return { fecha, activo: activo === "true" };
+    });

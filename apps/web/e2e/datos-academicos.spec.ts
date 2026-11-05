@@ -1,6 +1,8 @@
 import type { Page } from "@playwright/test";
-import { diaSemanaDe, fechaArgentina, sumarDias } from "@repo/domain";
+import { fechaArgentina, sumarDias } from "@repo/domain";
 
+import { diasNoLaborablesCargados } from "./support/db";
+import { planearFechasDeClases } from "./support/fechas-de-clases";
 import {
   expect,
   expectNoHorizontalPageScroll,
@@ -34,9 +36,12 @@ test.describe("Datos académicos", () => {
     const carrera = { codigo: `E${sufijo}`, nombre: `Carrera E2E ${sufijo}` };
     const materia = { codigo: `M${sufijo}`, nombre: `Materia E2E ${sufijo}` };
     const periodo = `Período E2E ${sufijo}`;
-    const hoy = fechaArgentina(new Date());
-    const dentroDeUnaSemana = sumarDias(hoy, 7);
-    const dentroDeDosSemanas = sumarDias(hoy, 14);
+    const comisionA = `E2E-A-${sufijo}`;
+    const comisionB = `E2E-B-${sufijo}`;
+    const hoy = process.env.E2E_HOY ?? fechaArgentina(new Date());
+    const fechas = planearFechasDeClases(hoy, diasNoLaborablesCargados());
+    const dentroDeUnaSemana = fechas.diaNoLaborable;
+    const dentroDeDosSemanas = fechas.claseGenerada;
 
     await loginViaUi(page, seededUsers.bedel);
     await page.goto("/datos-academicos");
@@ -80,8 +85,8 @@ test.describe("Datos académicos", () => {
     await expect(
       dialog.getByText("La fecha de fin debe ser posterior a la de inicio"),
     ).toBeVisible();
-    await dialog.getByLabel("Inicio").fill(sumarDias(hoy, 1));
-    await dialog.getByLabel("Fin").fill(sumarDias(hoy, 30));
+    await dialog.getByLabel("Inicio").fill(fechas.inicio);
+    await dialog.getByLabel("Fin").fill(fechas.fin);
     await dialog.getByRole("button", { name: "Guardar" }).click();
     await expect(page.getByText("Período creado")).toBeVisible();
     await expect(filas(page, periodo)).toBeVisible();
@@ -110,14 +115,14 @@ test.describe("Datos académicos", () => {
       await nueva.getByRole("button", { name: "Guardar" }).click();
       await expect(page.getByText("Comisión creada")).toBeVisible();
     };
-    await crearComision("E2E-A", seededUsers.docente.name);
-    await expect(filas(page, "E2E-A")).toContainText(seededUsers.docente.name);
-    await crearComision("E2E-B");
-    await expect(filas(page, "E2E-B")).toContainText("Sin docentes");
+    await crearComision(comisionA, seededUsers.docente.name);
+    await expect(filas(page, comisionA)).toContainText(seededUsers.docente.name);
+    await crearComision(comisionB);
+    await expect(filas(page, comisionB)).toContainText("Sin docentes");
 
     // Horarios: el aula ocupada nombra la comisión que ya la usa
     await page.getByRole("tab", { name: "Horarios" }).click();
-    const dia = String(diaSemanaDe(dentroDeDosSemanas));
+    const dia = String(fechas.diaSemana);
     const cargarHorario = async (comision: string, desde: string, hasta: string) => {
       const nuevo = await abrirDialogo(page, "Nuevo horario", "Nuevo horario");
       await nuevo.getByLabel("Comisión").selectOption({ label: `${comision} · ${materia.nombre}` });
@@ -128,10 +133,12 @@ test.describe("Datos académicos", () => {
       await nuevo.getByRole("button", { name: "Guardar" }).click();
       return nuevo;
     };
-    await cargarHorario("E2E-A", "06:00", "07:00");
+    await cargarHorario(comisionA, "06:00", "07:00");
     await expect(page.getByText("Horario creado")).toBeVisible();
-    const conflicto = await cargarHorario("E2E-B", "06:30", "07:30");
-    await expect(conflicto.getByText(/ya está asignada a la comisión E2E-A/)).toBeVisible();
+    const conflicto = await cargarHorario(comisionB, "06:30", "07:30");
+    await expect(
+      conflicto.getByText(new RegExp(`ya está asignada a la comisión ${comisionA}`)),
+    ).toBeVisible();
     await conflicto.getByRole("button", { name: "Cancelar" }).click();
 
     // Generar clases desde el período; regenerar no crea nada
@@ -139,7 +146,7 @@ test.describe("Datos académicos", () => {
     await accionDeFila(page, periodo, "Generar clases");
     await page.getByRole("button", { name: "Generar clases" }).click();
     const resumen = page.getByLabel("Resumen de la generación");
-    await expect(resumen).toContainText(/Creadas\s*3/);
+    await expect(resumen).toContainText(new RegExp(`Creadas\\s*${fechas.clasesEsperadas}(?!\\d)`));
     await page.getByRole("button", { name: "Cerrar" }).click();
     await accionDeFila(page, periodo, "Generar clases");
     await page.getByRole("button", { name: "Generar clases" }).click();
@@ -153,11 +160,11 @@ test.describe("Datos académicos", () => {
       await page.getByLabel("Materia").selectOption({ label: materia.nombre });
     };
     await buscarClases(dentroDeDosSemanas);
-    const clase = filas(page, "E2E-A");
+    const clase = filas(page, comisionA);
     await expect(clase).toContainText("Programada");
     await expect(clase).toContainText("Aula 14");
     await buscarClases(dentroDeUnaSemana);
-    await expect(page.getByText("E2E-A")).toHaveCount(0);
+    await expect(page.getByText(comisionA)).toHaveCount(0);
 
     // Bajas: la carrera con materias activas se rechaza; el horario saca sus clases
     await page.goto("/datos-academicos");
@@ -168,12 +175,12 @@ test.describe("Datos académicos", () => {
     ).toBeVisible();
 
     await page.getByRole("tab", { name: "Horarios" }).click();
-    await accionDeFila(page, `E2E-A · ${materia.nombre}`, "Dar de baja");
+    await accionDeFila(page, `${comisionA} · ${materia.nombre}`, "Dar de baja");
     await page.getByRole("alertdialog").getByRole("button", { name: "Dar de baja" }).click();
     await page.getByRole("button", { name: "De baja", exact: true }).click();
-    await expect(filas(page, "E2E-A", "De baja")).toBeVisible();
+    await expect(filas(page, comisionA, "De baja")).toBeVisible();
     await buscarClases(dentroDeDosSemanas);
-    await expect(page.getByText("E2E-A")).toHaveCount(0);
+    await expect(page.getByText(comisionA)).toHaveCount(0);
   });
 
   test("la Autoridad accede y Docente y Estudiante ven Acceso denegado", async ({ page }) => {
