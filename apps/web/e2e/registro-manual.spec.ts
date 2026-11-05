@@ -62,6 +62,7 @@ test.describe("Registro manual de asistencia", () => {
     await expect(detalle).toContainText("Teléfono sin batería");
 
     await page.goto("/historico");
+    await page.getByRole("tab", { name: "Asistencia docente" }).click();
     const fila = page
       .getByRole("row")
       .filter({ hasText: `${materia} · ${comision}` })

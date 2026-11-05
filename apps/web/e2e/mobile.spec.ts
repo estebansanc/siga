@@ -336,14 +336,19 @@ test.describe("Móvil", () => {
             capacidad: 30,
           },
         });
+        expect(aula.ok()).toBe(true);
         const { id: aulaId } = (await aula.json()) as { id: string };
         const creada = await page.request.post("/api/v1/incidencias", {
           data: { aulaId, elemento: "MOBILIARIO", descripcion: "Sillas rotas", gravedad: "LEVE" },
         });
+        expect(creada.ok()).toBe(true);
         const { id } = (await creada.json()) as { id: string };
-        await page.request.post(`/api/v1/incidencias/${id}/estado`, {
-          data: { estado: "RESUELTA" },
-        });
+        for (const estado of ["EN_CURSO", "RESUELTA"]) {
+          const avance = await page.request.post(`/api/v1/incidencias/${id}/estado`, {
+            data: { estado },
+          });
+          expect(avance.ok()).toBe(true);
+        }
 
         await page.goto("/novedades");
         await page.getByRole("tab", { name: "Historial" }).tap();
