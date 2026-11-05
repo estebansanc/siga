@@ -197,7 +197,7 @@ export const importarAulasDelPlano = async (
         equipamiento: [],
         estado: "DISPONIBLE" as const,
         planoId: plano.id,
-        poligono: aula.poligono as Prisma.InputJsonValue,
+        poligono: aula.poligono,
       })),
       select: { id: true, codigo: true },
     });

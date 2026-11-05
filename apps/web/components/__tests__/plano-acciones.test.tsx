@@ -52,6 +52,8 @@ const aula = (parcial: Partial<PlanoAulaDto> = {}): PlanoAulaDto => ({
   capacidad: 30,
   estadoAula: "DISPONIBLE",
   estado: "LIBRE",
+  plano: null,
+  poligono: null,
   claseEnCurso: null,
   proximaClase: null,
   ...parcial,
