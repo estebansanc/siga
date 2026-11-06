@@ -290,3 +290,34 @@ export const crearNovedadesDeHistorial = async () => {
   };
   return { marca, limpiar };
 };
+
+// Una clase de madrugada de 5K2 Proyecto Final en la fecha dada, sin solicitudes: es la primera
+// de la lista de Solicitar aula ese día y no depende de las Pendientes que deja el seed.
+export const crearClaseParaSolicitar = async (fecha: string) => {
+  const { prisma, toDateColumn } = await abrirBase();
+  const comision = await prisma.comision.findUniqueOrThrow({ where: { id: "comision-5k2-pf" } });
+  const minuto = 10 + Math.floor(Math.random() * 40);
+  const clase = await prisma.claseProgramada.create({
+    data: {
+      organizationId: comision.organizationId,
+      comisionId: comision.id,
+      fecha: toDateColumn(fecha),
+      inicio: instanteArgentino(fecha, `01:${minuto}`),
+      fin: instanteArgentino(fecha, `02:${minuto}`),
+      aulaId: null,
+    },
+  });
+  return clase.id;
+};
+
+export const solicitudesDeLaClase = async (claseId: string) => {
+  const { prisma } = await abrirBase();
+  return prisma.solicitudAula.findMany({ where: { claseId } });
+};
+
+export const eliminarClaseConSolicitudes = async (claseId: string) => {
+  const { prisma } = await abrirBase();
+  await prisma.solicitudAula.deleteMany({ where: { claseId } });
+  await prisma.asignacionAula.deleteMany({ where: { claseId } });
+  await prisma.claseProgramada.delete({ where: { id: claseId } });
+};

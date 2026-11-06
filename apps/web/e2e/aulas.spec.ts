@@ -1,6 +1,11 @@
 import { diaSemanaDe, fechaArgentina, sumarDias } from "@repo/domain";
 
 import {
+  crearClaseParaSolicitar,
+  eliminarClaseConSolicitudes,
+  solicitudesDeLaClase,
+} from "./support/clase-de-hoy";
+import {
   expect,
   expectNoHorizontalPageScroll,
   loginViaUi,
@@ -172,52 +177,67 @@ test.describe("Solicitar aula", () => {
   test("el docente busca, solicita un aula y una segunda solicitud para la clase se rechaza", async ({
     page,
   }) => {
-    await loginViaUi(page, seededUsers.docente);
-    await page.goto("/solicitudes");
-    await page.getByRole("button", { name: "Nueva solicitud" }).click();
-    await expect(page.getByRole("dialog", { name: "Nueva solicitud" })).toBeVisible();
-    await expect(page).toHaveURL(/\/solicitudes$/);
-    await expectNoHorizontalPageScroll(page);
+    const fecha = proximoDiaHabil();
+    const claseId = await crearClaseParaSolicitar(fecha);
+    const dialog = page.getByRole("dialog", { name: "Nueva solicitud" });
+    const abrirYElegirAula = async (alumnos: string) => {
+      await page.getByRole("button", { name: "Nueva solicitud" }).click();
+      await dialog.getByLabel("Fecha").fill(fecha);
+      await expect(dialog.getByLabel("Clase").locator(`option[value="${claseId}"]`)).toBeAttached();
+      await dialog.getByLabel("Clase").selectOption(claseId);
+      await dialog.getByLabel("Cantidad de alumnos").fill(alumnos);
+      await dialog.getByRole("button", { name: "Buscar aulas" }).click();
+      await dialog
+        .getByRole("button", { name: /^Elegir / })
+        .first()
+        .click();
+    };
 
-    await page.getByLabel("Fecha").fill(proximoDiaHabil());
-    const clase = page.getByLabel("Clase");
-    await expect(clase.locator("option")).not.toHaveCount(1);
-    await clase.selectOption({ index: 1 });
-    await expect(page.getByText(/Franja \d\d:\d\d a \d\d:\d\d/)).toBeVisible();
+    try {
+      await loginViaUi(page, seededUsers.docente);
+      await page.goto("/solicitudes");
+      await page.getByRole("button", { name: "Nueva solicitud" }).click();
+      await expect(dialog).toBeVisible();
+      await expect(page).toHaveURL(/\/solicitudes$/);
+      await expectNoHorizontalPageScroll(page);
 
-    await page.getByLabel("Cantidad de alumnos").fill("0");
-    await page.getByRole("button", { name: "Buscar aulas" }).click();
-    await expect(page.getByText("Ingresá una cantidad de alumnos mayor que 0.")).toBeVisible();
+      await dialog.getByLabel("Fecha").fill(fecha);
+      await dialog.getByLabel("Clase").selectOption(claseId);
+      await expect(dialog.getByText(/Franja \d\d:\d\d a \d\d:\d\d/)).toBeVisible();
 
-    await page.getByLabel("Cantidad de alumnos").fill("100");
-    await page.getByRole("button", { name: "Buscar aulas" }).click();
-    await expect(page.getByText("Ninguna aula cumple todos los criterios.")).toBeVisible();
-    await expect(page.getByText(/Capacidad para 100 alumnos/).first()).toBeVisible();
+      await dialog.getByLabel("Cantidad de alumnos").fill("0");
+      await dialog.getByRole("button", { name: "Buscar aulas" }).click();
+      await expect(dialog.getByText("Ingresá una cantidad de alumnos mayor que 0.")).toBeVisible();
 
-    await page.getByLabel("Cantidad de alumnos").fill("40");
-    await page.getByRole("checkbox", { name: "Proyector" }).check();
-    await page.getByRole("button", { name: "Buscar aulas" }).click();
-    await page
-      .getByRole("button", { name: /^Elegir / })
-      .first()
-      .click();
-    await page.getByRole("button", { name: "Confirmar solicitud" }).click();
+      await dialog.getByLabel("Cantidad de alumnos").fill("100");
+      await dialog.getByRole("button", { name: "Buscar aulas" }).click();
+      await expect(dialog.getByText("Ninguna aula cumple todos los criterios.")).toBeVisible();
+      await expect(dialog.getByText(/Capacidad para 100 alumnos/).first()).toBeVisible();
 
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect(page.getByText("Pendiente").first()).toBeVisible();
+      await dialog.getByLabel("Cantidad de alumnos").fill("40");
+      await dialog.getByRole("checkbox", { name: "Proyector" }).check();
+      await dialog.getByRole("button", { name: "Buscar aulas" }).click();
+      await dialog
+        .getByRole("button", { name: /^Elegir / })
+        .first()
+        .click();
+      await dialog.getByRole("button", { name: "Confirmar solicitud" }).click();
 
-    await page.getByRole("button", { name: "Nueva solicitud" }).click();
-    await page.getByLabel("Fecha").fill(proximoDiaHabil());
-    await expect(page.getByLabel("Clase").locator("option")).not.toHaveCount(1);
-    await page.getByLabel("Clase").selectOption({ index: 1 });
-    await page.getByLabel("Cantidad de alumnos").fill("10");
-    await page.getByRole("button", { name: "Buscar aulas" }).click();
-    await page
-      .getByRole("button", { name: /^Elegir / })
-      .first()
-      .click();
-    await page.getByRole("button", { name: "Confirmar solicitud" }).click();
-    await expect(page.getByText("Esta clase ya tiene una solicitud pendiente.")).toBeVisible();
+      await expect(page.getByText("Solicitud enviada")).toBeVisible();
+      await expect(dialog).toHaveCount(0);
+      await expect(page.getByText("Pendiente").first()).toBeVisible();
+      expect(await solicitudesDeLaClase(claseId)).toHaveLength(1);
+
+      await abrirYElegirAula("10");
+      await dialog.getByRole("button", { name: "Confirmar solicitud" }).click();
+      await expect(page.getByText("Esta clase ya tiene una solicitud pendiente.")).toBeVisible();
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByLabel("Cantidad de alumnos")).toHaveValue("10");
+      await expect(dialog.getByLabel("Clase")).toHaveValue(claseId);
+      expect(await solicitudesDeLaClase(claseId)).toHaveLength(1);
+    } finally {
+      await eliminarClaseConSolicitudes(claseId);
+    }
   });
 
   test("el docente ve el estado vacío en un día sin clases y el formulario en uno con clases", async ({

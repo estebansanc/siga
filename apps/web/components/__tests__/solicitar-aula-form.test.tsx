@@ -1,6 +1,7 @@
 import type { BusquedaAulaDto, ClaseDto } from "@repo/api/client";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SolicitarAulaForm } from "@/components/aulas/solicitar-aula-form";
@@ -114,6 +115,23 @@ describe("SolicitarAulaForm", () => {
       }),
     );
     expect(onSolicitada).toHaveBeenCalledOnce();
+  });
+
+  it("si la confirmación se rechaza no avisa el éxito ni cierra y conserva lo elegido", async () => {
+    crear.mockRejectedValue(new Error("Esta clase ya tiene una solicitud pendiente."));
+    renderWithProviders(
+      <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
+    );
+    await completarPedido("40");
+    await userEvent.click(screen.getByRole("button", { name: "Elegir Aula 7" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar solicitud" }));
+
+    await waitFor(() => expect(crear).toHaveBeenCalledOnce());
+    expect(onSolicitada).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Clase")).toHaveValue("clase-1");
+    expect(screen.getByLabelText("Cantidad de alumnos")).toHaveValue(40);
+    expect(screen.getByRole("button", { name: "Confirmar solicitud" })).toBeVisible();
   });
 
   it("sin coincidencias avisa y lista las sugerencias con el criterio que falla", async () => {
