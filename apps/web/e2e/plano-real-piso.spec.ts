@@ -25,7 +25,7 @@ const recinto = [
 // El e2e corre sin almacenamiento: el plano de aulas no trae imagen, así que se le agrega a la
 // respuesta real el plano y el polígono de una aula.
 const ubicarAula = async (page: Page, aulaId: string) => {
-  await page.route("**/aulas/plano", async (route) => {
+  await page.route(/\/aulas\/plano(\?.*)?$/, async (route) => {
     const respuesta = await route.fetch();
     const aulas = (await respuesta.json()) as { id: string; edificio: string; piso: string }[];
     const piso = aulas.find((aula) => aula.id === aulaId)!;
@@ -43,6 +43,8 @@ const ubicarAula = async (page: Page, aulaId: string) => {
 };
 
 test.describe("Plano real del piso", () => {
+  test.use({ serviceWorkers: "block" });
+
   test("el aula ubicada se dibuja en su recinto, la otra va en Sin ubicar y ambas abren su detalle; a 375 px no hay scroll horizontal", async ({
     page,
   }) => {
@@ -73,7 +75,7 @@ test.describe("Plano real del piso", () => {
       await page.keyboard.press("Escape");
 
       const acercar = page.getByRole("button", { name: "Acercar" });
-      for (let i = 0; i < 7; i++) await acercar.click();
+      for (let i = 0; i < 6; i++) await acercar.click();
       await expect(page.getByText("400 %")).toBeVisible();
       await expect(acercar).toBeDisabled();
       await expectNoHorizontalPageScroll(page);

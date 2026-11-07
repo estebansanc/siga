@@ -102,7 +102,7 @@ describe("PlanoAulas con plano de piso", () => {
     const svg = () => container.querySelector("svg[aria-label='Plano del piso']") as SVGElement;
     expect(svg().style.width).toBe("100%");
     expect(screen.getByRole("button", { name: "Alejar" })).toBeDisabled();
-    for (let i = 0; i < 7; i++)
+    for (let i = 0; i < 6; i++)
       await userEvent.click(screen.getByRole("button", { name: "Acercar" }));
     expect(svg().style.width).toBe("400%");
     expect(screen.getByText("400 %")).toBeVisible();
