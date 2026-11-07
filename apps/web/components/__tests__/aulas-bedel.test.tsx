@@ -17,6 +17,15 @@ vi.mock("@/components/incidencias/incidencias-section", () => ({
   IncidenciaItem: () => null,
   proponeFueraDeServicio: () => false,
 }));
+vi.mock("@/components/aulas/importar-plano/importar-plano-dialog", () => ({
+  ImportarPlanoDialog: ({ onClose }: { onClose: () => void }) => (
+    <div role="dialog" aria-label="Importar desde plano">
+      <button type="button" onClick={onClose}>
+        Cerrar
+      </button>
+    </div>
+  ),
+}));
 vi.mock("@/components/aulas/plano-acciones", () => ({
   PlanoAcciones: () => <button type="button">Asignar clase</button>,
 }));
@@ -117,5 +126,13 @@ describe("AulasBedel", () => {
     expect(within(dialog).getByText("Reportar incidencia")).toBeVisible();
     expect(within(dialog).queryByRole("button", { name: "Asignar clase" })).not.toBeInTheDocument();
     expect(within(dialog).queryByText("Libre en este momento.")).not.toBeInTheDocument();
+  });
+
+  it("Importar desde plano abre el asistente junto a Nueva aula", async () => {
+    renderWithProviders(<AulasBedel perfil="BEDEL" />);
+    await userEvent.click(screen.getByRole("button", { name: "Importar desde plano" }));
+    expect(screen.getByRole("dialog", { name: "Importar desde plano" })).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

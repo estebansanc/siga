@@ -3,13 +3,14 @@
 import type { Perfil } from "@repo/domain";
 import { Button } from "@repo/ui/components/button";
 import { ToggleGroup, ToggleGroupItem } from "@repo/ui/components/toggle-group";
-import { PlusIcon } from "lucide-react";
+import { ImageUpIcon, PlusIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { AulaDetalleDialog } from "./aula-detalle-dialog";
 import { AulaFormDialog } from "./aula-form-dialog";
 import { AulasSection } from "./aulas-section";
+import { ImportarPlanoDialog } from "./importar-plano/importar-plano-dialog";
 import { PlanoAulas } from "./plano-aulas";
 
 export type VistaAulas = "lista" | "plano";
@@ -22,6 +23,7 @@ export function AulasBedel({ perfil }: { perfil: Perfil }) {
   const router = useRouter();
   const vista: VistaAulas = useSearchParams().get("vista") === "plano" ? "plano" : "lista";
   const [creando, setCreando] = useState(false);
+  const [importando, setImportando] = useState(false);
   const [detalleId, setDetalleId] = useState<string | null>(null);
 
   const cambiarVista = (valores: string[]) => {
@@ -42,10 +44,16 @@ export function AulasBedel({ perfil }: { perfil: Perfil }) {
           <ToggleGroupItem value="lista">Lista</ToggleGroupItem>
           <ToggleGroupItem value="plano">Plano</ToggleGroupItem>
         </ToggleGroup>
-        <Button size="sm" onClick={() => setCreando(true)}>
-          <PlusIcon />
-          Nueva aula
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={() => setImportando(true)}>
+            <ImageUpIcon />
+            Importar desde plano
+          </Button>
+          <Button size="sm" onClick={() => setCreando(true)}>
+            <PlusIcon />
+            Nueva aula
+          </Button>
+        </div>
       </div>
       {vista === "lista" ? (
         <AulasSection onDetalle={setDetalleId} />
@@ -53,6 +61,7 @@ export function AulasBedel({ perfil }: { perfil: Perfil }) {
         <PlanoAulas perfil={perfil} onAbrirAula={setDetalleId} />
       )}
       {creando ? <AulaFormDialog onClose={() => setCreando(false)} /> : null}
+      {importando ? <ImportarPlanoDialog onClose={() => setImportando(false)} /> : null}
       {detalleId ? (
         <AulaDetalleDialog aulaId={detalleId} perfil={perfil} onClose={() => setDetalleId(null)} />
       ) : null}

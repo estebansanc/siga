@@ -26,6 +26,7 @@ export const queryKeys = {
     ["datos-academicos", entidad, query] as const,
   aulas: (bajas: boolean) => ["aulas", { bajas }] as const,
   aulasPlano: ["aulas", "plano"] as const,
+  planos: ["planos"] as const,
   aula: (id: string) => ["aulas", id] as const,
   clasesDelTurno: (query: Record<string, string>) => ["clases-del-turno", query] as const,
   clasesAsignables: (aulaId: string, reemplazo: boolean) =>
