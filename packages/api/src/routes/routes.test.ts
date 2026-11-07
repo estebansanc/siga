@@ -359,6 +359,44 @@ describe("SiGA: perfiles y flujo principal por HTTP", () => {
       como(perfil);
       expect((await call("/aulas/plano")).status).toBe(200);
     }
+    for (const perfil of [docente, estudiante, autoridad]) {
+      como(perfil);
+      expect((await call("/planos")).status).toBe(403);
+      como(perfil);
+      expect((await call("/planos/x")).status).toBe(403);
+      como(perfil);
+      expect(
+        (await call("/planos/imagen", json({ contentType: "image/png", size: 1000 }))).status,
+      ).toBe(403);
+      como(perfil);
+      expect(
+        (await call("/planos", json({ edificio: "A", piso: "1", key: "k", ancho: 10, alto: 10 })))
+          .status,
+      ).toBe(403);
+      como(perfil);
+      expect(
+        (
+          await call(
+            "/planos/x/aulas",
+            json({
+              capacidadPorDefecto: 30,
+              aulas: [
+                {
+                  codigo: "A",
+                  poligono: [
+                    { x: 0.1, y: 0.1 },
+                    { x: 0.3, y: 0.1 },
+                    { x: 0.3, y: 0.3 },
+                  ],
+                },
+              ],
+            }),
+          )
+        ).status,
+      ).toBe(403);
+      como(perfil);
+      expect((await call("/planos/x/deteccion", json({}))).status).toBe(403);
+    }
 
     como(institution);
     const aula = { codigo: "Aula 99", edificio: "Edificio A", piso: "PB", capacidad: 35 };

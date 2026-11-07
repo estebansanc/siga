@@ -8,7 +8,7 @@
 
 ## Decisión
 
-**Claude (Anthropic) por HTTP**, desde `packages/api/src/integrations/deteccion-aulas.ts`, sin SDK: es una única llamada a `POST /v1/messages` con la imagen del plano ya guardada (#116) y una herramienta forzada (`registrar_aulas`) cuyo esquema obliga a devolver `nombre`, `confianza` y `poligono`. La salida se valida con zod y se normaliza (coordenadas acotadas a 0 a 1, recintos degenerados descartados). El modelo se elige con `DETECCION_AULAS_MODELO`: `haiku` por defecto, `sonnet` u `opus`. La detección nunca crea aulas: devuelve propuestas que el Bedel revisa y confirma. Sin `ANTHROPIC_API_KEY` responde 503 y ante una falla del proveedor 502; en ambos casos el Bedel sigue a mano.
+**Claude (Anthropic) por HTTP**, desde `packages/api/src/integrations/deteccion-aulas.ts`, sin SDK: es una única llamada a `POST /v1/messages` con la imagen del plano ya guardada (#116) y una herramienta forzada (`registrar_aulas`) cuyo esquema obliga a devolver `nombre`, `confianza` y `poligono`. La salida se valida con zod y se normaliza (coordenadas acotadas a 0 a 1, recintos degenerados descartados). El modelo se elige con `DETECCION_AULAS_MODELO`: `haiku` por defecto, `sonnet` u `opus` (cualquier otro valor responde 503 nombrando la variable), mapeados a `claude-haiku-5-5`, `claude-sonnet-5-5` y `claude-opus-5-5`. La detección nunca crea aulas: devuelve propuestas que el Bedel revisa y confirma. Sin `ANTHROPIC_API_KEY` responde 503 y ante una falla del proveedor 502; en ambos casos el Bedel sigue a mano.
 
 El PDF se convierte a imagen en el navegador con `pdfjs-dist` (única dependencia nueva, de `apps/web`): ni el stack ni el servidor serverless lo hacen, y así la API solo recibe JPG o PNG, como el resto de los planos.
 

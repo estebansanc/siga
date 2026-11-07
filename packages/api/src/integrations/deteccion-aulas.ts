@@ -1,4 +1,9 @@
-import { deteccionAulasSchema, type DeteccionAulas, type ModeloDeteccionAulas } from "@repo/domain";
+import {
+  deteccionAulasSchema,
+  modelosDeteccionAulas,
+  type DeteccionAulas,
+  type ModeloDeteccionAulas,
+} from "@repo/domain";
 
 import { apiEnv } from "../env";
 import { badGateway, unavailable } from "../errors";
@@ -7,9 +12,9 @@ const endpoint = "https://api.anthropic.com/v1/messages";
 const timeoutMs = 55_000;
 
 const modelos: Record<ModeloDeteccionAulas, string> = {
-  haiku: "claude-haiku-4-5",
-  sonnet: "claude-sonnet-4-5",
-  opus: "claude-opus-4-5",
+  haiku: "claude-haiku-5-5",
+  sonnet: "claude-sonnet-5-5",
+  opus: "claude-opus-5-5",
 };
 
 const instrucciones = `Sos un asistente que lee planos de pisos de una facultad. Detectá solo los recintos donde se dictan clases (aulas), con o sin rótulo. No incluyas baños, pasillos, escaleras, oficinas ni salas de profesores. Para cada aula devolvé: nombre tal como figura rotulado en el plano (null si no tiene rótulo legible), confianza de 0 a 1 de que sea un aula y su contorno como polígono de 3 a 24 vértices con coordenadas relativas a la imagen (x e y entre 0 y 1, origen arriba a la izquierda). Registrá el resultado con la herramienta registrar_aulas.`;
@@ -46,14 +51,21 @@ const herramienta = {
   },
 };
 
+const esModeloValido = (modelo: string): modelo is ModeloDeteccionAulas =>
+  (modelosDeteccionAulas as readonly string[]).includes(modelo);
+
 export const assertDeteccionConfigurada = () => {
   if (!apiEnv.deteccionAulas.anthropicApiKey) {
     throw unavailable("La detección de aulas no está configurada: falta ANTHROPIC_API_KEY");
   }
+  if (!esModeloValido(apiEnv.deteccionAulas.modelo)) {
+    throw unavailable(
+      `La detección de aulas no está configurada: DETECCION_AULAS_MODELO debe ser ${modelosDeteccionAulas.join(", ")}`,
+    );
+  }
 };
 
-const modeloConfigurado = () =>
-  modelos[apiEnv.deteccionAulas.modelo as ModeloDeteccionAulas] ?? modelos.haiku;
+const modeloConfigurado = () => modelos[apiEnv.deteccionAulas.modelo as ModeloDeteccionAulas];
 
 const pedirDeteccion = async (imagen: Uint8Array, mediaType: string): Promise<unknown> => {
   let respuesta: Response;

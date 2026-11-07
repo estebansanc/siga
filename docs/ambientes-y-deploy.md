@@ -113,7 +113,7 @@ SiGA lo usa para detectar las aulas de un plano en "Importar desde plano" (ADR 0
 | Variable                 | Valor                                                                          |
 | ------------------------ | ------------------------------------------------------------------------------ |
 | `ANTHROPIC_API_KEY`      | API key de la consola de Anthropic                                             |
-| `DETECCION_AULAS_MODELO` | Opcional: `haiku` (por defecto), `sonnet` u `opus`; el costo sube en ese orden |
+| `DETECCION_AULAS_MODELO` | Opcional: `haiku` (por defecto), `sonnet` u `opus` (otro valor responde 503); el costo sube en ese orden |
 
 ### Resend
 

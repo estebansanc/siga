@@ -84,14 +84,23 @@ describe("detección de aulas del plano", () => {
     const [url, opciones] = fetchMock.mock.calls[0]!;
     expect(url).toBe("https://api.anthropic.com/v1/messages");
     expect(opciones.headers["x-api-key"]).toBe("clave-de-prueba");
-    expect(JSON.parse(opciones.body).model).toBe("claude-haiku-4-5");
+    expect(JSON.parse(opciones.body).model).toBe("claude-haiku-5-5");
   });
 
   it("usa el modelo configurado", async () => {
     apiEnv.deteccionAulas.modelo = "opus";
     fetchMock.mockResolvedValue(respuestaDelProveedor([]));
     await detectar();
-    expect(JSON.parse(fetchMock.mock.calls[0]![1].body).model).toBe("claude-opus-4-5");
+    expect(JSON.parse(fetchMock.mock.calls[0]![1].body).model).toBe("claude-opus-5-5");
+  });
+
+  it("503 si DETECCION_AULAS_MODELO no es haiku, sonnet ni opus, sin llamar al proveedor", async () => {
+    apiEnv.deteccionAulas.modelo = "gpt";
+    await expect(detectar()).rejects.toMatchObject({
+      status: 503,
+      message: expect.stringContaining("DETECCION_AULAS_MODELO"),
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("acota las coordenadas y descarta los recintos inválidos", async () => {
