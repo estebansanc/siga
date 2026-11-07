@@ -9,7 +9,7 @@ import {
   type Poligono,
 } from "@repo/domain";
 import { cn } from "@repo/ui/lib/utils";
-import { useRef, type PointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent } from "react";
 
 import type { Tono } from "@/components/estado-tonos";
 
@@ -127,6 +127,13 @@ export function PlanoPiso({
   const recuadro = useRef<HTMLDivElement>(null);
   const arrastre = useRef<Arrastre | null>(null);
   const seArrastro = useRef(false);
+  const imagen = useRef<SVGImageElement>(null);
+
+  useEffect(() => {
+    const el = imagen.current;
+    el?.addEventListener("error", onImagenFallida);
+    return () => el?.removeEventListener("error", onImagenFallida);
+  }, [imagenUrl, onImagenFallida]);
 
   const empezar = (evento: PointerEvent<HTMLDivElement>) => {
     const el = recuadro.current;
@@ -184,12 +191,7 @@ export function PlanoPiso({
           role="group"
           aria-label="Plano del piso"
         >
-          <image
-            href={imagenUrl}
-            width={plano.ancho}
-            height={plano.alto}
-            onError={onImagenFallida}
-          />
+          <image ref={imagen} href={imagenUrl} width={plano.ancho} height={plano.alto} />
           {aulas.map((aula) => (
             <AulaEnPlano
               key={aula.id}

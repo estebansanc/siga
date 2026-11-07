@@ -12,6 +12,7 @@ import { InfoIcon, PencilRulerIcon } from "lucide-react";
 import { useState } from "react";
 
 import { ControlesZoom } from "../controles-zoom";
+
 import { aulaDibujada, nombreDelAula, type AulaEditable } from "./aulas-editables";
 import { LienzoPlano } from "./lienzo-plano";
 
