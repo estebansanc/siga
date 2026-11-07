@@ -178,7 +178,8 @@ test.describe("Solicitar aula", () => {
     page,
   }) => {
     const fecha = proximoDiaHabil();
-    const claseId = await crearClaseParaSolicitar(fecha);
+    const { claseId, horaInicio } = await crearClaseParaSolicitar(fecha);
+    const solicitudesDeLaFranja = page.locator('[data-slot="item"]', { hasText: horaInicio });
     const dialog = page.getByRole("dialog", { name: "Nueva solicitud" });
     const abrirYElegirAula = async (alumnos: string) => {
       await page.getByRole("button", { name: "Nueva solicitud" }).click();
@@ -225,15 +226,21 @@ test.describe("Solicitar aula", () => {
 
       await expect(page.getByText("Solicitud enviada")).toBeVisible();
       await expect(dialog).toHaveCount(0);
-      await expect(page.getByText("Pendiente").first()).toBeVisible();
+      await expect(solicitudesDeLaFranja).toHaveCount(1);
+      await expect(solicitudesDeLaFranja.locator('[data-estado="PENDIENTE"]')).toBeVisible();
       expect(await solicitudesDeLaClase(claseId)).toHaveLength(1);
 
+      await page.setViewportSize({ width: 375, height: 812 });
       await abrirYElegirAula("10");
       await dialog.getByRole("button", { name: "Confirmar solicitud" }).click();
       await expect(page.getByText("Esta clase ya tiene una solicitud pendiente.")).toBeVisible();
       await expect(dialog).toBeVisible();
       await expect(dialog.getByLabel("Cantidad de alumnos")).toHaveValue("10");
       await expect(dialog.getByLabel("Clase")).toHaveValue(claseId);
+      await expectNoHorizontalPageScroll(page);
+      await page.keyboard.press("Escape");
+      await expect(dialog).toHaveCount(0);
+      await expect(solicitudesDeLaFranja).toHaveCount(1);
       expect(await solicitudesDeLaClase(claseId)).toHaveLength(1);
     } finally {
       await eliminarClaseConSolicitudes(claseId);

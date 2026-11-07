@@ -296,18 +296,19 @@ export const crearNovedadesDeHistorial = async () => {
 export const crearClaseParaSolicitar = async (fecha: string) => {
   const { prisma, toDateColumn } = await abrirBase();
   const comision = await prisma.comision.findUniqueOrThrow({ where: { id: "comision-5k2-pf" } });
-  const minuto = 10 + Math.floor(Math.random() * 40);
+  const horaInicio = `01:${10 + Math.floor(Math.random() * 40)}`;
+  const minuto = horaInicio.slice(3);
   const clase = await prisma.claseProgramada.create({
     data: {
       organizationId: comision.organizationId,
       comisionId: comision.id,
       fecha: toDateColumn(fecha),
-      inicio: instanteArgentino(fecha, `01:${minuto}`),
+      inicio: instanteArgentino(fecha, horaInicio),
       fin: instanteArgentino(fecha, `02:${minuto}`),
       aulaId: null,
     },
   });
-  return clase.id;
+  return { claseId: clase.id, horaInicio };
 };
 
 export const solicitudesDeLaClase = async (claseId: string) => {
