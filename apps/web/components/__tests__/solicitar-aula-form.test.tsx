@@ -122,11 +122,15 @@ describe("SolicitarAulaForm", () => {
     renderWithProviders(
       <SolicitarAulaForm onSolicitada={onSolicitada} onVerSolicitudes={onVerSolicitudes} />,
     );
+    fireEvent.change(screen.getByLabelText("Fecha"), { target: { value: "2026-10-14" } });
+    await userEvent.click(screen.getByRole("checkbox", { name: "Proyector" }));
     await completarPedido("40");
     await userEvent.click(screen.getByRole("button", { name: "Elegir Aula 7" }));
     await userEvent.click(screen.getByRole("button", { name: "Confirmar solicitud" }));
 
     await waitFor(() => expect(crear).toHaveBeenCalledOnce());
+    expect(screen.getByLabelText("Fecha")).toHaveValue("2026-10-14");
+    expect(screen.getByRole("checkbox", { name: "Proyector" })).toBeChecked();
     expect(onSolicitada).not.toHaveBeenCalled();
     expect(toast.success).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Clase")).toHaveValue("clase-1");
