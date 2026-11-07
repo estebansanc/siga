@@ -113,17 +113,37 @@ describe("PlanoAulas con plano de piso", () => {
     expect(svg().style.width).toBe("100%");
   });
 
-  it("un refresco con otra URL firmada conserva el zoom y la imagen ya cargada", async () => {
+  it("un refresco con otra firma y un cambio de estado conserva el zoom y la imagen ya cargada", async () => {
     const { container, rerender } = renderWithProviders(<PlanoAulas perfil="DOCENTE" />);
     await userEvent.click(screen.getByRole("button", { name: "Acercar" }));
-    state.aulas = state.aulas?.map((item) =>
-      item.plano ? { ...item, plano: plano("https://storage.test/plano.png?firma=2") } : item,
-    );
+    state.aulas = state.aulas?.map((item) => {
+      if (!item.plano) return item;
+      const refrescada = { ...item, plano: plano("https://storage.test/plano.png?firma=2") };
+      return item.id === "a21" ? { ...refrescada, estado: "OCUPADA" as const } : refrescada;
+    });
     rerender(<PlanoAulas perfil="DOCENTE" />);
     expect(screen.getByText("150 %")).toBeVisible();
     expect(imagenDelPlano(container)).toHaveAttribute(
       "href",
       "https://storage.test/plano.png?firma=1",
+    );
+    expect(screen.getByRole("button", { name: "Aula 21, Ocupada" })).toHaveAttribute(
+      "data-estado",
+      "OCUPADA",
+    );
+  });
+
+  it("si se reemplaza la imagen del piso (misma id, otra ruta) toma la nueva", () => {
+    const { container, rerender } = renderWithProviders(<PlanoAulas perfil="DOCENTE" />);
+    state.aulas = state.aulas?.map((item) =>
+      item.plano
+        ? { ...item, plano: plano("https://storage.test/planos/nueva.png?firma=1") }
+        : item,
+    );
+    rerender(<PlanoAulas perfil="DOCENTE" />);
+    expect(imagenDelPlano(container)).toHaveAttribute(
+      "href",
+      "https://storage.test/planos/nueva.png?firma=1",
     );
   });
 

@@ -40,6 +40,9 @@ import { PlanoPiso, type AulaUbicada } from "./plano-piso";
 
 const porNombre = (a: string, b: string) => a.localeCompare(b, "es");
 
+// La firma cambia en cada respuesta; la ruta cambia solo cuando se reemplaza la imagen del piso.
+const rutaDeLaImagen = (imagenUrl: string) => imagenUrl.split("?")[0];
+
 const unicos = (valores: string[]) => [...new Set(valores)];
 
 function Selector({
@@ -180,7 +183,7 @@ function PisoSeccion({
       </div>
       {plano ? (
         <PisoConPlano
-          key={plano.id}
+          key={`${plano.id}:${rutaDeLaImagen(plano.imagenUrl)}`}
           plano={plano}
           ubicadas={ubicadas}
           sinUbicar={sinUbicar}
