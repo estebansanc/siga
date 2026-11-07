@@ -89,7 +89,7 @@ beforeEach(() => {
   });
 });
 
-const abrir = async (onClose = vi.fn()) => {
+const abrir = (onClose = vi.fn()) => {
   const user = userEvent.setup({ applyAccept: false });
   renderWithProviders(<ImportarPlanoDialog onClose={onClose} />);
   return { user, onClose };
@@ -103,7 +103,7 @@ const completarPaso1 = async (user: ReturnType<typeof userEvent.setup>, archivo 
 
 describe("Importar desde plano: paso 1", () => {
   it("rechaza un archivo que no es PDF, PNG o JPG o pesa más de 20 MB", async () => {
-    const { user } = await abrir();
+    const { user } = abrir();
     await user.upload(
       screen.getByLabelText("Archivo del plano"),
       new File(["x"], "plano.gif", { type: "image/gif" }),
@@ -123,7 +123,7 @@ describe("Importar desde plano: paso 1", () => {
   });
 
   it("con un PDF de varias páginas se elige cuál y se manda a guardar", async () => {
-    const { user } = await abrir();
+    const { user } = abrir();
     await completarPaso1(user);
     await user.selectOptions(await screen.findByLabelText("Página del plano"), "2");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -141,7 +141,7 @@ describe("Importar desde plano: paso 1", () => {
 
   it("avisa que reemplaza el plano si el piso ya tiene uno", async () => {
     state.planos = [plano];
-    const { user } = await abrir();
+    const { user } = abrir();
     await completarPaso1(user);
     expect(
       await screen.findByText(/ya tiene plano: al continuar se reemplaza/),
@@ -150,7 +150,7 @@ describe("Importar desde plano: paso 1", () => {
 
   it("sin almacenamiento muestra el aviso y no avanza", async () => {
     guardar.mockRejectedValue(new RequestError(503, "UNAVAILABLE", "faltan STORAGE_BUCKET"));
-    const { user } = await abrir();
+    const { user } = abrir();
     await completarPaso1(user, new File(["x"], "plano.png", { type: "image/png" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(
@@ -163,7 +163,7 @@ describe("Importar desde plano: paso 1", () => {
   });
 
   it("pide edificio, piso y archivo", async () => {
-    const { user } = await abrir();
+    const { user } = abrir();
     await user.click(screen.getByRole("button", { name: "Continuar" }));
     expect(await screen.findByText("Ingresá el edificio")).toBeInTheDocument();
     expect(screen.getByText("Ingresá el piso")).toBeInTheDocument();
@@ -179,7 +179,7 @@ const hastaDeteccion = async (user: ReturnType<typeof userEvent.setup>) => {
 
 describe("Importar desde plano: paso 2", () => {
   it("tilda las confiables y destilda las dudosas; tocar alterna", async () => {
-    const { user } = await abrir();
+    const { user } = abrir();
     await hastaDeteccion(user);
     expect(screen.getByRole("checkbox", { name: "Aula 21" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Aula 22/ })).not.toBeChecked();
@@ -194,7 +194,7 @@ describe("Importar desde plano: paso 2", () => {
 
   it("sin clave, con error o sin aulas avisa y se sigue a mano", async () => {
     detectar.mockRejectedValue(new RequestError(503, "UNAVAILABLE", "falta ANTHROPIC_API_KEY"));
-    const { user } = await abrir();
+    const { user } = abrir();
     await hastaDeteccion(user);
     expect(screen.getByText(/detección automática no está configurada/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Dibujar aula" })).toBeInTheDocument();
@@ -202,7 +202,7 @@ describe("Importar desde plano: paso 2", () => {
 
   it("avisa si el proveedor falla o no detecta aulas", async () => {
     detectar.mockResolvedValue({ aulas: [] });
-    const { user } = await abrir();
+    const { user } = abrir();
     await hastaDeteccion(user);
     expect(screen.getByText("No se detectaron aulas. Dibujalas a mano.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -211,7 +211,7 @@ describe("Importar desde plano: paso 2", () => {
 
   it("dibujar un aula agrega un rectángulo tildado sin nombre", async () => {
     detectar.mockResolvedValue({ aulas: [] });
-    const { user } = await abrir();
+    const { user } = abrir();
     await hastaDeteccion(user);
     await user.click(screen.getByRole("button", { name: "Dibujar aula" }));
     const svg = screen.getByRole("img", { name: "Plano del piso" });
@@ -231,7 +231,7 @@ describe("Importar desde plano: pasos 3 y 4", () => {
   };
 
   it("no avanza sin capacidad por defecto ni con una fila sin nombre", async () => {
-    const { user } = await abrir();
+    const { user } = abrir();
     await hastaNombres(user);
     expect(screen.getByLabelText("Aula 1: nombre")).toHaveValue("Aula 21");
     await user.click(screen.getByRole("button", { name: "Continuar" }));
@@ -246,7 +246,7 @@ describe("Importar desde plano: pasos 3 y 4", () => {
       existente({ id: "y", codigo: "Aula 77", piso: "PB" }),
     ];
     state.bajas = [existente({ id: "z", codigo: "Aula 99", activa: false })];
-    const { user } = await abrir();
+    const { user } = abrir();
     await hastaNombres(user);
     const nombre3 = screen.getByLabelText("Aula 3: nombre");
     await user.type(nombre3, "Aula 77");
@@ -266,7 +266,7 @@ describe("Importar desde plano: pasos 3 y 4", () => {
   it("la vista previa cuenta nuevas y ubicadas y Confirmar importa con la capacidad", async () => {
     state.activas = [existente({ codigo: "Aula 22" })];
     const onClose = vi.fn();
-    const { user } = await abrir(onClose);
+    const { user } = abrir(onClose);
     await hastaNombres(user);
     await user.type(screen.getByLabelText("Aula 3: nombre"), "Aula 23");
     await user.type(screen.getByLabelText("Capacidad por defecto"), "40");

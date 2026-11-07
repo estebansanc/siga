@@ -3,7 +3,6 @@
 import {
   Combobox,
   ComboboxContent,
-  ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
@@ -40,7 +39,6 @@ export function CampoConSugerencias({
       >
         <ComboboxInput id={id} className="w-full" aria-invalid={Boolean(error)} />
         <ComboboxContent>
-          <ComboboxEmpty>Se creará uno nuevo</ComboboxEmpty>
           <ComboboxList>
             {(opcion: string) => (
               <ComboboxItem key={opcion} value={opcion}>
