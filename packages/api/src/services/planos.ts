@@ -11,14 +11,17 @@ import {
 } from "@repo/domain";
 
 import { conflict, notFound, unprocessable } from "../errors";
+import { assertDeteccionConfigurada, detectarAulas } from "../integrations/deteccion-aulas";
 import {
   assertStorageConfigured,
   createReadUrl,
   createUploadUrl,
   deleteObjects,
+  getObject,
   getObjectInfo,
 } from "../integrations/storage";
 import type {
+  DeteccionAulasDto,
   ImagenPlanoSubidaDto,
   ImportacionPlanoDto,
   PlanoImagenDto,
@@ -226,4 +229,17 @@ export const importarAulasDelPlano = async (
     });
     return resultado;
   });
+};
+
+export const detectarAulasDelPlano = async (
+  auth: AuthContext,
+  planoId: string,
+): Promise<DeteccionAulasDto> => {
+  await assertPerfil(auth, "BEDEL");
+  assertStorageConfigured();
+  assertDeteccionConfigurada();
+  const plano = await buscarPlano(auth.organizationId, planoId);
+  const imagen = await getObject(plano.imagenKey);
+  if (!imagen) throw unprocessable("No se encontró la imagen del plano. Subila de nuevo.");
+  return detectarAulas(imagen.body, imagen.contentType);
 };

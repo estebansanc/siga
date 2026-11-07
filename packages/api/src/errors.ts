@@ -19,6 +19,7 @@ export const unprocessable = (message: string) => new ApiError(422, "VALIDATION"
 export const badRequest = (message: string) => new ApiError(400, "BAD_REQUEST", message);
 export const forbidden = (message: string) => new ApiError(403, "FORBIDDEN", message);
 export const unavailable = (message: string) => new ApiError(503, "UNAVAILABLE", message);
+export const badGateway = (message: string) => new ApiError(502, "BAD_GATEWAY", message);
 export const tooManyRequests = (message: string) => new ApiError(429, "RATE_LIMITED", message);
 
 // Un dato repetido se marca en el campo que lo causa.

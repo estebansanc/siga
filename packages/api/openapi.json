@@ -3102,6 +3102,45 @@
           "ubicadas"
         ]
       },
+      "DeteccionAulas": {
+        "type": "object",
+        "properties": {
+          "aulas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nombre": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Nulo si el recinto no tiene rótulo"
+                },
+                "confianza": {
+                  "type": "number",
+                  "description": "De 0 a 1"
+                },
+                "poligono": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PuntoPlano"
+                  },
+                  "description": "De 3 a 24 puntos con coordenadas relativas a la imagen (0 a 1)"
+                }
+              },
+              "required": [
+                "nombre",
+                "confianza",
+                "poligono"
+              ]
+            }
+          }
+        },
+        "required": [
+          "aulas"
+        ]
+      },
       "SesionQr": {
         "type": "object",
         "properties": {
@@ -14712,6 +14751,117 @@
           },
           "422": {
             "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/planos/{id}/deteccion": {
+      "post": {
+        "tags": [
+          "Planos"
+        ],
+        "summary": "Detectar las aulas del plano guardado con IA",
+        "description": "Solo Bedel. Envía la imagen guardada del plano a Claude (Anthropic) y devuelve los recintos de dictado con `nombre` (nulo si no tiene rótulo), `confianza` (0 a 1) y `poligono`; no crea nada. El modelo se elige con `DETECCION_AULAS_MODELO` (haiku, sonnet u opus). 503 sin `ANTHROPIC_API_KEY` o sin almacenamiento; 502 si el proveedor falla o responde algo inválido.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aulas detectadas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeteccionAulas"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Error de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Falló el proveedor de detección",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Detección o almacenamiento no configurados",
             "content": {
               "application/json": {
                 "schema": {

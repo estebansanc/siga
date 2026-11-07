@@ -25,3 +25,4 @@ export * from "./turnos";
 export * from "./usuarios";
 export * from "./bloqueo-cuenta";
 export * from "./politica-privacidad";
+export * from "./deteccion-aulas";

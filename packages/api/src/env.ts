@@ -22,6 +22,10 @@ export const apiEnv = {
     // Placeholder hasta verificar el dominio propio en Resend (docs/ambientes-y-deploy.md).
     from: optional("EMAIL_FROM") || "Mi Producto <no-reply@example.com>",
   },
+  deteccionAulas: {
+    anthropicApiKey: optional("ANTHROPIC_API_KEY"),
+    modelo: optional("DETECCION_AULAS_MODELO") || "haiku",
+  },
   timeZone: "America/Argentina/Buenos_Aires",
   // Una sola IP en los e2e agotaría las cuotas.
   rateLimitEnabled: process.env.RATE_LIMIT !== "off",

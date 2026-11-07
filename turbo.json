@@ -2,7 +2,9 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "globalEnv": [
-    "NODE_ENV"
+    "NODE_ENV",
+    "ANTHROPIC_API_KEY",
+    "DETECCION_AULAS_MODELO"
   ],
   "tasks": {
     "build": {

@@ -3,6 +3,7 @@ import { guardarPlanoSchema, importarAulasPlanoSchema, subirImagenPlanoSchema } 
 
 import type { ApiEnv } from "../context";
 import {
+  deteccionAulasDtoSchema,
   idParamSchema,
   imagenPlanoSubidaSchema,
   importacionPlanoSchema,
@@ -11,7 +12,7 @@ import {
 } from "../schemas";
 import * as planos from "../services/planos";
 
-import { commonErrors, jsonBody, jsonResponse } from "./shared";
+import { commonErrors, errorResponse, jsonBody, jsonResponse } from "./shared";
 
 const tags = ["Planos"];
 
@@ -92,4 +93,23 @@ export const planoRoutes = new OpenAPIHono<ApiEnv>()
         ),
         201,
       ),
+  )
+  .openapi(
+    createRoute({
+      method: "post",
+      path: "/{id}/deteccion",
+      tags,
+      summary: "Detectar las aulas del plano guardado con IA",
+      description:
+        "Solo Bedel. Envía la imagen guardada del plano a Claude (Anthropic) y devuelve los recintos de dictado con `nombre` (nulo si no tiene rótulo), `confianza` (0 a 1) y `poligono`; no crea nada. El modelo se elige con `DETECCION_AULAS_MODELO` (haiku, sonnet u opus). 503 sin `ANTHROPIC_API_KEY` o sin almacenamiento; 502 si el proveedor falla o responde algo inválido.",
+      request: { params: idParamSchema },
+      responses: {
+        200: jsonResponse(deteccionAulasDtoSchema, "Aulas detectadas"),
+        502: errorResponse("Falló el proveedor de detección"),
+        503: errorResponse("Detección o almacenamiento no configurados"),
+        ...commonErrors,
+      },
+    }),
+    async (c) =>
+      c.json(await planos.detectarAulasDelPlano(c.get("auth"), c.req.valid("param").id), 200),
   );

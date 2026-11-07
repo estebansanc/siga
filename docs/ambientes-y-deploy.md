@@ -106,6 +106,15 @@ SiGA lo usa para las fotos de las incidencias de aulas (RF-15, ADR 006): sin él
 
 Las cuatro son obligatorias a la vez; localmente se dejan vacías (ver `.env.example`). La política CORS de cada bucket (Settings → CORS Policy) lleva en `AllowedOrigins` el origen exacto de su ambiente, `https://staging.<dominio>` o `https://app.<dominio>`: el navegador hace el `PUT` directo al bucket y sin ese origen la subida falla.
 
+### Anthropic (detección de aulas)
+
+SiGA lo usa para detectar las aulas de un plano en "Importar desde plano" (ADR 012). Sin clave, la detección responde 503 nombrando `ANTHROPIC_API_KEY` y el Bedel sigue cargando las aulas a mano; el resto de la app funciona igual. Variables de Vercel, en Production y Preview:
+
+| Variable                 | Valor                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| `ANTHROPIC_API_KEY`      | API key de la consola de Anthropic                                             |
+| `DETECCION_AULAS_MODELO` | Opcional: `haiku` (por defecto), `sonnet` u `opus`; el costo sube en ese orden |
+
 ### Resend
 
 1. Crear la cuenta (plan gratuito: 3.000 emails por mes, 100 por día) y agregar el dominio propio en Domains; cargar en el DNS los registros que indica (SPF, DKIM y el de retorno) y esperar la verificación. No se puede enviar desde `vercel.app`.

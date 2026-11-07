@@ -935,3 +935,19 @@ export const importacionPlanoSchema = z
   })
   .openapi("ImportacionPlano");
 export type ImportacionPlanoDto = z.infer<typeof importacionPlanoSchema>;
+
+export const deteccionAulasDtoSchema = z
+  .object({
+    aulas: z.array(
+      z.object({
+        nombre: z
+          .string()
+          .nullable()
+          .openapi({ description: "Nulo si el recinto no tiene rótulo" }),
+        confianza: z.number().openapi({ description: "De 0 a 1" }),
+        poligono: poligonoAulaSchema,
+      }),
+    ),
+  })
+  .openapi("DeteccionAulas");
+export type DeteccionAulasDto = z.infer<typeof deteccionAulasDtoSchema>;

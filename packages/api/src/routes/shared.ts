@@ -2,7 +2,7 @@ import type { z } from "@hono/zod-openapi";
 
 import { errorSchema } from "../schemas";
 
-const errorResponse = (description: string) => ({
+export const errorResponse = (description: string) => ({
   content: { "application/json": { schema: errorSchema } },
   description,
 });
