@@ -8,15 +8,12 @@ import { Button } from "@repo/ui/components/button";
 import { Checkbox } from "@repo/ui/components/checkbox";
 import { DialogFooter } from "@repo/ui/components/dialog";
 import { Label } from "@repo/ui/components/label";
-import { InfoIcon, PencilRulerIcon, ZoomInIcon, ZoomOutIcon } from "lucide-react";
+import { InfoIcon, PencilRulerIcon } from "lucide-react";
 import { useState } from "react";
 
+import { ControlesZoom } from "../controles-zoom";
 import { aulaDibujada, nombreDelAula, type AulaEditable } from "./aulas-editables";
 import { LienzoPlano } from "./lienzo-plano";
-
-const zoomMinimo = 1;
-const zoomMaximo = 4;
-const pasoDeZoom = 0.5;
 
 type PasoDeteccionProps = {
   plano: PlanoPisoDto;
@@ -90,27 +87,8 @@ export function PasoDeteccion({
           <PencilRulerIcon />
           Dibujar aula
         </Button>
-        <div className="ml-auto flex gap-1">
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="outline"
-            aria-label="Alejar"
-            disabled={zoom <= zoomMinimo}
-            onClick={() => setZoom(Math.max(zoom - pasoDeZoom, zoomMinimo))}
-          >
-            <ZoomOutIcon />
-          </Button>
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="outline"
-            aria-label="Acercar"
-            disabled={zoom >= zoomMaximo}
-            onClick={() => setZoom(Math.min(zoom + pasoDeZoom, zoomMaximo))}
-          >
-            <ZoomInIcon />
-          </Button>
+        <div className="ml-auto">
+          <ControlesZoom zoom={zoom} onChange={setZoom} />
         </div>
       </div>
       {dibujando ? <p className="text-sm">Arrastrá sobre el plano para dibujar el aula.</p> : null}

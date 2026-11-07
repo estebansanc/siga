@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   accionesDelPlano,
+  acercarZoom,
+  alejarZoom,
+  describirZoom,
+  repartirAulasDelPiso,
   compararCodigosAula,
   compararPisos,
   contarEstadosDelPiso,
@@ -111,5 +115,39 @@ describe("conteo del piso", () => {
     expect(describirConteoPiso({ libres: 2, ocupadas: 1, noDisponibles: 2 })).toBe(
       "2 libres · 1 ocupada · 2 no disponibles",
     );
+  });
+});
+
+describe("repartirAulasDelPiso", () => {
+  const plano = { id: "p1" };
+  const poligono = [{ x: 0, y: 0 }];
+
+  it("con plano separa las aulas ubicadas de las que no tienen polígono", () => {
+    const ubicada = { id: "a", plano, poligono };
+    const sinPoligono = { id: "b", plano: null, poligono: null };
+    expect(repartirAulasDelPiso([ubicada, sinPoligono])).toEqual({
+      plano,
+      ubicadas: [ubicada],
+      sinUbicar: [sinPoligono],
+    });
+  });
+
+  it("sin plano en ninguna aula deja el piso en la grilla", () => {
+    const aulas = [{ id: "a", plano: null, poligono: null }];
+    expect(repartirAulasDelPiso(aulas)).toEqual({ plano: null, ubicadas: [], sinUbicar: aulas });
+  });
+});
+
+describe("zoom del plano", () => {
+  it("acerca de a 50 % hasta 400 % y aleja sin bajar del ajuste al ancho", () => {
+    expect(acercarZoom(1)).toBe(1.5);
+    expect(acercarZoom(3.5)).toBe(4);
+    expect(acercarZoom(4)).toBe(4);
+    expect(alejarZoom(1.5)).toBe(1);
+    expect(alejarZoom(1)).toBe(1);
+  });
+
+  it("describe el zoom en porcentaje", () => {
+    expect(describirZoom(2.5)).toBe("250 %");
   });
 });

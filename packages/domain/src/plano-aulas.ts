@@ -119,3 +119,29 @@ export const clasesAsignablesQuerySchema = z.object({
 });
 
 export const destinosAulaQuerySchema = z.object({ claseId: z.string().min(1) });
+
+type AulaDelPiso = { poligono: unknown; plano: unknown };
+
+// Un piso con plano guardado dibuja las aulas ubicadas sobre la imagen; las activas sin
+// polígono van aparte para que no desaparezcan. Sin plano, todas siguen en la grilla.
+export const repartirAulasDelPiso = <T extends AulaDelPiso>(aulas: T[]) => {
+  const plano: NonNullable<T["plano"]> | null =
+    aulas.find((aula) => aula.plano !== null)?.plano ?? null;
+  const ubicadas: (T & { poligono: NonNullable<T["poligono"]> })[] = [];
+  const sinUbicar: T[] = [];
+  for (const aula of aulas) {
+    if (plano !== null && aula.poligono !== null) {
+      ubicadas.push(aula as T & { poligono: NonNullable<T["poligono"]> });
+    } else sinUbicar.push(aula);
+  }
+  return { plano, ubicadas, sinUbicar };
+};
+
+export const zoomMinimo = 1;
+export const zoomMaximo = 4;
+export const pasoDeZoom = 0.5;
+
+export const acercarZoom = (zoom: number) => Math.min(zoom + pasoDeZoom, zoomMaximo);
+export const alejarZoom = (zoom: number) => Math.max(zoom - pasoDeZoom, zoomMinimo);
+
+export const describirZoom = (zoom: number) => `${Math.round(zoom * 100)} %`;

@@ -1,12 +1,15 @@
 "use client";
 
-import type { PlanoAulaDto } from "@repo/api/client";
+import type { PlanoAulaDto, PlanoImagenDto } from "@repo/api/client";
 import {
   compararPisos,
   contarEstadosDelPiso,
   describirConteoPiso,
+  repartirAulasDelPiso,
+  zoomMinimo,
   type Perfil,
 } from "@repo/domain";
+import { Alert, AlertDescription } from "@repo/ui/components/alert";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
@@ -25,7 +28,7 @@ import {
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@repo/ui/components/toggle-group";
 import { cn } from "@repo/ui/lib/utils";
-import { DoorOpenIcon } from "lucide-react";
+import { DoorOpenIcon, TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
 
 import { tonoClassNames } from "@/components/estado-tonos";
@@ -33,6 +36,7 @@ import { usePlanoAulas } from "@/hooks/use-aulas";
 
 import { PlanoAulaDialog } from "./plano-aula-dialog";
 import { PlanoEstadoBadge, planoEstadoPresentacion } from "./plano-estado-badge";
+import { PlanoPiso, type AulaUbicada } from "./plano-piso";
 
 const porNombre = (a: string, b: string) => a.localeCompare(b, "es");
 
@@ -85,6 +89,78 @@ function AulaCelda({ aula, onClick }: { aula: PlanoAulaDto; onClick: () => void 
   );
 }
 
+function GrillaAulas({
+  aulas,
+  onAbrirAula,
+}: {
+  aulas: PlanoAulaDto[];
+  onAbrirAula: (aulaId: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {aulas.map((aula) => (
+        <AulaCelda key={aula.id} aula={aula} onClick={() => onAbrirAula(aula.id)} />
+      ))}
+    </div>
+  );
+}
+
+// El zoom vive acá y la URL firmada se fija al abrir: el refresco de 30 s trae una URL nueva
+// en cada respuesta y recargaría la imagen. Si la fijada deja de servir, se prueba una vez con
+// la última antes de dar el plano por perdido.
+function PisoConPlano({
+  plano,
+  ubicadas,
+  sinUbicar,
+  onAbrirAula,
+}: {
+  plano: PlanoImagenDto;
+  ubicadas: AulaUbicada[];
+  sinUbicar: PlanoAulaDto[];
+  onAbrirAula: (aulaId: string) => void;
+}) {
+  const [zoom, setZoom] = useState(zoomMinimo);
+  const [imagenUrl, setImagenUrl] = useState(plano.imagenUrl);
+  const [fallida, setFallida] = useState(false);
+
+  if (fallida) {
+    return (
+      <div className="flex flex-col gap-3">
+        <Alert variant="destructive">
+          <TriangleAlertIcon />
+          <AlertDescription>No se pudo cargar el plano de este piso</AlertDescription>
+        </Alert>
+        <GrillaAulas aulas={[...ubicadas, ...sinUbicar]} onAbrirAula={onAbrirAula} />
+      </div>
+    );
+  }
+
+  const imagenFallida = () => {
+    if (plano.imagenUrl !== imagenUrl) setImagenUrl(plano.imagenUrl);
+    else setFallida(true);
+  };
+
+  return (
+    <>
+      <PlanoPiso
+        plano={plano}
+        imagenUrl={imagenUrl}
+        aulas={ubicadas}
+        zoom={zoom}
+        onZoomChange={setZoom}
+        onAbrirAula={onAbrirAula}
+        onImagenFallida={imagenFallida}
+      />
+      {sinUbicar.length > 0 ? (
+        <section aria-label="Sin ubicar" className="flex flex-col gap-2">
+          <h4 className="text-sm font-medium">Sin ubicar</h4>
+          <GrillaAulas aulas={sinUbicar} onAbrirAula={onAbrirAula} />
+        </section>
+      ) : null}
+    </>
+  );
+}
+
 function PisoSeccion({
   piso,
   aulas,
@@ -95,23 +171,30 @@ function PisoSeccion({
   onAbrirAula: (aulaId: string) => void;
 }) {
   const conteo = describirConteoPiso(contarEstadosDelPiso(aulas.map((aula) => aula.estado)));
+  const { plano, ubicadas, sinUbicar } = repartirAulasDelPiso(aulas);
   return (
     <section aria-label={piso} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h3 className="font-heading text-base font-semibold">{piso}</h3>
         <p className="text-muted-foreground text-sm">{conteo}</p>
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {aulas.map((aula) => (
-          <AulaCelda key={aula.id} aula={aula} onClick={() => onAbrirAula(aula.id)} />
-        ))}
-      </div>
+      {plano ? (
+        <PisoConPlano
+          key={plano.id}
+          plano={plano}
+          ubicadas={ubicadas}
+          sinUbicar={sinUbicar}
+          onAbrirAula={onAbrirAula}
+        />
+      ) : (
+        <GrillaAulas aulas={aulas} onAbrirAula={onAbrirAula} />
+      )}
     </section>
   );
 }
 
 // Plano de aulas (RF-02, RF-07): todos los pisos del edificio apilados, cada uno con su conteo
-// y una grilla provisoria por código hasta tener los planos de cada piso. Se actualiza por
+// y la imagen del piso con sus aulas sobre el polígono (o, sin plano, la grilla por código). Se actualiza por
 // consulta periódica de 30 s. El edificio inicial queda fijado con los primeros datos: si se
 // queda sin aulas no salta a otro.
 export function PlanoAulas({
