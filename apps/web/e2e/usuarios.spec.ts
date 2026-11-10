@@ -262,7 +262,7 @@ test.describe("Usuarios", () => {
       }
 
       const holguraDelTexto = (selector: typeof buscador, usaPlaceholder: boolean) =>
-        selector.evaluate((el, placeholder) => {
+        selector.evaluate(async (el, placeholder) => {
           const campo = el as HTMLInputElement | HTMLSelectElement;
           const estilo = getComputedStyle(campo);
           const contexto = document.createElement("canvas").getContext("2d")!;
@@ -270,6 +270,8 @@ test.describe("Usuarios", () => {
           const texto = placeholder
             ? (campo as HTMLInputElement).placeholder
             : (campo as HTMLSelectElement).selectedOptions[0].text;
+          const caras = await document.fonts.load(contexto.font, texto);
+          if (caras.length === 0) throw new Error(`Google Sans no cubre "${texto}"`);
           const disponible =
             campo.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
           return disponible - contexto.measureText(texto).width;

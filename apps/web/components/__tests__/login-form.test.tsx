@@ -43,6 +43,24 @@ beforeEach(() => {
 });
 
 describe("LoginForm", () => {
+  it("con Tab recorre los campos en orden visual hasta Ingresar y los links muestran el foco", async () => {
+    renderWithProviders(<LoginForm />);
+    const orden = [
+      screen.getByRole("button", { name: "Continuar con Google" }),
+      screen.getByLabelText("Email"),
+      screen.getByLabelText("Contraseña"),
+      screen.getByRole("link", { name: "¿Olvidaste tu contraseña?" }),
+      screen.getByRole("button", { name: "Ingresar" }),
+    ];
+    for (const elemento of orden) {
+      await userEvent.tab();
+      expect(elemento).toHaveFocus();
+    }
+    expect(
+      screen.getByRole("link", { name: "¿Olvidaste tu contraseña?" }).parentElement,
+    ).toHaveClass("[&>a:focus-visible]:outline-2");
+  });
+
   it("tras ingresar bien va al inicio y el botón sigue deshabilitado con spinner mientras navega", async () => {
     signInEmail.mockResolvedValue({ error: null });
     renderWithProviders(<LoginForm />);

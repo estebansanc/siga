@@ -250,33 +250,41 @@ test.describe("Solicitar aula", () => {
   test("el docente ve el estado vacío en un día sin clases y el formulario en uno con clases", async ({
     page,
   }) => {
-    await loginViaUi(page, seededUsers.docente);
-    await page.goto("/solicitudes");
-    await page.getByRole("button", { name: "Nueva solicitud" }).click();
-    const dialog = page.getByRole("dialog", { name: "Nueva solicitud" });
+    const diaHabil = proximoDiaHabil();
+    const domingo = proximoDomingo();
+    const { claseId } = await crearClaseParaSolicitar(diaHabil);
+    try {
+      await loginViaUi(page, seededUsers.docente);
+      await page.goto("/solicitudes");
+      await page.getByRole("button", { name: "Nueva solicitud" }).click();
+      const dialog = page.getByRole("dialog", { name: "Nueva solicitud" });
 
-    await dialog.getByLabel("Fecha").fill(proximoDiaHabil());
-    await dialog.getByLabel("Clase").selectOption({ index: 1 });
-    await dialog.getByLabel("Cantidad de alumnos").fill("10");
-    await dialog.getByRole("button", { name: "Buscar aulas" }).click();
-    await expect(dialog.getByRole("region", { name: "Resultados" })).toBeVisible();
+      await dialog.getByLabel("Fecha").fill(diaHabil);
+      await expect(dialog.getByLabel("Clase").locator(`option[value="${claseId}"]`)).toBeAttached();
+      await dialog.getByLabel("Clase").selectOption(claseId);
+      await dialog.getByLabel("Cantidad de alumnos").fill("10");
+      await dialog.getByRole("button", { name: "Buscar aulas" }).click();
+      await expect(dialog.getByRole("region", { name: "Resultados" })).toBeVisible();
 
-    await dialog.getByLabel("Fecha").fill(proximoDomingo());
-    await expect(dialog.getByText("No hay clases para pedir aula")).toBeVisible();
-    await expect(dialog.getByRole("region", { name: "Resultados" })).toHaveCount(0);
-    await expect(dialog.getByText(textoSinClases(proximoDomingo()))).toBeVisible();
-    await expect(dialog.getByLabel("Clase")).toHaveCount(0);
-    await expect(dialog.getByRole("button", { name: "Buscar aulas" })).toHaveCount(0);
-    await expectNoHorizontalPageScroll(page);
+      await dialog.getByLabel("Fecha").fill(domingo);
+      await expect(dialog.getByText("No hay clases para pedir aula")).toBeVisible();
+      await expect(dialog.getByRole("region", { name: "Resultados" })).toHaveCount(0);
+      await expect(dialog.getByText(textoSinClases(domingo))).toBeVisible();
+      await expect(dialog.getByLabel("Clase")).toHaveCount(0);
+      await expect(dialog.getByRole("button", { name: "Buscar aulas" })).toHaveCount(0);
+      await expectNoHorizontalPageScroll(page);
 
-    await dialog.getByLabel("Fecha").fill(proximoDiaHabil());
-    await expect(dialog.getByLabel("Clase")).toBeVisible();
-    await expect(dialog.getByText("No hay clases para pedir aula")).toHaveCount(0);
+      await dialog.getByLabel("Fecha").fill(diaHabil);
+      await expect(dialog.getByLabel("Clase")).toBeVisible();
+      await expect(dialog.getByText("No hay clases para pedir aula")).toHaveCount(0);
 
-    await dialog.getByLabel("Fecha").fill(proximoDomingo());
-    await dialog.getByRole("button", { name: "Ver mis solicitudes" }).click();
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect(page).toHaveURL(/\/solicitudes$/);
+      await dialog.getByLabel("Fecha").fill(domingo);
+      await dialog.getByRole("button", { name: "Ver mis solicitudes" }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(page).toHaveURL(/\/solicitudes$/);
+    } finally {
+      await eliminarClaseConSolicitudes(claseId);
+    }
   });
 
   test("en celular el estado vacío de Solicitar aula se ve completo dentro del diálogo", async ({
