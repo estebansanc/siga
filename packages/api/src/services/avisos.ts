@@ -10,9 +10,9 @@ import {
 
 import { runDeferred } from "../deferred";
 import { apiEnv } from "../env";
-import { notFound } from "../errors";
+import { notFound, unprocessable } from "../errors";
 import type { AvisoDto, NotificacionAvisoDto } from "../schemas";
-import { toIso } from "../serializers";
+import { toIso, toIsoOrNull } from "../serializers";
 
 import { avisoEmail } from "./emails/templates";
 import { crearTokenBajaAvisos, enviarCorreos, registrarEnvios, urlDeBaja } from "./notificaciones";
@@ -23,6 +23,7 @@ const maxAvisosListados = 100;
 
 const avisoInclude = {
   publicadoPor: { select: { id: true, name: true } },
+  finalizadoPor: { select: { id: true, name: true } },
 } satisfies Prisma.AvisoInclude;
 
 type AvisoConAutor = Prisma.AvisoGetPayload<{ include: typeof avisoInclude }>;
@@ -45,6 +46,10 @@ const toDto = (aviso: AvisoConAutor): AvisoDto => ({
   hasta: toIso(aviso.hasta),
   enviarPorCorreo: aviso.enviarPorCorreo,
   publicadoPor: { id: aviso.publicadoPor.id, nombre: aviso.publicadoPor.name },
+  finalizadoEn: toIsoOrNull(aviso.finalizadoEn),
+  finalizadoPor: aviso.finalizadoPor
+    ? { id: aviso.finalizadoPor.id, nombre: aviso.finalizadoPor.name }
+    : null,
   createdAt: toIso(aviso.createdAt),
 });
 
@@ -139,6 +144,33 @@ export const publicarAviso = async (auth: AuthContext, input: CrearAviso): Promi
   });
   if (aviso.enviarPorCorreo) await notificarAvisoPublicado(auth.organizationId, aviso);
   return toDto(aviso);
+};
+
+// Finalizar no borra: la vigencia termina ahora y el aviso pasa al historial con quién lo
+// finalizó. Uno programado a futuro termina sin llegar a mostrarse.
+export const finalizarAviso = async (
+  auth: AuthContext,
+  avisoId: string,
+  now = new Date(),
+): Promise<AvisoDto> => {
+  await assertPerfil(auth, "BEDEL", "AUTORIDAD");
+  const aviso = await prisma.aviso.findFirst({
+    where: { id: avisoId, organizationId: auth.organizationId },
+    select: { desde: true, hasta: true },
+  });
+  if (!aviso) throw notFound("Aviso");
+  if (aviso.hasta <= now) throw unprocessable("El aviso ya terminó");
+  const finalizado = await prisma.aviso.update({
+    where: { id: avisoId },
+    data: {
+      desde: aviso.desde < now ? aviso.desde : now,
+      hasta: now,
+      finalizadoEn: now,
+      finalizadoPorId: auth.userId,
+    },
+    include: avisoInclude,
+  });
+  return toDto(finalizado);
 };
 
 export const listarNotificacionesDeAviso = async (

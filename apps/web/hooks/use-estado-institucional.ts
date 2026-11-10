@@ -32,7 +32,7 @@ export const useCambiarEstadoInstitucional = () => {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.estadoInstitucional }),
-        // Un cierre suspende clases: los listados tienen que reflejarlo.
+        // Un cierre suspende clases y una reapertura puede reanudarlas: los listados lo reflejan.
         queryClient.invalidateQueries({ queryKey: ["clases"] }),
       ]);
     },

@@ -63,7 +63,7 @@ const estadosNoFinales = ["PROGRAMADA", "DEMORADA", "DOCENTE_PRESENTE", "VIRTUAL
 
 // RF-01: el cambio se registra con fecha, hora y usuario; al cerrar, las clases de la ventana
 // de cierre (hasta la vigencia o el fin del día) pasan a Suspendida en la misma transacción
-// (CU-34, FIAB-6).
+// (CU-34, FIAB-6). Al reabrir, el bedel puede reanudar las que ese cierre suspendió.
 export const cambiarEstado = async (
   auth: AuthContext,
   input: CambiarEstadoInstitucional,
@@ -77,12 +77,10 @@ export const cambiarEstado = async (
   if (vigenciaHasta && vigenciaHasta <= desde) {
     throw unprocessable("La vigencia estimada tiene que ser posterior a ahora");
   }
+  const cierreAReanudar =
+    input.reanudarClases === true && actual.estado === "CERRADA" ? actual.id : null;
 
   return prisma.$transaction(async (tx) => {
-    const clasesSuspendidas =
-      input.estado === "CERRADA"
-        ? await suspenderClasesDelCierre(tx, auth.organizationId, desde, vigenciaHasta)
-        : 0;
     const registro = await tx.estadoInstitucional.create({
       data: {
         organizationId: auth.organizationId,
@@ -94,12 +92,20 @@ export const cambiarEstado = async (
       },
       include: estadoInclude,
     });
-    return { estado: toDto(registro), clasesSuspendidas };
+    const clasesSuspendidas =
+      input.estado === "CERRADA"
+        ? await suspenderClasesDelCierre(tx, registro.id, auth.organizationId, desde, vigenciaHasta)
+        : 0;
+    const clasesReanudadas = cierreAReanudar
+      ? await reanudarClasesDelCierre(tx, cierreAReanudar, auth.organizationId, desde)
+      : 0;
+    return { estado: toDto(registro), clasesSuspendidas, clasesReanudadas };
   });
 };
 
 const suspenderClasesDelCierre = async (
   tx: DbTransaction,
+  cierreId: string,
   organizationId: string,
   desde: Date,
   vigenciaHasta: Date | null,
@@ -112,10 +118,13 @@ const suspenderClasesDelCierre = async (
       inicio: { lt: hasta },
       fin: { gt: desde },
     },
-    select: { id: true },
+    select: { id: true, estado: true },
   });
   if (afectadas.length === 0) return 0;
   const claseIds = afectadas.map((clase) => clase.id);
+  await tx.claseSuspendidaPorCierre.createMany({
+    data: afectadas.map((clase) => ({ cierreId, claseId: clase.id, estadoAnterior: clase.estado })),
+  });
   await tx.claseProgramada.updateMany({
     where: { id: { in: claseIds } },
     data: { estado: "SUSPENDIDA" },
@@ -126,4 +135,36 @@ const suspenderClasesDelCierre = async (
     hasta: toIso(hasta),
   });
   return claseIds.length;
+};
+
+// Vuelven al estado previo al cierre solo las que siguen suspendidas y no terminaron: las que
+// ya pasaron no se dictaron.
+const reanudarClasesDelCierre = async (
+  tx: DbTransaction,
+  cierreId: string,
+  organizationId: string,
+  ahora: Date,
+) => {
+  const suspendidas = await tx.claseSuspendidaPorCierre.findMany({
+    where: { cierreId, clase: { estado: "SUSPENDIDA", fin: { gt: ahora } } },
+    select: { claseId: true, estadoAnterior: true },
+  });
+  if (suspendidas.length === 0) return 0;
+  for (const estado of new Set(suspendidas.map((clase) => clase.estadoAnterior))) {
+    await tx.claseProgramada.updateMany({
+      where: {
+        id: {
+          in: suspendidas
+            .filter((clase) => clase.estadoAnterior === estado)
+            .map((clase) => clase.claseId),
+        },
+      },
+      data: { estado },
+    });
+  }
+  await registrarCambioMasivo(tx, organizationId, "ClaseProgramada", "reanudar_por_reapertura", {
+    cierreId,
+    clases: suspendidas.map((clase) => ({ id: clase.claseId, estado: clase.estadoAnterior })),
+  });
+  return suspendidas.length;
 };

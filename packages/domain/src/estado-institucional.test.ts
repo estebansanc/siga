@@ -9,6 +9,17 @@ describe("cambiarEstadoInstitucionalSchema", () => {
     });
   });
 
+  it("reanudar las clases es opcional y solo acepta booleano", () => {
+    expect(
+      cambiarEstadoInstitucionalSchema.parse({ estado: "ABIERTA", reanudarClases: true })
+        .reanudarClases,
+    ).toBe(true);
+    expect(
+      cambiarEstadoInstitucionalSchema.safeParse({ estado: "ABIERTA", reanudarClases: "sí" })
+        .success,
+    ).toBe(false);
+  });
+
   it("Cerrada y Abierta con novedades exigen motivo de hasta 280 caracteres", () => {
     for (const estado of ["CERRADA", "ABIERTA_CON_NOVEDADES"]) {
       const sinMotivo = cambiarEstadoInstitucionalSchema.safeParse({ estado, motivo: " " });

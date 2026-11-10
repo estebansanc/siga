@@ -32,6 +32,13 @@ export function AvisoItem({ aviso, children }: { aviso: AvisoDto; children?: Rea
           Vigente del {formatFechaHora(aviso.desde)} al {formatFechaHora(aviso.hasta)} ·{" "}
           {aviso.publicadoPor.nombre}
         </ItemDescription>
+        {aviso.finalizadoEn ? (
+          <ItemDescription className="text-xs">
+            Finalizado
+            {aviso.finalizadoPor ? ` por ${aviso.finalizadoPor.nombre}` : ""} el{" "}
+            {formatFechaHora(aviso.finalizadoEn)}
+          </ItemDescription>
+        ) : null}
         {children}
       </ItemContent>
     </Item>

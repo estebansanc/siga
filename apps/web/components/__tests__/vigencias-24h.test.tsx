@@ -39,6 +39,8 @@ describe("vigencias en 24 h", () => {
       hasta: "2026-10-15T10:30:00.000Z",
       enviarPorCorreo: false,
       publicadoPor: { id: "u1", nombre: "Bedel" },
+      finalizadoEn: null,
+      finalizadoPor: null,
       createdAt: "2026-10-14T22:00:00.000Z",
     } as AvisoDto;
     renderWithProviders(<AvisoItem aviso={aviso} />);

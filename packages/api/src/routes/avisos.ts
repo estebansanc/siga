@@ -31,12 +31,26 @@ export const avisoRoutes = new OpenAPIHono<ApiEnv>()
       tags,
       summary: "Publicar un aviso institucional",
       description:
-        "Solo Bedel y Autoridad. El aviso se ve entre `desde` (ahora si se omite) y `hasta`. Con `enviarPorCorreo` sale un correo por destinatario al publicar; a los estudiantes solo si activaron la opción de avisos. No se edita ni se borra.",
+        "Solo Bedel y Autoridad. El aviso se ve entre `desde` (ahora si se omite) y `hasta`. Con `enviarPorCorreo` sale un correo por destinatario al publicar; a los estudiantes solo si activaron la opción de avisos. No se edita ni se borra; se puede finalizar antes de tiempo.",
       request: { body: jsonBody(crearAvisoSchema) },
       middleware: [perfilOnly("BEDEL", "AUTORIDAD")] as const,
       responses: { 201: jsonResponse(avisoSchema, "Aviso publicado"), ...commonErrors },
     }),
     async (c) => c.json(await avisos.publicarAviso(c.get("auth"), c.req.valid("json")), 201),
+  )
+  .openapi(
+    createRoute({
+      method: "post",
+      path: "/{id}/finalizar",
+      tags,
+      summary: "Finalizar un aviso antes de que termine su vigencia",
+      description:
+        "Solo Bedel y Autoridad, aunque no lo hayan publicado. La vigencia termina en ese momento y el aviso pasa al historial con `finalizadoEn` y `finalizadoPor`; no se borra ni envía correos. 422 si el aviso ya terminó.",
+      request: { params: idParamSchema },
+      middleware: [perfilOnly("BEDEL", "AUTORIDAD")] as const,
+      responses: { 200: jsonResponse(avisoSchema, "Aviso finalizado"), ...commonErrors },
+    }),
+    async (c) => c.json(await avisos.finalizarAviso(c.get("auth"), c.req.valid("param").id), 200),
   )
   .openapi(
     createRoute({

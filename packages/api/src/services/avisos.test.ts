@@ -8,6 +8,7 @@ import {
   authOf,
   countAuditLogs,
   createInstitution,
+  createOrganization,
   createUserWithPerfil,
   resetDatabase,
   seedAcademicFixture,
@@ -16,7 +17,7 @@ import {
   type TestUser,
 } from "../test/db";
 
-import { listarAvisos, listarNotificacionesDeAviso, publicarAviso } from "./avisos";
+import { finalizarAviso, listarAvisos, listarNotificacionesDeAviso, publicarAviso } from "./avisos";
 import { crearTokenBajaAvisos, darDeBajaPorCorreo } from "./notificaciones";
 
 let institution: TestOrganization;
@@ -178,6 +179,59 @@ describe("vigencia", () => {
     await publicar({ titulo: "Urgente", prioridad: "URGENTE" });
     await publicar({ titulo: "Otro normal" });
     expect(await titulosVigentes(institution)).toEqual(["Urgente", "Otro normal", "Normal"]);
+  });
+});
+
+describe("finalizar", () => {
+  it("termina la vigencia ahora: sale de Vigentes y pasa al Historial con quién lo finalizó", async () => {
+    const estudiante = await crearEstudiante();
+    const aviso = await publicar({ prioridad: "URGENTE" });
+    const autoridad = await createUserWithPerfil(institution, "AUTORIDAD");
+
+    const finalizado = await asOrganization(institution, () =>
+      finalizarAviso(authOf(institution, autoridad), aviso.id),
+    );
+
+    expect(finalizado.finalizadoPor).toEqual({ id: autoridad.userId, nombre: expect.any(String) });
+    expect(finalizado.finalizadoEn).toBe(finalizado.hasta);
+    expect(await titulosVigentes(estudiante)).toEqual([]);
+    expect((await vistaDe(estudiante, "HISTORIAL")).map((item) => item.id)).toEqual([aviso.id]);
+    expect(await countAuditLogs(institution.organizationId, "Aviso")).toBe(2);
+  });
+
+  it("un aviso programado a futuro termina sin llegar a mostrarse", async () => {
+    const aviso = await publicar({ desde: minutos(60), hasta: minutos(120) });
+    const finalizado = await finalizarAviso(bedel(), aviso.id);
+    expect(finalizado.desde).toBe(finalizado.hasta);
+    expect(
+      await listarAvisos(bedel(), { vista: "VIGENTES" }, new Date(Date.now() + 90 * 60_000)),
+    ).toEqual([]);
+  });
+
+  it("no envía correos", async () => {
+    const aviso = await publicar();
+    await crearEstudiante({ correo: true });
+    await finalizarAviso(bedel(), aviso.id);
+    expect(await correos()).toEqual([]);
+  });
+
+  it("rechaza un aviso que ya terminó, uno de otra institución y a Docente y Estudiante", async () => {
+    const aviso = await publicar();
+    const despues = new Date(Date.now() + 2 * 60 * 60_000);
+    await expect(finalizarAviso(bedel(), aviso.id, despues)).rejects.toMatchObject({
+      status: 422,
+      message: "El aviso ya terminó",
+    });
+    const otra = await createOrganization();
+    await expect(finalizarAviso(authOf(otra, otra), aviso.id)).rejects.toMatchObject({
+      status: 404,
+    });
+    for (const perfil of ["ESTUDIANTE", "DOCENTE"] as const) {
+      const usuario = await createUserWithPerfil(institution, perfil);
+      await expect(finalizarAviso(authOf(institution, usuario), aviso.id)).rejects.toMatchObject({
+        status: 403,
+      });
+    }
   });
 });
 

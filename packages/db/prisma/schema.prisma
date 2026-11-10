@@ -33,6 +33,7 @@ model User {
   novedadesEditadas        NovedadEdicion[]           @relation("NovedadEdicionEditadaPor")
   novedadesFinalizadas     Novedad[]                  @relation("NovedadFinalizadaPor")
   avisosPublicados         Aviso[]                    @relation("AvisoPublicadoPor")
+  avisosFinalizados        Aviso[]                    @relation("AvisoFinalizadoPor")
   estadosInstitucionales   EstadoInstitucional[]
   solicitudesAula          SolicitudAula[]
   sesionesQr               SesionQr[]
@@ -527,26 +528,27 @@ enum EstadoInstitucion {
 // Instancia de dictado. `fecha` es el día en hora argentina; `inicio` y `fin` son los
 // instantes exactos de la franja, para comparar con "ahora" sin convertir zonas.
 model ClaseProgramada {
-  id              String             @id @default(cuid())
+  id              String                     @id @default(cuid())
   organizationId  String
-  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization    Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   comisionId      String
-  comision        Comision           @relation(fields: [comisionId], references: [id], onDelete: Cascade)
+  comision        Comision                   @relation(fields: [comisionId], references: [id], onDelete: Cascade)
   horarioId       String?
-  horario         Horario?           @relation(fields: [horarioId], references: [id], onDelete: SetNull)
-  fecha           DateTime           @db.Date
+  horario         Horario?                   @relation(fields: [horarioId], references: [id], onDelete: SetNull)
+  fecha           DateTime                   @db.Date
   inicio          DateTime
   fin             DateTime
   aulaId          String?
-  aula            Aula?              @relation(fields: [aulaId], references: [id], onDelete: SetNull)
-  modalidad       Modalidad          @default(PRESENCIAL)
-  estado          EstadoClase        @default(PROGRAMADA)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  aula            Aula?                      @relation(fields: [aulaId], references: [id], onDelete: SetNull)
+  modalidad       Modalidad                  @default(PRESENCIAL)
+  estado          EstadoClase                @default(PROGRAMADA)
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
   novedades       NovedadClase[]
   solicitudesAula SolicitudAula[]
   asistencia      AsistenciaDocente?
   asignaciones    AsignacionAula[]
+  suspensiones    ClaseSuspendidaPorCierre[]
 
   @@unique([comisionId, inicio])
   @@index([organizationId, fecha])
@@ -557,19 +559,35 @@ model ClaseProgramada {
 
 // Solo inserts: el estado vigente es la fila con el `desde` más reciente.
 model EstadoInstitucional {
-  id             String            @id @default(cuid())
-  organizationId String
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  estado         EstadoInstitucion
-  motivo         String?
-  desde          DateTime
-  vigenciaHasta  DateTime?
-  userId         String
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt      DateTime          @default(now())
+  id                String                     @id @default(cuid())
+  organizationId    String
+  organization      Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  estado            EstadoInstitucion
+  motivo            String?
+  desde             DateTime
+  vigenciaHasta     DateTime?
+  userId            String
+  user              User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime                   @default(now())
+  clasesSuspendidas ClaseSuspendidaPorCierre[]
 
   @@index([organizationId, desde])
   @@map("estado_institucional")
+}
+
+// Clases que suspendió un cierre y el estado que tenían antes: al reabrir se reanudan las que
+// siguen suspendidas y no terminaron (RF-01).
+model ClaseSuspendidaPorCierre {
+  id             String              @id @default(cuid())
+  cierreId       String
+  cierre         EstadoInstitucional @relation(fields: [cierreId], references: [id], onDelete: Cascade)
+  claseId        String
+  clase          ClaseProgramada     @relation(fields: [claseId], references: [id], onDelete: Cascade)
+  estadoAnterior EstadoClase
+
+  @@unique([cierreId, claseId])
+  @@index([claseId])
+  @@map("clase_suspendida_por_cierre")
 }
 
 model Novedad {
@@ -769,6 +787,9 @@ model Aviso {
   enviarPorCorreo Boolean        @default(false)
   publicadoPorId  String
   publicadoPor    User           @relation("AvisoPublicadoPor", fields: [publicadoPorId], references: [id], onDelete: Cascade)
+  finalizadoEn    DateTime?
+  finalizadoPorId String?
+  finalizadoPor   User?          @relation("AvisoFinalizadoPor", fields: [finalizadoPorId], references: [id], onDelete: SetNull)
   createdAt       DateTime       @default(now())
   notificaciones  Notificacion[]
 

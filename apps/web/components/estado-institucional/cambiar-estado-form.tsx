@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { CambioEstadoInstitucionalDto } from "@repo/api/client";
 import {
   cambiarEstadoInstitucionalSchema,
   estadoInstitucionLabels,
@@ -16,9 +17,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
+import { Checkbox } from "@repo/ui/components/checkbox";
 import { DateTimeInput } from "@repo/ui/components/datetime-input";
 import {
   Field,
+  FieldContent,
   FieldDescription,
   FieldError,
   FieldGroup,
@@ -43,6 +46,23 @@ import { showRequestError } from "@/lib/form-errors";
 
 const motivoMax = 280;
 
+const resumenDelCambio = (cambio: CambioEstadoInstitucionalDto) => {
+  if (cambio.clasesSuspendidas > 0) {
+    return `Estado registrado. ${cambio.clasesSuspendidas} clases pasaron a Suspendida`;
+  }
+  if (cambio.clasesReanudadas > 0) {
+    return `Estado registrado. Se reanudaron ${cambio.clasesReanudadas} clases`;
+  }
+  return "Estado registrado";
+};
+
+const valoresIniciales = (estado: CambiarEstadoInstitucional["estado"]) => ({
+  estado,
+  motivo: "",
+  vigenciaHasta: "",
+  reanudarClases: true,
+});
+
 // El `datetime-local` entrega "2026-10-14T23:30" sin zona: es hora argentina (DAT-1).
 const aIsoArgentino = (value: unknown) =>
   typeof value === "string" && value ? `${value}:00-03:00` : null;
@@ -54,21 +74,18 @@ export function CambiarEstadoForm() {
   const [avisoOfrecido, setAvisoOfrecido] = useState<CambioDeEstado | null>(null);
   const form = useForm<CambiarEstadoInstitucionalInput, unknown, CambiarEstadoInstitucional>({
     resolver: zodResolver(cambiarEstadoInstitucionalSchema),
-    defaultValues: { estado: "ABIERTA", motivo: "", vigenciaHasta: "" },
+    defaultValues: valoresIniciales("ABIERTA"),
   });
   const estadoElegido = form.watch("estado");
   const motivo = form.watch("motivo") ?? "";
   const mismoEstado = estadoActual.data?.estado === estadoElegido;
+  const reabre = estadoActual.data?.estado === "CERRADA" && estadoElegido !== "CERRADA";
 
   const enviar = async (values: CambiarEstadoInstitucional) => {
     try {
       const cambio = await cambiar.mutateAsync(values);
-      toast.success(
-        cambio.clasesSuspendidas > 0
-          ? `Estado registrado. ${cambio.clasesSuspendidas} clases pasaron a Suspendida`
-          : "Estado registrado",
-      );
-      form.reset({ estado: values.estado, motivo: "", vigenciaHasta: "" });
+      toast.success(resumenDelCambio(cambio));
+      form.reset(valoresIniciales(values.estado));
       setPendiente(null);
       const registrado = cambio.estado;
       if (ofreceAviso(registrado.estado)) {
@@ -80,8 +97,10 @@ export function CambiarEstadoForm() {
   };
 
   // Cerrar tiene impacto sobre las clases: pide confirmación (CUR-08).
-  const onSubmit = (values: CambiarEstadoInstitucional) =>
-    values.estado === "CERRADA" ? setPendiente(values) : enviar(values);
+  const onSubmit = (values: CambiarEstadoInstitucional) => {
+    const cambio = { ...values, reanudarClases: reabre && values.reanudarClases === true };
+    return cambio.estado === "CERRADA" ? setPendiente(cambio) : enviar(cambio);
+  };
 
   return (
     <Card>
@@ -141,6 +160,30 @@ export function CambiarEstadoForm() {
               />
               <FieldError>{form.formState.errors.vigenciaHasta?.message}</FieldError>
             </Field>
+            {reabre ? (
+              <Field orientation="horizontal">
+                <Controller
+                  control={form.control}
+                  name="reanudarClases"
+                  render={({ field }) => (
+                    <Checkbox
+                      id="estado-reanudar"
+                      checked={field.value ?? false}
+                      onCheckedChange={(value) => field.onChange(value === true)}
+                      aria-describedby="estado-reanudar-ayuda"
+                    />
+                  )}
+                />
+                <FieldContent>
+                  <FieldLabel htmlFor="estado-reanudar">
+                    Reanudar las clases suspendidas por el cierre
+                  </FieldLabel>
+                  <FieldDescription id="estado-reanudar-ayuda">
+                    Las que todavía no terminaron vuelven al estado que tenían antes del cierre.
+                  </FieldDescription>
+                </FieldContent>
+              </Field>
+            ) : null}
           </FieldGroup>
           <div className="flex justify-end">
             <Button type="submit" disabled={cambiar.isPending || mismoEstado || !estadoActual.data}>

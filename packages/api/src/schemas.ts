@@ -165,6 +165,7 @@ export const cambioEstadoInstitucionalSchema = z
   .object({
     estado: estadoInstitucionalSchema,
     clasesSuspendidas: z.number().int(),
+    clasesReanudadas: z.number().int(),
   })
   .openapi("CambioEstadoInstitucional");
 export type CambioEstadoInstitucionalDto = z.infer<typeof cambioEstadoInstitucionalSchema>;
@@ -589,6 +590,8 @@ export const avisoSchema = z
     hasta: z.string(),
     enviarPorCorreo: z.boolean(),
     publicadoPor: z.object({ id: z.string(), nombre: z.string() }),
+    finalizadoEn: z.string().nullable(),
+    finalizadoPor: z.object({ id: z.string(), nombre: z.string() }).nullable(),
     createdAt: z.string(),
   })
   .openapi("Aviso");

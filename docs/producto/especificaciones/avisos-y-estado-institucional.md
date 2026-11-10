@@ -27,7 +27,8 @@ Requisitos cubiertos: RF-01, RF-08, RF-14, RF-17. Criterios de aceptación: CA-0
 
 **Reglas**
 
-- Al pasar a "Cerrada", las clases programadas afectadas pasan a "Suspendida" (ver estados de clase en `novedades.md`).
+- Al pasar a "Cerrada", las clases programadas afectadas pasan a "Suspendida" (ver estados de clase en `novedades.md`). El sistema recuerda qué clases suspendió cada cierre y en qué estado estaban.
+- Al reabrir (pasar de "Cerrada" a "Abierta" o "Abierta con novedades"), el formulario ofrece "Reanudar las clases suspendidas por el cierre", marcado por defecto. Con la opción marcada, las clases que suspendió el último cierre, siguen suspendidas y todavía no terminaron vuelven al estado que tenían antes del cierre, y se informa cuántas se reanudaron. Las que ya terminaron, y las que estaban suspendidas antes del cierre (por novedad del docente), quedan como están. La reanudación no envía correos.
 - Con la institución "Cerrada" no se pueden generar QR de asistencia (RF-03).
 
 **Salidas**: estado actualizado y visible para todos los perfiles en menos de 60 segundos; confirmación; error si faltan datos obligatorios o el estado coincide con el vigente.
@@ -58,6 +59,7 @@ Requisitos cubiertos: RF-01, RF-08, RF-14, RF-17. Criterios de aceptación: CA-0
 3. Publica el aviso en la sección Avisos de los destinatarios; si es urgente, también junto al indicador de estado institucional.
 4. Si se eligió enviar por correo, envía el aviso a los destinatarios (a los estudiantes, solo si lo habilitaron en RF-17) y registra el resultado de cada envío.
 5. Al vencer la vigencia, el aviso deja de mostrarse como activo y se conserva en el historial.
+6. Bedel y Autoridad pueden **finalizar** un aviso que todavía no terminó (vigente o programado a futuro) desde Avisos → Publicados, aunque no lo hayan publicado. Se pide confirmación; la vigencia termina en ese momento, el aviso deja de mostrarse como vigente para todos y pasa al historial con "Finalizado por <nombre> el <fecha y hora>". No se borra ni envía correos; si hace falta comunicar la rectificación, se publica otro aviso.
 
 **Reglas**
 

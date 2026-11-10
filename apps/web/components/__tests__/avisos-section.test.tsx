@@ -12,12 +12,15 @@ type EstadoDelTest = {
   search: string;
 };
 const state = vi.hoisted((): EstadoDelTest => ({ avisos: {}, notificaciones: [], search: "" }));
+const finalizar = vi.hoisted(() => vi.fn());
 
 vi.mock("@/hooks/use-avisos", () => ({
   useAvisos: (vista: string) => ({ data: state.avisos[vista] }),
   useNotificacionesAviso: () => ({ data: state.notificaciones }),
   usePublicarAviso: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useFinalizarAviso: () => ({ mutateAsync: finalizar, isPending: false }),
 }));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/hooks/use-datos-academicos", () => ({
   useCarreras: () => ({ data: [] }),
   useComisiones: () => ({ data: [] }),
@@ -38,12 +41,17 @@ const aviso = (parcial: Partial<AvisoDto>): AvisoDto => ({
   hasta: "2026-10-22T15:00:00.000Z",
   enviarPorCorreo: false,
   publicadoPor: { id: "u1", nombre: "Rosa Benítez" },
+  finalizadoEn: null,
+  finalizadoPor: null,
   createdAt: "2026-10-21T15:00:00.000Z",
   ...parcial,
 });
 
+const enUnDia = () => new Date(Date.now() + 24 * 60 * 60_000).toISOString();
+
 beforeEach(() => {
   replace.mockClear();
+  finalizar.mockReset();
   state.search = "";
   state.notificaciones = [];
   state.avisos = {
@@ -114,5 +122,50 @@ describe("AvisosSection", () => {
     state.avisos.VIGENTES = [];
     renderWithProviders(<AvisosSection puedePublicar={false} />);
     expect(screen.getByText("No hay avisos vigentes.")).toBeInTheDocument();
+  });
+
+  it("en Publicados, Finalizar pide confirmación y finaliza solo los que siguen vigentes", async () => {
+    finalizar.mockResolvedValue(aviso({ id: "v" }));
+    state.avisos.PUBLICADOS = [
+      aviso({ id: "v", titulo: "Paro docente", hasta: enUnDia() }),
+      aviso({ id: "h", titulo: "Aviso viejo" }),
+    ];
+    renderWithProviders(<AvisosSection puedePublicar />);
+    await userEvent.click(screen.getByRole("tab", { name: "Publicados" }));
+    const finalizarBotones = screen.getAllByRole("button", { name: "Finalizar" });
+    expect(finalizarBotones).toHaveLength(1);
+
+    await userEvent.click(finalizarBotones[0]);
+    const confirmacion = await screen.findByRole("alertdialog", { name: "¿Finalizar el aviso?" });
+    expect(within(confirmacion).getByText(/"Paro docente" deja de mostrarse/)).toBeInTheDocument();
+    await userEvent.click(within(confirmacion).getByRole("button", { name: "Finalizar aviso" }));
+
+    expect(finalizar).toHaveBeenCalledWith("v");
+    const { toast } = await import("sonner");
+    expect(toast.success).toHaveBeenCalledWith("Aviso finalizado");
+  });
+
+  it("Volver cierra la confirmación sin finalizar", async () => {
+    state.avisos.PUBLICADOS = [aviso({ id: "v", hasta: enUnDia() })];
+    renderWithProviders(<AvisosSection puedePublicar />);
+    await userEvent.click(screen.getByRole("tab", { name: "Publicados" }));
+    await userEvent.click(screen.getByRole("button", { name: "Finalizar" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Volver" }));
+    expect(finalizar).not.toHaveBeenCalled();
+  });
+
+  it("el historial muestra quién finalizó el aviso y cuándo", async () => {
+    state.avisos.HISTORIAL = [
+      aviso({
+        id: "f",
+        titulo: "Paro docente",
+        finalizadoEn: "2026-10-22T15:00:00.000Z",
+        finalizadoPor: { id: "u2", nombre: "Carla Medina" },
+      }),
+    ];
+    renderWithProviders(<AvisosSection puedePublicar={false} />);
+    await userEvent.click(screen.getByRole("tab", { name: "Historial" }));
+    expect(screen.getByText(/Finalizado por Carla Medina el/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Finalizar" })).not.toBeInTheDocument();
   });
 });

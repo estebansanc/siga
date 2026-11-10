@@ -21,7 +21,7 @@ import {
 import { ItemGroup } from "@repo/ui/components/item";
 import { Skeleton } from "@repo/ui/components/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@repo/ui/components/tabs";
-import { BellIcon, MailIcon, PlusIcon } from "lucide-react";
+import { BellIcon, CircleStopIcon, MailIcon, PlusIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -29,6 +29,7 @@ import { useAvisos } from "@/hooks/use-avisos";
 import { avisoDesdeQuery } from "@/lib/aviso-precargado";
 
 import { AvisoItem } from "./aviso-item";
+import { FinalizarAvisoDialog } from "./finalizar-aviso-dialog";
 import { PublicarAvisoDialog } from "./publicar-aviso-dialog";
 import { ResultadoEnviosDialog } from "./resultado-envios-dialog";
 
@@ -43,6 +44,8 @@ const vacios: Record<VistaAvisos, string> = {
   HISTORIAL: "Todavía no hay avisos vencidos.",
   PUBLICADOS: "Todavía no se publicó ningún aviso.",
 };
+
+const sigueVigente = (aviso: AvisoDto) => new Date(aviso.hasta) > new Date();
 
 // Vigentes e historial son para todos; quien publica ve además "Publicados" con el resultado de
 // los envíos por correo (RF-14).
@@ -62,6 +65,7 @@ export function AvisosSection({ puedePublicar }: { puedePublicar: boolean }) {
     if (publicando?.precargado) router.replace("/avisos");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [viendoEnvios, setViendoEnvios] = useState<AvisoDto | null>(null);
+  const [finalizando, setFinalizando] = useState<AvisoDto | null>(null);
   const avisos = useAvisos(vista);
   const vistas: VistaAvisos[] = puedePublicar
     ? ["VIGENTES", "HISTORIAL", "PUBLICADOS"]
@@ -111,16 +115,21 @@ export function AvisosSection({ puedePublicar }: { puedePublicar: boolean }) {
           <ItemGroup className="gap-2">
             {avisos.data.map((aviso) => (
               <AvisoItem key={aviso.id} aviso={aviso}>
-                {vista === "PUBLICADOS" && aviso.enviarPorCorreo ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-1 w-fit"
-                    onClick={() => setViendoEnvios(aviso)}
-                  >
-                    <MailIcon />
-                    Resultado de envíos
-                  </Button>
+                {vista === "PUBLICADOS" ? (
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {aviso.enviarPorCorreo ? (
+                      <Button variant="outline" size="sm" onClick={() => setViendoEnvios(aviso)}>
+                        <MailIcon />
+                        Resultado de envíos
+                      </Button>
+                    ) : null}
+                    {sigueVigente(aviso) ? (
+                      <Button variant="outline" size="sm" onClick={() => setFinalizando(aviso)}>
+                        <CircleStopIcon />
+                        Finalizar
+                      </Button>
+                    ) : null}
+                  </div>
                 ) : null}
               </AvisoItem>
             ))}
@@ -132,6 +141,9 @@ export function AvisosSection({ puedePublicar }: { puedePublicar: boolean }) {
           precargado={publicando.precargado}
           onClose={() => setPublicando(null)}
         />
+      ) : null}
+      {finalizando ? (
+        <FinalizarAvisoDialog aviso={finalizando} onClose={() => setFinalizando(null)} />
       ) : null}
       {viendoEnvios ? (
         <ResultadoEnviosDialog

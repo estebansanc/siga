@@ -16,6 +16,7 @@ import {
 } from "../test/db";
 
 import { cambiarEstado, listarHistorial, obtenerEstadoActual } from "./estado-institucional";
+import { publicarNovedad } from "./novedades";
 
 let institution: TestOrganization;
 let fixture: AcademicFixture;
@@ -121,5 +122,98 @@ describe("estado institucional", () => {
     expect(
       (await prisma.claseProgramada.findUniqueOrThrow({ where: { id: clase.id } })).estado,
     ).toBe("SUSPENDIDA");
+  });
+
+  describe("al reabrir tras un cierre", () => {
+    const bedel = () => authOf(institution, institution);
+    const estadoDe = async (id: string) =>
+      (await prisma.claseProgramada.findUniqueOrThrow({ where: { id } })).estado;
+    const cerrar = () => cambiarEstado(bedel(), { estado: "CERRADA", motivo: "Paro" });
+
+    it("reanuda las clases que suspendió el cierre con el estado que tenían", async () => {
+      const programada = await createClase(institution, fixture, hoy(), "00:00", "23:59");
+      const presente = await createClase(institution, fixture, hoy(), "00:01", "23:58");
+      await prisma.claseProgramada.update({
+        where: { id: presente.id },
+        data: { estado: "DOCENTE_PRESENTE" },
+      });
+      await cerrar();
+
+      const cambio = await cambiarEstado(bedel(), { estado: "ABIERTA", reanudarClases: true });
+
+      expect(cambio.clasesReanudadas).toBe(2);
+      expect(await estadoDe(programada.id)).toBe("PROGRAMADA");
+      expect(await estadoDe(presente.id)).toBe("DOCENTE_PRESENTE");
+      expect(
+        await prisma.auditLog.findFirst({ where: { action: "reanudar_por_reapertura" } }),
+      ).toMatchObject({ entity: "ClaseProgramada" });
+    });
+
+    it("también reanuda al pasar a Abierta con novedades", async () => {
+      const clase = await createClase(institution, fixture, hoy(), "00:00", "23:59");
+      await cerrar();
+      const cambio = await cambiarEstado(bedel(), {
+        estado: "ABIERTA_CON_NOVEDADES",
+        motivo: "Se levantó el paro",
+        reanudarClases: true,
+      });
+      expect(cambio.clasesReanudadas).toBe(1);
+      expect(await estadoDe(clase.id)).toBe("PROGRAMADA");
+    });
+
+    it("sin la opción, las clases siguen suspendidas", async () => {
+      const clase = await createClase(institution, fixture, hoy(), "00:00", "23:59");
+      await cerrar();
+      const cambio = await cambiarEstado(bedel(), { estado: "ABIERTA" });
+      expect(cambio.clasesReanudadas).toBe(0);
+      expect(await estadoDe(clase.id)).toBe("SUSPENDIDA");
+    });
+
+    it("no reanuda las suspendidas antes del cierre ni las que ya terminaron", async () => {
+      const porDocente = await createClase(institution, fixture, hoy(), "00:00", "23:59");
+      await prisma.claseProgramada.update({
+        where: { id: porDocente.id },
+        data: { estado: "SUSPENDIDA" },
+      });
+      const terminada = await createClase(institution, fixture, hoy(), "00:01", "23:58");
+      await cerrar();
+      await prisma.claseProgramada.update({
+        where: { id: terminada.id },
+        data: { fin: new Date(Date.now() - 1000) },
+      });
+
+      const cambio = await cambiarEstado(bedel(), { estado: "ABIERTA", reanudarClases: true });
+
+      expect(cambio.clasesReanudadas).toBe(0);
+      expect(await estadoDe(porDocente.id)).toBe("SUSPENDIDA");
+      expect(await estadoDe(terminada.id)).toBe("SUSPENDIDA");
+    });
+
+    it("el docente puede publicar una novedad sobre una clase reanudada", async () => {
+      const clase = await createClase(institution, fixture, hoy(), "00:00", "23:59");
+      await cerrar();
+      await cambiarEstado(bedel(), { estado: "ABIERTA", reanudarClases: true });
+
+      const novedad = await asOrganization(institution, () =>
+        publicarNovedad(authOf(institution, fixture.docente), {
+          claseIds: [clase.id],
+          tipo: "DEMORA",
+          minutosDemora: 10,
+        }),
+      );
+
+      expect(novedad).toMatchObject({ tipo: "DEMORA", estado: "ACTIVA" });
+      expect(await estadoDe(clase.id)).toBe("DEMORADA");
+    });
+
+    it("solo reanuda las del último cierre", async () => {
+      const clase = await createClase(institution, fixture, hoy(), "00:00", "23:59");
+      await cerrar();
+      await cambiarEstado(bedel(), { estado: "ABIERTA" });
+      await cerrar();
+      const cambio = await cambiarEstado(bedel(), { estado: "ABIERTA", reanudarClases: true });
+      expect(cambio.clasesReanudadas).toBe(0);
+      expect(await estadoDe(clase.id)).toBe("SUSPENDIDA");
+    });
   });
 });

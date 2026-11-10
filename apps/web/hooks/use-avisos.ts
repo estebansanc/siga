@@ -26,6 +26,16 @@ export const usePublicarAviso = () => {
   });
 };
 
+// Finalizar saca el aviso de Vigentes para todos: se refrescan todas las vistas.
+export const useFinalizarAviso = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      unwrap<AvisoDto>(api.avisos[":id"].finalizar.$post({ param: { id } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.avisos }),
+  });
+};
+
 export const useNotificacionesAviso = (id: string) =>
   useQuery({
     queryKey: queryKeys.avisoNotificaciones(id),

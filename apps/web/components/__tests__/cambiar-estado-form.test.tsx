@@ -32,6 +32,7 @@ beforeEach(() => {
   cambiar.mockResolvedValue({
     estado: { ...state.estado, estado: "CERRADA" },
     clasesSuspendidas: 2,
+    clasesReanudadas: 0,
   });
 });
 
@@ -76,6 +77,7 @@ describe("CambiarEstadoForm", () => {
         estado: "CERRADA",
         motivo: "Corte de energía",
         vigenciaHasta: null,
+        reanudarClases: false,
       }),
     );
     const { toast } = await import("sonner");
@@ -91,6 +93,7 @@ describe("CambiarEstadoForm", () => {
         vigenciaHasta: "2026-10-15T01:30:00.000Z",
       },
       clasesSuspendidas: 0,
+      clasesReanudadas: 0,
     });
     renderWithProviders(<CambiarEstadoForm />);
     await userEvent.selectOptions(screen.getByLabelText("Nuevo estado"), "CERRADA");
@@ -116,6 +119,7 @@ describe("CambiarEstadoForm", () => {
     cambiar.mockResolvedValue({
       estado: { ...state.estado, estado: "ABIERTA_CON_NOVEDADES" },
       clasesSuspendidas: 0,
+      clasesReanudadas: 0,
     });
     renderWithProviders(<CambiarEstadoForm />);
     await userEvent.selectOptions(screen.getByLabelText("Nuevo estado"), "ABIERTA_CON_NOVEDADES");
@@ -128,6 +132,7 @@ describe("CambiarEstadoForm", () => {
         estado: "ABIERTA_CON_NOVEDADES",
         motivo: "Paro de transporte",
         vigenciaHasta: "2026-10-14T23:30:00-03:00",
+        reanudarClases: false,
       }),
     );
     expect(
@@ -146,10 +151,49 @@ describe("CambiarEstadoForm", () => {
     cambiar.mockResolvedValue({
       estado: { ...state.estado, estado: "ABIERTA" },
       clasesSuspendidas: 0,
+      clasesReanudadas: 0,
     });
     renderWithProviders(<CambiarEstadoForm />);
     await userEvent.click(screen.getByRole("button", { name: "Cambiar estado" }));
     await waitFor(() => expect(cambiar).toHaveBeenCalled());
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("al reabrir tras un cierre ofrece reanudar las clases, marcado, e informa cuántas", async () => {
+    state.estado = { ...state.estado!, estado: "CERRADA" };
+    cambiar.mockResolvedValue({
+      estado: { ...state.estado, estado: "ABIERTA" },
+      clasesSuspendidas: 0,
+      clasesReanudadas: 3,
+    });
+    renderWithProviders(<CambiarEstadoForm />);
+    const reanudar = screen.getByRole("checkbox", {
+      name: "Reanudar las clases suspendidas por el cierre",
+    });
+    expect(reanudar).toBeChecked();
+    await userEvent.click(screen.getByRole("button", { name: "Cambiar estado" }));
+    await waitFor(() =>
+      expect(cambiar).toHaveBeenCalledWith(expect.objectContaining({ reanudarClases: true })),
+    );
+    const { toast } = await import("sonner");
+    expect(toast.success).toHaveBeenCalledWith("Estado registrado. Se reanudaron 3 clases");
+  });
+
+  it("al reabrir se puede desmarcar la reanudación", async () => {
+    state.estado = { ...state.estado!, estado: "CERRADA" };
+    renderWithProviders(<CambiarEstadoForm />);
+    await userEvent.click(
+      screen.getByRole("checkbox", { name: "Reanudar las clases suspendidas por el cierre" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Cambiar estado" }));
+    await waitFor(() =>
+      expect(cambiar).toHaveBeenCalledWith(expect.objectContaining({ reanudarClases: false })),
+    );
+  });
+
+  it("sin un cierre vigente no ofrece reanudar clases", async () => {
+    renderWithProviders(<CambiarEstadoForm />);
+    await userEvent.selectOptions(screen.getByLabelText("Nuevo estado"), "ABIERTA_CON_NOVEDADES");
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
 });
