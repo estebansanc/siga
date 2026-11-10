@@ -19,21 +19,21 @@ import {
 } from "@repo/ui/components/field";
 import { Input } from "@repo/ui/components/input";
 import { Spinner } from "@repo/ui/components/spinner";
+import type { Route } from "next";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { formValue } from "@/lib/form-data";
 import { navigateAfterSignIn } from "@/lib/navigation";
 
-import { authRouteWithNext, nextRouteOf } from "./auth-routes";
+
+import { authRouteWithNext } from "./auth-routes";
 import { GoogleIcon } from "./google-icon";
 
-export function LoginForm() {
-  const searchParams = useSearchParams();
-  const next = nextRouteOf(searchParams);
-  const passwordUpdated = searchParams.get("contrasena") === "actualizada";
+type LoginFormProps = { next: Route; passwordUpdated: boolean };
+
+export function LoginForm({ next, passwordUpdated }: LoginFormProps) {
   const [pending, setPending] = useState(false);
   const [redirectingToGoogle, setRedirectingToGoogle] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string>();
@@ -141,8 +141,7 @@ export function LoginForm() {
                 Ingresar
               </Button>
               <FieldDescription className="text-center">
-                ¿Sos estudiante?{" "}
-                <Link href={authRouteWithNext("/registro", next)}>Registrate</Link>
+                ¿Sos estudiante? <Link href={authRouteWithNext("/registro", next)}>Registrate</Link>
               </FieldDescription>
               <FieldDescription className="text-center">
                 Docentes y personal: tu acceso lo crea Bedelía

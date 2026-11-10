@@ -197,7 +197,7 @@ export function UsuariosSection() {
           />
           <NativeSelect
             aria-label="Filtrar por perfil"
-            className="w-full sm:w-[11.5rem] sm:shrink-0"
+            className="w-full sm:w-[13rem] sm:shrink-0"
             value={perfil}
             onChange={(event) => setPerfil(event.target.value)}
           >
@@ -210,7 +210,7 @@ export function UsuariosSection() {
           </NativeSelect>
           <NativeSelect
             aria-label="Filtrar por solicitud de baja"
-            className="w-full sm:w-[10rem] sm:shrink-0"
+            className="w-full sm:w-[12rem] sm:shrink-0"
             value={bajaSolicitada}
             onChange={(event) => setBajaSolicitada(event.target.value)}
           >

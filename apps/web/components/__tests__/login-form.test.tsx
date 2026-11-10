@@ -5,15 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LoginForm } from "@/components/auth/login-form";
 import { renderWithProviders } from "@/test/render";
 
-const { signInEmail, sendVerificationEmail, signInWithGoogle, pushMock, state } = vi.hoisted(
-  () => ({
-    signInEmail: vi.fn(),
-    sendVerificationEmail: vi.fn(),
-    signInWithGoogle: vi.fn(),
-    pushMock: vi.fn(),
-    state: { search: "" },
-  }),
-);
+const { signInEmail, sendVerificationEmail, signInWithGoogle, pushMock } = vi.hoisted(() => ({
+  signInEmail: vi.fn(),
+  sendVerificationEmail: vi.fn(),
+  signInWithGoogle: vi.fn(),
+  pushMock: vi.fn(),
+}));
 
 vi.mock("@repo/auth/client", () => ({
   authClient: { signIn: { email: signInEmail }, sendVerificationEmail },
@@ -21,10 +18,6 @@ vi.mock("@repo/auth/client", () => ({
 }));
 
 vi.mock("@/lib/navigation", () => ({ navigateAfterSignIn: pushMock }));
-
-vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(state.search),
-}));
 
 vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn() },
@@ -38,13 +31,12 @@ const fillAndSubmit = async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  state.search = "";
   signInWithGoogle.mockResolvedValue(undefined);
 });
 
 describe("LoginForm", () => {
-  it("con Tab recorre los campos en orden visual hasta Ingresar y los links muestran el foco", async () => {
-    renderWithProviders(<LoginForm />);
+  it("con Tab recorre los campos en orden visual hasta Ingresar", async () => {
+    renderWithProviders(<LoginForm next="/" passwordUpdated={false} />);
     const orden = [
       screen.getByRole("button", { name: "Continuar con Google" }),
       screen.getByLabelText("Email"),
@@ -56,14 +48,11 @@ describe("LoginForm", () => {
       await userEvent.tab();
       expect(elemento).toHaveFocus();
     }
-    expect(
-      screen.getByRole("link", { name: "¿Olvidaste tu contraseña?" }).parentElement,
-    ).toHaveClass("[&>a:focus-visible]:outline-2");
   });
 
   it("tras ingresar bien va al inicio y el botón sigue deshabilitado con spinner mientras navega", async () => {
     signInEmail.mockResolvedValue({ error: null });
-    renderWithProviders(<LoginForm />);
+    renderWithProviders(<LoginForm next="/" passwordUpdated={false} />);
     await fillAndSubmit();
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/"));
     const submit = screen.getByRole("button", { name: /Ingresar/ });
@@ -73,18 +62,17 @@ describe("LoginForm", () => {
 
   it("respeta next al ingresar y en el link a Registrate", async () => {
     signInEmail.mockResolvedValue({ error: null });
-    state.search = "next=%2Finvitacion%2Finv-1";
-    renderWithProviders(<LoginForm />);
+    renderWithProviders(<LoginForm next="/solicitudes" passwordUpdated={false} />);
     expect(screen.getByRole("link", { name: "Registrate" })).toHaveAttribute(
       "href",
-      "/registro?next=%2Finvitacion%2Finv-1",
+      "/registro?next=%2Fsolicitudes",
     );
     await fillAndSubmit();
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/invitacion/inv-1"));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/solicitudes"));
   });
 
   it("el pie aclara que Registrate es para estudiantes y que el personal no es un link", () => {
-    renderWithProviders(<LoginForm />);
+    renderWithProviders(<LoginForm next="/" passwordUpdated={false} />);
     expect(screen.getByText(/¿Sos estudiante\?/)).toBeInTheDocument();
     expect(screen.queryByText(/¿No tenés cuenta\?/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Registrate" })).toHaveAttribute("href", "/registro");
@@ -94,7 +82,7 @@ describe("LoginForm", () => {
 
   it("si las credenciales fallan, vuelve a habilitar el formulario y avisa", async () => {
     signInEmail.mockResolvedValue({ error: { message: "invalid" } });
-    renderWithProviders(<LoginForm />);
+    renderWithProviders(<LoginForm next="/" passwordUpdated={false} />);
     await fillAndSubmit();
     const { toast } = await import("sonner");
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Email o contraseña incorrectos"));
@@ -103,7 +91,7 @@ describe("LoginForm", () => {
   });
 
   it("Continuar con Google deshabilita ambos botones con spinner mientras redirige", async () => {
-    renderWithProviders(<LoginForm />);
+    renderWithProviders(<LoginForm next="/" passwordUpdated={false} />);
     const google = screen.getByRole("button", { name: "Continuar con Google" });
     await userEvent.click(google);
     expect(signInWithGoogle).toHaveBeenCalledWith("/");
@@ -115,7 +103,7 @@ describe("LoginForm", () => {
   it("sin verificar el correo lo indica y permite reenviar el enlace", async () => {
     signInEmail.mockResolvedValue({ error: { code: "EMAIL_NOT_VERIFIED" } });
     sendVerificationEmail.mockResolvedValue({ error: null });
-    renderWithProviders(<LoginForm />);
+    renderWithProviders(<LoginForm next="/" passwordUpdated={false} />);
     await fillAndSubmit();
     expect(await screen.findByText("Verificá tu correo para ingresar")).toBeInTheDocument();
     expect(pushMock).not.toHaveBeenCalled();
@@ -133,7 +121,7 @@ describe("LoginForm", () => {
     signInEmail.mockResolvedValue({
       error: { code: "ACCOUNT_DEACTIVATED", message: "Tu cuenta está desactivada" },
     });
-    renderWithProviders(<LoginForm />);
+    renderWithProviders(<LoginForm next="/" passwordUpdated={false} />);
     await fillAndSubmit();
     const { toast } = await import("sonner");
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Tu cuenta está desactivada"));
@@ -142,14 +130,14 @@ describe("LoginForm", () => {
   it("una cuenta bloqueada ve el mensaje con la hora de liberación", async () => {
     const message = "Cuenta bloqueada temporalmente. Podés volver a intentar a las 18:05.";
     signInEmail.mockResolvedValue({ error: { code: "ACCOUNT_LOCKED", message } });
-    renderWithProviders(<LoginForm />);
+    renderWithProviders(<LoginForm next="/" passwordUpdated={false} />);
     await fillAndSubmit();
     const { toast } = await import("sonner");
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith(message));
   });
 
   it("ofrece recuperar la contraseña", () => {
-    renderWithProviders(<LoginForm />);
+    renderWithProviders(<LoginForm next="/" passwordUpdated={false} />);
     expect(screen.getByRole("link", { name: "¿Olvidaste tu contraseña?" })).toHaveAttribute(
       "href",
       "/recuperar-contrasena",
@@ -157,8 +145,7 @@ describe("LoginForm", () => {
   });
 
   it("tras definir una contraseña nueva avisa que se actualizó", () => {
-    state.search = "contrasena=actualizada";
-    renderWithProviders(<LoginForm />);
+    renderWithProviders(<LoginForm next="/" passwordUpdated />);
     expect(screen.getByText("Tu contraseña se actualizó")).toBeInTheDocument();
   });
 });

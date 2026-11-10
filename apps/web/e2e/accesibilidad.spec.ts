@@ -117,6 +117,7 @@ test.describe("Teclado", () => {
     page,
   }) => {
     await page.goto("/login");
+    await expect(page.locator("button[type=submit]")).toBeVisible();
     const visitados: string[] = [];
     let ultimoY = -1;
     for (let paso = 0; paso < 12; paso++) {
