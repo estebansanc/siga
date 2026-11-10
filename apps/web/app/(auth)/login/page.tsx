@@ -10,9 +10,10 @@ type LoginPageProps = { searchParams: Promise<Record<string, string | string[] |
 
 const firstValues = (params: Record<string, string | string[] | undefined>) =>
   new URLSearchParams(
-    Object.entries(params).flatMap(([key, value]) =>
-      typeof value === "string" ? [[key, value]] : [],
-    ),
+    Object.entries(params).flatMap(([key, value]) => {
+      const first = Array.isArray(value) ? value[0] : value;
+      return first === undefined ? [] : [[key, first]];
+    }),
   );
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {

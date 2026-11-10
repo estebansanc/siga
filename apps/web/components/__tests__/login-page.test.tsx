@@ -25,6 +25,14 @@ describe("LoginPage", () => {
     );
   });
 
+  it("con un parámetro repetido se queda con el primero", async () => {
+    await renderPage({ next: ["/solicitudes", "/otra"] });
+    expect(screen.getByRole("link", { name: "Registrate" })).toHaveAttribute(
+      "href",
+      "/registro?next=%2Fsolicitudes",
+    );
+  });
+
   it("ignora un next externo", async () => {
     await renderPage({ next: "//evil.com" });
     expect(screen.getByRole("link", { name: "Registrate" })).toHaveAttribute("href", "/registro");
